@@ -1,0 +1,17 @@
+Fichero,Tamaño (KB),Filas,Columnas,Time_min,Time_max,Alta_freq,Descripción
+AIR_AIR Temperatures (ALL)-data-as-joinbyfield-2026-02-12 08,133.2,1461,13,2025-02-12 07:00,2026-02-12 07:00,False,"Temperatura del aire — sensores R1, WS100, S1, S2"
+AIR_ePAR (all parameters)-data-as-joinbyfield-2026-02-12 09_,448.7,1461,25,2025-02-12 07:00,2026-02-12 07:00,False,"ePAR (PAR fotosintético) — sensores R1, S1, S2"
+Intrensiy_Precipitation-data-as-joinbyfield-2026-02-12 14_22,17510.5,605682,3,2025-06-16 11:55,2025-06-20 09:40,True,Intensidad de precipitación — alta frecuencia (~s)
+Precipitation (Total  Difference cumulative sum)-data-2026-0,16677.4,605682,2,2025-06-16 11:55,2025-06-20 09:40,True,Precipitación acumulada (cumsum) — alta frecuencia
+Precipitation-data-as-joinbyfield-2026-02-12 14_21_47.csv,17510.5,605682,3,2025-06-16 11:55,2025-06-20 09:40,True,Intensidad precipitación (duplicado joinbyfield)
+Precipitation_quantity_Precipitation (Total  Difference cumu,16659.1,605011,2,2025-06-16 11:55,2025-06-20 09:40,True,Precipitación acumulada (cumsum) — alta frecuencia
+Precipitation_type_-data-2026-02-12 09_01_21.csv,22812.4,605010,2,2025-06-16 11:55,2025-06-20 09:40,True,Tipo precipitación (WMO wawa)
+Precipitation_type_-data-2026-02-12 09_02_48.csv,26188.7,605011,2,2025-06-16 11:55,2025-06-20 09:40,True,Tipo precipitación (WMO wawa)
+PV_Irradiance-data-as-joinbyfield-2026-02-12 14_17_50.csv,92.2,1753,5,2025-05-12 04:00,2025-10-05 04:00,False,Irradiancia GPOA y Albedo — secciones S1 y S2
+PV_PV panel temperatures-data-as-joinbyfield-2026-02-12 14_1,126.8,1753,9,2025-05-12 04:00,2025-10-05 04:00,False,Temperatura de paneles FV — S1 y S2
+PV_PV panel temperatures_ Section S1-data-as-joinbyfield-202,54.5,1170,5,2025-05-12 02:00,2025-10-05 05:00,False,Temperatura paneles sección S1 (detalle)
+SOIL_Temperature-data-as-joinbyfield-2026-02-12 08_54_57.csv,138.6,1461,15,2025-02-12 07:00,2026-02-12 07:00,False,"Temperatura del suelo — sensores R1, S1, S2"
+SOIL_VWC-data-as-joinbyfield-2026-02-12 08_57_18.csv,114.2,1461,15,2025-02-12 07:00,2026-02-12 07:00,False,"VWC (Humedad volumétrica suelo) — R1, S1, S2"
+Tracking angles-data-as-joinbyfield-2026-02-12 14_24_26.csv,126.4,1461,11,2025-02-12 13:00,2026-02-12 13:00,False,Ángulos de tracking paneles — trackers M01–M10
+Wind direction-data-2026-02-12 14_25_08.csv,18.8,731,2,2025-02-12 13:00,2026-02-12 13:00,False,Dirección del viento (predominante)
+Wind speed-data-2026-02-12 09_05_40.csv,38.5,1461,2,2025-02-12 07:00,2026-02-12 07:00,False,Velocidad del viento (km/h)
