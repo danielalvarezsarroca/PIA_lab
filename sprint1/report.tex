@@ -1,0 +1,347 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+
+\definecolor{accent}{RGB}{30, 90, 160}
+\definecolor{muted}{RGB}{100, 100, 100}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=accent,
+    urlcolor=accent,
+    citecolor=accent,
+    pdftitle={E01 — Informe de Análisis Exploratorio de Datos},
+    pdfauthor={Daniel Álvarez / Equipo Chacorocalfarobar},
+}
+
+% Títulos de sección
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\titlespacing{\section}{0pt}{18pt}{8pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+
+% Cabecera y pie
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{muted}E01 — Informe EDA · Sprint 1}
+\fancyhead[R]{\small\color{muted}Sistemas Agrovoltaicos Dinámicos}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Metadatos del documento
+\title{}
+\date{}
+
+\begin{document}
+
+% ─── Portada ────────────────────────────────────────────────────────────────
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\color{accent}\rule{\linewidth}{2pt}}\\[0.5cm]
+{\Large\bfseries Análisis y Optimización Operativa\\[0.3em]
+de Sistemas Agrovoltaicos Dinámicos}\\[0.4cm]
+{\color{accent}\rule{\linewidth}{1pt}}\\[1.2cm]
+{\LARGE\bfseries E01 — Informe de Análisis Exploratorio de Datos}\\[0.3cm]
+{\large Sprint 1}\\[2.5cm]
+\begin{tabular}{ll}
+\textbf{Organización:}   & Sostenibilidad y Ciencia \\[4pt]
+\textbf{Equipo:}         & Daniel Álvarez / Chacorocalfarobar \\[4pt]
+\textbf{Sprint:}         & 1 de 4 — EDA e insights \\[4pt]
+\textbf{Entregable:}     & E01 — Informe de Análisis Exploratorio \\[4pt]
+\textbf{Fecha:}          & 17 de abril de 2026 \\[4pt]
+\textbf{Notebook EDA:}   & \texttt{sprint1/sprint1\_eda\_agrovoltaica.ipynb} \\
+\end{tabular}
+\vfill
+{\color{muted}\small Documento confidencial · Proyecto académico/profesional PIA}
+\end{titlepage}
+
+% ─── Índice ─────────────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ─── 1. Introducción ────────────────────────────────────────────────────────
+\section{Introducción y contexto del Sprint 1}
+
+El presente informe documenta el trabajo realizado durante el \textbf{Sprint 1} del proyecto \emph{Análisis y Optimización Operativa de Sistemas Agrovoltaicos Dinámicos}, cuyo objetivo es transformar datos históricos de sensores en un sistema inteligente de análisis, supervisión y decisión operativa que equilibre producción energética y microclima del cultivo.
+
+El Sprint 1 tiene como misión exclusiva el \textbf{análisis exploratorio de datos (EDA)}: comprender la estructura de los datos disponibles, identificar sus problemas de calidad, detectar patrones temporales iniciales y sentar las bases analíticas necesarias para la modelización del Sprint 2.
+
+Este informe es el \textbf{Entregable E01} del sprint. El \textbf{Entregable E02} (notebook reproducible) lo acompaña en \texttt{sprint1/sprint1\_eda\_agrovoltaica.ipynb} y contiene el código completo y ejecutable de todo el análisis aquí descrito.
+
+\subsection{Principio rector del análisis}
+
+En coherencia con la misión del proyecto, el EDA no se limita a las variables energéticas. Todas las decisiones metodológicas consideran el \textbf{equilibrio entre producción energética y microclima agrícola}. Optimizar solo la energía es un riesgo explícitamente documentado en el registro de riesgos del proyecto.
+
+% ─── 2. Descripción de los datos ────────────────────────────────────────────
+\section{Descripción de los datos disponibles}
+
+\subsection{Fuentes y naturaleza de los datos}
+
+Los datos provienen del sistema de adquisición de la instalación agrovoltaica dinámica y han sido exportados en formato CSV. Se dispone de \textbf{16 ficheros} que cubren las siguientes categorías de variables:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Variables energéticas / fotovoltaicas:} ángulos de tracking de paneles (M01–M10), irradiancia en plano de panel (GPOA) y albedo de dos secciones, temperatura de paneles FV.
+    \item \textbf{Variables microclimáticas agrícolas:} ePAR (radiación fotosintéticamente activa), VWC (contenido volumétrico de agua del suelo), temperatura del suelo, temperatura del aire en distintas posiciones.
+    \item \textbf{Variables meteorológicas de referencia:} temperatura del aire (estación exterior WS100), velocidad y dirección del viento, precipitación (intensidad, acumulado y tipo).
+\end{itemize}
+
+\subsection{Estructura espacial de los sensores}
+
+Los sensores siguen una nomenclatura que refleja la organización espacial de la instalación:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{R1:} zona con código \texttt{R1dXX}. Presente en todos los datasets pero sin datos válidos en la mayor parte del período.
+    \item \textbf{S1:} sección experimental 1, sensores \texttt{S1dXX}. Posiciones este, centro y oeste documentadas en temperatura de aire.
+    \item \textbf{S2:} sección experimental 2, sensores \texttt{S2dXX}. Estructura análoga a S1.
+    \item \textbf{WS100:} estación meteorológica de referencia exterior.
+\end{itemize}
+
+\subsection{Características técnicas de los ficheros}
+
+Los ficheros presentan dos particularidades técnicas que condicionaron el proceso de carga:
+
+\begin{enumerate}[leftmargin=1.5cm]
+    \item La mayoría de ficheros incluyen una primera línea con la directiva \texttt{sep=,} (formato de exportación Excel), que debe descartarse antes de la lectura.
+    \item Los valores numéricos contienen la unidad de medida embebida como texto (\texttt{"28.8 °C"}, \texttt{"1024 W/m²"}, \texttt{"41.4 °"}, \texttt{"32.4 \%"}), lo que los convierte en strings y requiere un paso de extracción del valor numérico antes de cualquier análisis.
+\end{enumerate}
+
+Además, los ficheros de precipitación presentan una resolución temporal de \textbf{segundos} (más de 600.000 filas), incompatible con el resampleo directo al que se someten el resto de datasets.
+
+% ─── 3. Metodología ─────────────────────────────────────────────────────────
+\section{Metodología del EDA}
+
+\subsection{Organización general del análisis}
+
+El análisis se ha estructurado en \textbf{nueve bloques secuenciales}, diseñados para avanzar de lo más general (inventario) a lo más específico (interpretación de dominio), de forma que cada bloque construye sobre los anteriores:
+
+\begin{enumerate}[leftmargin=1.5cm]
+    \item Carga e inventario de datasets
+    \item Auditoría de calidad de datos
+    \item Normalización temporal inicial
+    \item Análisis univariante
+    \item Análisis temporal
+    \item Correlaciones y relaciones entre variables
+    \item Análisis orientado al dominio agrovoltaico
+    \item Hipótesis sobre sensores y espacios de investigación
+    \item Conclusiones y próximos pasos
+\end{enumerate}
+
+\subsection{Infraestructura de código reutilizable}
+
+Antes de iniciar el análisis se implementaron funciones auxiliares reutilizables, pensadas para ser la base del pipeline de limpieza del Sprint 2:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \texttt{strip\_unit(series)}: extrae el valor numérico de columnas con unidades embebidas mediante expresión regular.
+    \item \texttt{detect\_sep\_line(filepath)}: detecta si el fichero incluye la directiva \texttt{sep=} y devuelve el número de líneas a saltar.
+    \item \texttt{load\_csv(filepath, nrows)}: carga un CSV manejando BOM UTF-8, la línea \texttt{sep=} y la normalización de la columna \texttt{Time} a formato \texttt{datetime}.
+    \item \texttt{strip\_all\_units(df)}: aplica \texttt{strip\_unit} a todas las columnas no-temporales de un DataFrame.
+    \item \texttt{resample\_to\_6h(df\_num)}: resamplea un DataFrame numérico a resolución temporal de 6 horas mediante media.
+\end{itemize}
+
+\subsection{Bloque 1 — Carga e inventario de datasets}
+
+El inventario se construye de forma automática iterando sobre todos los ficheros \texttt{.csv} presentes en \texttt{data/}. Para cada fichero se registran: nombre, tamaño en KB, número de filas, número de columnas, timestamp mínimo y máximo, y una etiqueta semántica derivada del nombre del fichero. Los ficheros de precipitación de alta frecuencia se identifican automáticamente y se tratan con un muestreo de las primeras 5.000 filas para el inventario, evitando saturar la memoria. El inventario se exporta a \texttt{outputs/inventario\_datasets.csv}.
+
+\subsection{Bloque 2 — Auditoría de calidad de datos}
+
+Para cada dataset se calcula un conjunto de métricas de calidad:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item Porcentaje promedio de valores nulos sobre el total de columnas no-temporales.
+    \item Número de filas duplicadas.
+    \item Número de timestamps nulos o no parseables.
+    \item Número de columnas con varianza nula o quasi-nula (columnas constantes).
+    \item Número de columnas con más del 95\% de valores nulos.
+    \item Frecuencia de muestreo aproximada (mediana de los intervalos entre timestamps consecutivos).
+\end{itemize}
+
+Estas métricas se consolidan en una tabla resumen exportada a \texttt{outputs/quality\_report.csv}. Adicionalmente, se genera una visualización de barras del porcentaje de nulos por columna para cada dataset principal, exportada a \texttt{outputs/nulls\_by\_column.png}.
+
+\subsection{Bloque 3 — Normalización temporal inicial}
+
+Para cada dataset se calcula: timestamp de inicio, timestamp de fin, días totales cubiertos, frecuencia de muestreo mediana, tamaño del hueco máximo y número de huecos superiores a tres veces la frecuencia mediana. Se genera un diagrama de Gantt horizontal que muestra la cobertura temporal de todos los datasets simultáneamente (\texttt{outputs/temporal\_coverage.png}), facilitando la identificación de desalineaciones. Complementariamente, se listan todos los huecos superiores a 24 horas por dataset.
+
+\subsection{Bloque 4 — Análisis univariante}
+
+Para los datasets de sensores se aplica \texttt{strip\_all\_units} para obtener versiones numéricas y se calculan estadísticos descriptivos completos: conteo de valores válidos, media, desviación típica, mínimo, cuartiles, máximo, porcentaje de nulos y asimetría. Se seleccionan manualmente las columnas más representativas de cada dataset (variables de tracking, irradiancia, temperatura de panel, temperatura del aire, temperatura del suelo, VWC y ePAR) para generar histogramas con líneas de media y mediana (\texttt{outputs/dist\_\{dataset\}.png}). La detección de outliers se realiza con el método IQR con factor 3.0, exportando un resumen a \texttt{outputs/outliers\_summary.csv}.
+
+\subsection{Bloque 5 — Análisis temporal}
+
+Se generan dos figuras de evolución temporal multi-panel:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Variables energéticas} (\texttt{outputs/temporal\_energy\_vars.png}): ángulo de tracking de todos los trackers, irradiancia GPOA de S1 y S2, temperatura de panel FV.
+    \item \textbf{Variables microclimáticas} (\texttt{outputs/temporal\_micro\_vars.png}): temperatura del aire, temperatura del suelo, VWC y ePAR fotosintético.
+\end{itemize}
+
+Adicionalmente, se calcula el perfil intradiario de cuatro variables clave (GPOA, ángulo de tracking, ePAR, temperatura del suelo) como mediana por hora del día, con banda de IQR, exportado a \texttt{outputs/intraday\_profiles.png}.
+
+\subsection{Bloque 6 — Correlaciones y relaciones entre variables}
+
+Se construye un \textbf{dataset integrado a resolución 6h} combinando columnas seleccionadas de los siete datasets principales mediante \texttt{resample\_to\_6h} y concatenación sobre el índice temporal. Este dataset integrado se exporta a \texttt{outputs/dataset\_integrado\_6h.csv} y sirve de base para todos los análisis de correlación.
+
+La matriz de correlaciones se calcula con el \textbf{coeficiente de Spearman} (no Pearson), justificado por la naturaleza potencialmente no lineal de las relaciones entre rotación de paneles y variables microclimáticas. Se genera la matriz completa (\texttt{outputs/correlation\_matrix.png}), un gráfico de barras de las correlaciones con la variable de tracking de referencia (\texttt{outputs/correlations\_vs\_tracking.png}) y una figura de seis scatter plots de los pares más relevantes para el proyecto (\texttt{outputs/scatter\_key\_pairs.png}).
+
+\subsection{Bloque 7 — Análisis orientado al dominio agrovoltaico}
+
+Este bloque contiene los análisis más específicos del proyecto, organizados en cuatro subanálisis:
+
+\subsubsection{Segmentación por régimen de tracking}
+
+Se clasifica cada timestep del dataset integrado en uno de cuatro regímenes operativos en función del ángulo del tracker de referencia (M01): \textsc{stow} (ángulo ≈ 50.6°, tolerancia ±0.5°), \textsc{horizontal} (ángulo ≈ 0°), \textsc{tracking\_am} (ángulo negativo, seguimiento matutino) y \textsc{tracking\_pm} (ángulo positivo, seguimiento vespertino). Esta clasificación permite analizar el comportamiento de todas las variables condicionado al modo de operación de los paneles.
+
+\subsubsection{Comparativa de variables por régimen}
+
+Para las variables microclimáticas y energéticas clave (GPOA, ePAR, temperatura del aire, temperatura del suelo, VWC) se generan boxplots por régimen de tracking, exportados a \texttt{outputs/vars\_by\_tracking\_regime.png}. El objetivo es cuantificar el efecto que cada modo de operación tiene sobre el microclima del cultivo.
+
+\subsubsection{Comparativa entre secciones S1 y S2}
+
+Se comparan las distribuciones de las mismas variables entre las dos secciones experimentales mediante boxplots paralelos (\texttt{outputs/section\_S1\_vs\_S2.png}), calculando la diferencia de medianas S2 -- S1 para cada variable.
+
+\subsubsection{Análisis de efectos retardados (lag analysis)}
+
+Para cuantificar el desfase temporal entre cambios en la irradiancia y la respuesta de las variables del suelo (temperatura y VWC), se calcula la correlación de Pearson entre la serie de GPOA y las series desplazadas temporalmente de cada variable objetivo, barriendo un rango de ±8 pasos (±48 horas). Se identifican el lag óptimo y la máxima correlación absoluta para cada par, exportando los resultados a \texttt{outputs/lag\_analysis.csv} y \texttt{outputs/lag\_analysis.png}. Este análisis está motivado por la naturaleza física del sistema: el suelo responde con inercia térmica e hídrica a los cambios de radiación.
+
+\subsubsection{Umbrales agronómicos de ePAR}
+
+Se analiza la distribución del ePAR bajo el dosel respecto a tres umbrales de referencia agronómica: punto de compensación lumínica (~20 µmol·m\textsuperscript{-2}·s\textsuperscript{-1}), fotosíntesis activa baja (~200 µmol·m\textsuperscript{-2}·s\textsuperscript{-1}) y rango óptimo aproximado para cultivos C3 (~600 µmol·m\textsuperscript{-2}·s\textsuperscript{-1}). Se calcula el porcentaje de timesteps en cada rango y se genera un histograma con los umbrales superpuestos (\texttt{outputs/epar\_thresholds.png}).
+
+\subsection{Bloque 8 — Hipótesis sobre sensores y espacios de investigación}
+
+Se analizan dos fuentes de evidencia para proponer hipótesis sobre la estructura espacial de la instalación:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Correlación entre trackers:} se calcula la matriz de correlaciones de Spearman entre todos los trackers (M01–M10) y la varianza del ángulo por tracker (\texttt{outputs/tracker\_correlations.png}). Una varianza próxima a cero indica tracker en posición fija.
+    \item \textbf{Perfil de exposición lumínica por sensor ePAR:} se calcula la mediana de cada sensor ePAR y la correlación entre sensores para inferir agrupaciones de exposición (\texttt{outputs/epar\_sensor\_profile.png}).
+\end{itemize}
+
+\subsection{Bloque 9 — Conclusiones y próximos pasos}
+
+El bloque final consolida de forma estructurada: estado general de los datos, problemas de calidad detectados, variables más relevantes del proyecto, insights accionables para el Sprint 2, riesgos técnicos y analíticos, y siguientes pasos recomendados. Se genera también una figura resumen con la evolución integrada de las cuatro variables más representativas del sistema (\texttt{outputs/key\_variables\_overview.png}).
+
+% ─── 4. Outputs generados ───────────────────────────────────────────────────
+\section{Outputs generados}
+
+Todos los artefactos del análisis se encuentran en \texttt{sprint1/outputs/}:
+
+\begin{longtable}{p{7.5cm} p{7cm}}
+\toprule
+\textbf{Fichero} & \textbf{Descripción} \\
+\midrule
+\endhead
+\texttt{inventario\_datasets.csv}       & Inventario completo de los 16 ficheros CSV \\
+\texttt{quality\_report.csv}            & Tabla de métricas de calidad por dataset \\
+\texttt{temporal\_summary.csv}          & Cobertura temporal y huecos por dataset \\
+\texttt{outliers\_summary.csv}          & Conteo de outliers IQR×3 por variable \\
+\texttt{dataset\_integrado\_6h.csv}     & Dataset integrado resampleado a 6h \\
+\texttt{lag\_analysis.csv}              & Lag óptimo y correlación máxima por par \\
+\texttt{nulls\_by\_column.png}          & Porcentaje de nulos por columna \\
+\texttt{temporal\_coverage.png}         & Diagrama de Gantt de cobertura temporal \\
+\texttt{dist\_\{dataset\}.png}          & Histogramas de distribución por dataset \\
+\texttt{temporal\_energy\_vars.png}     & Evolución temporal de variables energéticas \\
+\texttt{temporal\_micro\_vars.png}      & Evolución temporal de variables microclimáticas \\
+\texttt{intraday\_profiles.png}         & Perfiles intradiarios medianos \\
+\texttt{correlation\_matrix.png}        & Matriz de correlaciones de Spearman \\
+\texttt{correlations\_vs\_tracking.png} & Correlaciones de todas las variables con tracking \\
+\texttt{scatter\_key\_pairs.png}        & Scatter plots de los pares más relevantes \\
+\texttt{vars\_by\_tracking\_regime.png} & Variables por régimen de tracking \\
+\texttt{section\_S1\_vs\_S2.png}        & Comparativa entre secciones S1 y S2 \\
+\texttt{lag\_analysis.png}              & Correlación cruzada con desplazamiento temporal \\
+\texttt{epar\_thresholds.png}           & Distribución ePAR con umbrales agronómicos \\
+\texttt{tracker\_correlations.png}      & Correlaciones y varianza entre trackers \\
+\texttt{epar\_sensor\_profile.png}      & Perfil de exposición lumínica por sensor ePAR \\
+\texttt{key\_variables\_overview.png}   & Visión integrada de variables clave del sistema \\
+\bottomrule
+\end{longtable}
+
+% ─── 5. Supuestos y limitaciones ────────────────────────────────────────────
+\section{Supuestos explícitos y limitaciones}
+
+En coherencia con los principios del proyecto, se declaran explícitamente los supuestos adoptados y las limitaciones del análisis:
+
+\begin{longtable}{p{5cm} p{5cm} p{4.5cm}}
+\toprule
+\textbf{Supuesto / Limitación} & \textbf{Impacto potencial} & \textbf{Acción recomendada} \\
+\midrule
+\endhead
+Zona R1 considerada no instrumentada durante el período analizado &
+Sin grupo de control real en el análisis comparativo &
+Confirmar estado de R1 con el equipo técnico \\[6pt]
+Trackers M02, M06 y M10 tratados como atípicos por baja varianza de ángulo &
+Posible sesgo en el análisis de correlación tracking--microclima &
+Verificar estado mecánico de los actuadores \\[6pt]
+Período con datos válidos: solo verano 2025 &
+Sin variabilidad estacional (invierno, otoño, primavera) &
+Ampliar período si se dispone de datos históricos adicionales \\[6pt]
+Resampleo a 6h como frecuencia común del dataset integrado &
+Pérdida de eventos breves de alta irradiancia &
+Revisar con resolución 2h para variables energéticas en Sprint 2 \\[6pt]
+Umbrales de ePAR basados en referencias agronómicas genéricas &
+Puede no representar el cultivo específico de la instalación &
+Validar con el especialista agrícola del experimento \\[6pt]
+Tipo de cultivo no conocido &
+No se pueden calcular índices agronómicos específicos (LAI, Kcb, etc.) &
+Solicitar metadatos al cliente \\
+\bottomrule
+\end{longtable}
+
+% ─── 6. Definition of Done ──────────────────────────────────────────────────
+\section{Verificación del Definition of Done}
+
+\begin{longtable}{p{9cm} p{2.5cm}}
+\toprule
+\textbf{Criterio DoD} & \textbf{Estado} \\
+\midrule
+\endhead
+Entregable E02 (notebook) ejecuta sin errores &  Cumplido \\
+Funciones principales documentadas en el notebook & Cumplido \\
+Entregable incluye limitaciones y próximos pasos & Cumplido \\
+Código versionado o listo para versionado & Pendiente (git) \\
+Revisado por al menos una persona distinta del autor & Pendiente (Sprint Review) \\
+Aceptado por el cliente o con feedback registrado & Pendiente (Sprint Review) \\
+Registro de riesgos actualizado & Pendiente (PM) \\
+\bottomrule
+\end{longtable}
+
+% ─── 7. Relación con sprints siguientes ─────────────────────────────────────
+\section{Relación con el Sprint 2}
+
+Los artefactos producidos en este sprint sirven directamente de base para el Sprint 2 (modelización):
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{\texttt{dataset\_integrado\_6h.csv}:} dataset base listo para feature engineering y entrenamiento.
+    \item \textbf{Funciones auxiliares} (\texttt{strip\_unit}, \texttt{load\_csv}, \texttt{resample\_to\_6h}): forman el núcleo del pipeline de limpieza reproducible.
+    \item \textbf{Segmentación por régimen de tracking:} puede usarse directamente como variable categórica en el modelo.
+    \item \textbf{Análisis de lag:} determina qué lag features añadir en el feature engineering.
+    \item \textbf{Hipótesis sobre trackers atípicos:} informa sobre qué trackers excluir o tratar separadamente en el modelo.
+\end{itemize}
+
+% ─── Pie ────────────────────────────────────────────────────────────────────
+\vspace{2cm}
+\noindent\rule{\linewidth}{0.4pt}\\[4pt]
+{\small\color{muted}
+Documento E01 — Sprint 1 del proyecto \emph{Análisis y Optimización Operativa de Sistemas Agrovoltaicos Dinámicos}.\\
+Equipo: Daniel Álvarez / Chacorocalfarobar · Organización: Sostenibilidad y Ciencia · 17 de abril de 2026.
+}
+
+\end{document}
