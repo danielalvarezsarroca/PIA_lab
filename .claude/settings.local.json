@@ -10,7 +10,13 @@
       "Bash(grep -v \"^2025.*,,,,,,,,,,,,,,,,,,,,,,,$\" \"AIR_ePAR \\(all parameters\\)-data-as-joinbyfield-2026-02-12 09_00_37.csv\")",
       "Bash(grep -v \"^2025.*,,,,,,,,,,,,,,$\" \"SOIL_Temperature-data-as-joinbyfield-2026-02-12 08_54_57.csv\")",
       "Bash(grep -v \"^2025.*,$\" \"Wind speed-data-2026-02-12 09_05_40.csv\")",
-      "Bash(grep -v \"^2025.*,,,,,,,,,$\" \"PV_PV panel temperatures-data-as-joinbyfield-2026-02-12 14_18_22.csv\")"
+      "Bash(grep -v \"^2025.*,,,,,,,,,$\" \"PV_PV panel temperatures-data-as-joinbyfield-2026-02-12 14_18_22.csv\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import pymupdf\")",
+      "Bash(python3 -c \"import fitz\")",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"import fitz; print\\('installed'\\)\")",
+      "Bash(python3 *)"
     ]
   }
 }
