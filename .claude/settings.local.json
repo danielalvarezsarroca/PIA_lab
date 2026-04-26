@@ -16,7 +16,10 @@
       "Bash(python3 -c \"import fitz\")",
       "Bash(pip install *)",
       "Bash(python3 -c \"import fitz; print\\('installed'\\)\")",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(pdftotext \"C:/Users/dania/OneDrive - Universitat Politècnica de Catalunya/UPC/Q6/PIA/sprint1/Gestion_Proyecto_Sprint1.pdf\" -)",
+      "Bash(grep -n \"^\\\\\\\\\\\\\\\\section\" \"C:/Users/dania/OneDrive - Universitat Politècnica de Catalunya/UPC/Q6/PIA/sprint2/Gestion_Proyecto_Sprint2.tex\")",
+      "Bash(grep *)"
     ]
   }
 }

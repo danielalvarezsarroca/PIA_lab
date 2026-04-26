@@ -1,0 +1,1075 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{lmodern}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Sprint 2 -- Modelización y Política de Rotación}
+\lhead{Proyecto SAMO -- Sostenibilidad y Ciencia}
+\rfoot{Página \thepage}
+\lfoot{Equipo Chacorocalfarobar}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\titleformat{\section}{\large\bfseries\color{black}}{}{0em}{\thesection\quad}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{\thesubsection\quad}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{\thesubsubsection\quad}
+
+\definecolor{graybox}{gray}{0.93}
+\definecolor{accentblue}{RGB}{30, 90, 160}
+
+\newmdenv[
+  backgroundcolor=graybox,
+  linecolor=accentblue,
+  linewidth=1.2pt,
+  leftline=true,
+  rightline=false,
+  topline=false,
+  bottomline=false,
+  innerleftmargin=10pt,
+  innerrightmargin=8pt,
+  innertopmargin=6pt,
+  innerbottommargin=6pt
+]{reglabox}
+
+\begin{document}
+
+% ─── PORTADA ────────────────────────────────────────────────────────────────
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    {\Large \textbf{Sostenibilidad y Ciencia}}\\[0.4cm]
+    {\large Proyecto: Análisis y Optimización Operativa de Sistemas Agrovoltaicos Dinámicos}\\[2.5cm]
+
+    {\Huge \textbf{E03 -- Informe de Modelización}}\\[0.4cm]
+    {\LARGE \textbf{Política de Rotación de Paneles Agrovoltaicos}}\\[0.4cm]
+    {\large Sprint 2}\\[2cm]
+
+    \rule{10cm}{0.5pt}\\[1cm]
+
+    \begin{tabular}{rl}
+        \textbf{Proyecto:}   & SAMO -- Sistemas Agrovoltaicos Dinámicos \\[4pt]
+        \textbf{Equipo:}     & Chacorocalfarobar \\[4pt]
+        \textbf{Director PM:}& Daniel Álvarez Sarroca \\[4pt]
+        \textbf{Sprint:}     & 2 de 4 \\[4pt]
+        \textbf{Entregable:} & E03 \\[4pt]
+        \textbf{Fecha:}      & Abril 2026 \\[4pt]
+        \textbf{Versión:}    & 1.0
+    \end{tabular}
+
+    \vfill
+    {\small Documento técnico interno -- Pendiente de validación agronómica con el especialista de planta}
+\end{titlepage}
+
+% ─── RESUMEN EJECUTIVO ──────────────────────────────────────────────────────
+\newpage
+\section*{Resumen Ejecutivo}
+\addcontentsline{toc}{section}{Resumen Ejecutivo}
+
+Este informe documenta el trabajo técnico realizado durante el Sprint~2 del proyecto SAMO.
+El objetivo del sprint era desarrollar un modelo de decisión que permitiera proponer una
+primera política operativa de rotación de paneles agrovoltaicos, equilibrando
+simultáneamente la producción energética y las condiciones microclimáticas del cultivo.
+
+Se integraron ocho conjuntos de datos de sensores a una granularidad temporal común de
+seis horas, obteniendo 337 observaciones modelables correspondientes al período
+junio--octubre de 2025. Se definió un índice combinado Energía--Cultivo (\textbf{IEC})
+como variable objetivo provisional, y se entrenaron dos modelos complementarios:
+\textit{Decision Tree Regressor} para la extracción de reglas interpretables y
+\textit{ElasticNetCV} para la generalización predictiva.
+
+Los resultados más relevantes son:
+
+\begin{itemize}[noitemsep]
+    \item El modo de operación \textbf{TRACKING\_PM} obtiene un IEC medio de \textbf{0.742},
+          frente a \textbf{0.204} del modo HORIZONTAL.
+    \item Se han derivado \textbf{6 reglas candidatas de rotación}, trazables y revisables
+          por el equipo técnico y agrícola.
+    \item El modelo ElasticNet alcanza un R$^2$ de \textbf{0.873} en el conjunto de test,
+          con un MAE de 0.057.
+    \item Se identifican condiciones críticas de alta y baja prioridad basadas en Albedo,
+          elevación solar y humedad del suelo.
+\end{itemize}
+
+Todas las reglas se consideran \textit{candidatas observacionales} pendientes de validación
+con el especialista agrícola antes de integrarse en el dashboard del Sprint~3.
+
+\vspace{0.5cm}
+\tableofcontents
+
+% ─── 1. INTRODUCCIÓN ────────────────────────────────────────────────────────
+\newpage
+\section{Introducción}
+
+\subsection{Contexto del proyecto}
+
+Los sistemas agrovoltaicos dinámicos combinan la generación de energía fotovoltaica con
+el cultivo agrícola bajo los propios paneles solares. A diferencia de las instalaciones
+estáticas, los paneles disponen de un eje de rotación que permite modificar su ángulo de
+inclinación a lo largo del día. Esta capacidad introduce un grado de libertad operativo
+fundamental: el ángulo de los paneles afecta simultáneamente a la irradiancia recibida
+por el sistema fotovoltaico y al microclima del cultivo situado debajo.
+
+El objetivo del proyecto no es maximizar únicamente la energía producida, sino encontrar
+un \textbf{equilibrio dinámico} entre producción energética y condiciones favorables para
+el cultivo. Esto incluye variables como la radiación fotosintéticamente activa (ePAR),
+el contenido volumétrico de agua del suelo (VWC), la temperatura del suelo y el estrés
+térmico del cultivo.
+
+\subsection{Objetivos del Sprint 2}
+
+El Sprint~2 tiene como misión principal transformar los hallazgos exploratorios del
+Sprint~1 en un modelo de decisión operativo. De forma específica, se busca:
+
+\begin{enumerate}[noitemsep]
+    \item Definir un target cuantificable que capture el equilibrio energía--cultivo.
+    \item Preparar un dataset de modelización limpio y reproducible.
+    \item Entrenar y evaluar al menos dos enfoques de modelización complementarios.
+    \item Traducir los resultados del modelo a reglas operativas interpretables.
+    \item Publicar el código en formato notebook replicable.
+\end{enumerate}
+
+\subsection{Alcance del informe}
+
+Este documento cubre los entregables técnicos \textbf{E03} (informe de política de
+rotación) y está vinculado al entregable \textbf{E04} (código del modelo, notebook
+\texttt{sprint2\_modelizacion\_agrovoltaica.ipynb}). No se incluyen en este informe los
+artefactos de gestión del sprint (actas, presupuesto, registro de riesgos).
+
+% ─── 2. PIPELINE DE DATOS ───────────────────────────────────────────────────
+\newpage
+\section{Pipeline de Datos}
+
+\subsection{Datasets integrados}
+
+Se han procesado ocho conjuntos de datos en formato CSV procedentes de los sensores de
+la planta agrovoltaica. La integración se realiza mediante la variable temporal
+\texttt{Time} como clave de unión, una vez normalizada la columna de tiempo en todos
+los ficheros. La tabla~\ref{tab:datasets} resume los datasets y su función.
+
+\begin{table}[H]
+\centering
+\caption{Datasets integrados en el Sprint 2}
+\label{tab:datasets}
+\begin{tabular}{lll}
+\toprule
+\textbf{Identificador} & \textbf{Tipo de variable} & \textbf{Variables principales} \\
+\midrule
+\texttt{air\_temp}   & Microclima atmosférico & Temperatura del aire (WS, S1, S2) \\
+\texttt{epar}        & Cultivo                & Radiación fotosintética (S1, S2) \\
+\texttt{irradiance}  & Energético             & GPOA, Albedo (S1, S2) \\
+\texttt{pv\_temp}    & Energético             & Temperatura de panel (S1, S2) \\
+\texttt{soil\_temp}  & Cultivo                & Temperatura del suelo (S1, S2) \\
+\texttt{soil\_vwc}   & Cultivo                & Contenido volumétrico de agua \\
+\texttt{tracking}    & Control operativo      & Ángulo de rotación (M01--M09) \\
+\texttt{wind\_speed} & Meteorológico          & Velocidad del viento \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Funciones del pipeline}
+
+Se formalizan tres funciones reutilizables dentro del notebook, que extienden el pipeline
+del Sprint~1:
+
+\begin{description}[style=nextline]
+    \item[\texttt{strip\_unit(series)}]
+        Extrae el valor numérico de columnas que contienen unidades embebidas en el
+        texto (por ejemplo, \texttt{"41.4°"} o \texttt{"1024 W/m²"}). En Sprint~1
+        solo funcionaba con columnas de tipo \texttt{object}; en Sprint~2 se extiende
+        para soportar también el tipo \texttt{string} introducido en \texttt{pandas} 3.x.
+
+    \item[\texttt{load\_csv(filepath)}]
+        Carga un CSV corrigiendo la cabecera BOM UTF-8 y las líneas auxiliares de tipo
+        \texttt{sep=} que generan algunos exportadores. Normaliza el nombre de la columna
+        temporal a \texttt{Time} y la convierte a \texttt{datetime}.
+
+    \item[\texttt{resample\_to\_6h(df)}]
+        Reagrega cualquier dataframe numérico al grid temporal de seis horas mediante
+        la media aritmética (\texttt{mean}). Esto permite unificar las distintas
+        frecuencias de muestreo de los sensores.
+\end{description}
+
+\subsection{Cobertura temporal}
+
+Una vez integrados los ocho datasets y resampleados a seis horas, el dataset combinado
+contiene \textbf{1.462 filas} y \textbf{30 variables} base. La cobertura de datos no
+es uniforme entre sensores; la tabla~\ref{tab:cobertura} muestra el porcentaje de
+registros con valor disponible para cada grupo de variables.
+
+\begin{table}[H]
+\centering
+\caption{Cobertura de datos por grupo de variables (\% de timesteps con dato válido)}
+\label{tab:cobertura}
+\begin{tabular}{lc}
+\toprule
+\textbf{Grupo de variables} & \textbf{Cobertura (\%)} \\
+\midrule
+Irradiancia (GPOA, Albedo, Tpanel)  & 28.5 \\
+Velocidad de viento                  & 54.5 \\
+VWC del suelo                        & 58.8 \\
+Temperatura del suelo                & 61.5 \\
+Temperatura del aire, ePAR           & 64.2 \\
+Tracking (ángulo de trackers)        & 69.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La baja cobertura de irradiancia (28.5\%) y de viento (54.5\%) limita la ventana de
+solapamiento total útil para modelización. La figura~\ref{fig:cobertura} muestra el
+mapa de cobertura temporal completo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{outputs_sprint2/dataset_integrado_cobertura.png}
+    \caption{Mapa de cobertura temporal del dataset integrado. Cada celda representa
+             la disponibilidad de dato (blanco = disponible, negro = ausente).}
+    \label{fig:cobertura}
+\end{figure}
+
+% ─── 3. DIAGNÓSTICO DE TRACKERS ─────────────────────────────────────────────
+\section{Diagnóstico Previo: Estado de los Trackers}
+
+Antes de proceder a la modelización, se realizó un diagnóstico de varianza sobre todos
+los trackers disponibles. El objetivo era detectar posibles trackers en posición
+de \textit{stow} fija (sin movimiento real durante el período), que en Sprint~1 se
+habían marcado como sospechosos para los trackers M02, M06 y M10.
+
+El análisis de varianza del ángulo registrado no muestra evidencia concluyente de
+\textit{stow} fijo para ninguno de los tres trackers mencionados. Esto significa dos
+cosas: (1) no hay suficiente evidencia para declarar fallo mecánico solo con este
+análisis, y (2) la validación con el equipo de planta sigue siendo necesaria.
+
+Se han usado únicamente los trackers con varianza confirmada (M01, M03, M05, M07, M09)
+para calcular el ángulo medio representativo del sistema (\texttt{track\_mean}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{outputs_sprint2/tracker_variance_diagnostic.png}
+    \caption{Varianza del ángulo registrado por tracker. La línea roja discontinua
+             indica el umbral de baja varianza (5 grados$^2$) empleado como señal
+             de alerta de posible \textit{stow} fijo.}
+    \label{fig:tracker_var}
+\end{figure}
+
+% ─── 4. FEATURE ENGINEERING ─────────────────────────────────────────────────
+\newpage
+\section{Feature Engineering}
+
+\subsection{Variables construidas}
+
+A partir del dataset integrado se construyen las siguientes variables derivadas para
+alimentar el modelo:
+
+\subsubsection{Variables temporales y astronómicas}
+
+\begin{description}[noitemsep, style=nextline]
+    \item[\texttt{hour\_of\_day}] Hora del timestep (valores: 0, 6, 12, 18 al trabajar
+        a resolución de 6h).
+    \item[\texttt{day\_of\_year}] Día del año (1--365), como proxy de la estación.
+    \item[\texttt{solar\_elevation\_deg}] Elevación solar teórica en grados, calculada
+        mediante la fórmula astronómica estándar usando latitud $41.39°$N como proxy
+        de la localización de la planta (pendiente de confirmar con el equipo técnico).
+        Los valores negativos (nocturnos) se recortan a cero.
+\end{description}
+
+\subsubsection{Variables de régimen de tracking}
+
+\begin{description}[noitemsep, style=nextline]
+    \item[\texttt{track\_mean}] Media del ángulo registrado por los trackers activos
+        M01, M03, M05, M07 y M09.
+    \item[\texttt{tracking\_regime}] Clasificación operativa del modo de operación:
+        \begin{itemize}[noitemsep]
+            \item \textbf{TRACKING\_PM}: ángulo medio positivo ($> 5°$), paneles
+                girados hacia el oeste (tarde).
+            \item \textbf{TRACKING\_AM}: ángulo medio negativo ($< -5°$), paneles
+                girados hacia el este (mañana).
+            \item \textbf{HORIZONTAL}: ángulo cercano a cero ($|ángulo| < 5°$).
+            \item \textbf{STOW}: ángulo próximo a 50.6° (posición de seguridad).
+            \item \textbf{UNKNOWN}: ángulo no disponible.
+        \end{itemize}
+\end{description}
+
+\subsubsection{Variables agregadas por sección}
+
+Para reducir la dimensionalidad y capturar el comportamiento conjunto de cada zona de
+la planta, se calculan medias por sección:
+
+\begin{itemize}[noitemsep]
+    \item \texttt{ePAR\_S1\_mean}, \texttt{ePAR\_S2\_mean}: media de los sensores ePAR
+        de cada sección.
+    \item \texttt{VWC\_S1\_mean}, \texttt{VWC\_S2\_mean}: media del contenido volumétrico
+        de agua del suelo.
+    \item \texttt{Tsoil\_S1\_mean}, \texttt{Tsoil\_S2\_mean}: media de temperatura del
+        suelo.
+\end{itemize}
+
+\subsubsection{Variables con efecto retardado (lag)}
+
+Para capturar la inercia térmica del suelo, se incorporan dos variables de lag:
+
+\begin{itemize}[noitemsep]
+    \item \texttt{Tsoil\_S1\_mean\_lag\_6h}: temperatura media del suelo de la sección~1
+        seis horas antes.
+    \item \texttt{Tsoil\_S1\_mean\_lag\_12h}: temperatura media del suelo de la sección~1
+        doce horas antes.
+\end{itemize}
+
+\subsubsection{Variables diferenciales}
+
+\begin{itemize}[noitemsep]
+    \item \texttt{VWC\_diff\_S1\_minus\_S2}: diferencia de contenido de agua entre sección~1
+        y sección~2, como indicador de heterogeneidad hídrica entre zonas.
+\end{itemize}
+
+\subsection{Nota sobre la exclusión de GPOA}
+
+Las variables \texttt{GPOA\_S1} y \texttt{GPOA\_S2} (irradiancia sobre plano inclinado)
+se calculan y se usan para construir el target IEC (componente energética), pero se
+excluyen \textbf{deliberadamente} de las features del modelo. Incluirlas crearía una
+circularidad directa: el modelo aprendería a predecir el IEC usando las mismas variables
+irradiativas que lo definen, produciendo un R$^2$ artificialmente elevado sin valor
+informativo real. Como proxies de las condiciones radiativas se conservan
+\texttt{Albedo\_S1} y \texttt{Albedo\_S2}, que reflejan las condiciones de luz sin
+participar directamente en el cálculo del target.
+
+% ─── 5. DEFINICIÓN DEL TARGET: IEC ──────────────────────────────────────────
+\newpage
+\section{Definición del Target: Índice Energía--Cultivo (IEC)}
+
+\subsection{Justificación}
+
+El proyecto SAMO no tiene como objetivo maximizar la energía producida, sino encontrar
+un equilibrio dinámico entre eficiencia energética y condiciones agronómicas favorables.
+Para operacionalizar este objetivo en un modelo supervisado, es necesario definir una
+variable objetivo (\textit{target}) única que capture ambas dimensiones.
+
+Dado que en esta fase no existe aún un target validado por el equipo técnico y agrícola,
+se propone el \textbf{Índice Energía--Cultivo (IEC)} como formulación provisional y
+explícitamente revisable.
+
+\subsection{Formulación}
+
+El IEC se construye como la media ponderada de dos sub-índices normalizados:
+
+\begin{equation}
+    \text{IEC} = 0.5 \cdot \text{energy\_score} + 0.5 \cdot \text{crop\_score}
+    \label{eq:iec}
+\end{equation}
+
+\subsubsection{Componente energética}
+
+\begin{equation}
+    \text{energy\_score} = \min\!\left(1,\; \frac{\overline{\text{GPOA}}}{P_{95}(\overline{\text{GPOA}})}\right)
+\end{equation}
+
+donde $\overline{\text{GPOA}}$ es la media de \texttt{GPOA\_S1} y \texttt{GPOA\_S2},
+y $P_{95}$ es el percentil 95 del período completo. Un \texttt{energy\_score} de 1
+indica irradiancia máxima (óptimo energético); de 0 indica ausencia de irradiancia
+(noche o nublado).
+
+\subsubsection{Componente agrícola}
+
+\begin{equation}
+    \text{crop\_score} = 0.4 \cdot \text{par\_score} + 0.4 \cdot \text{vwc\_score} + 0.2 \cdot \text{tsoil\_score}
+\end{equation}
+
+donde cada sub-score se define como la proximidad normalizada a un valor objetivo:
+
+\begin{align}
+    \text{par\_score}   &= \max\!\left(0,\; 1 - \frac{|\overline{\text{ePAR}} - 600|}{600}\right) \\[4pt]
+    \text{vwc\_score}   &= \max\!\left(0,\; 1 - \frac{|\overline{\text{VWC}} - 30|}{15}\right) \\[4pt]
+    \text{tsoil\_score} &= \max\!\left(0,\; 1 - \frac{|\overline{T_{suelo}} - 28|}{10}\right)
+\end{align}
+
+Los valores de referencia (ePAR = 600 $\mu$mol/m$^2$/s, VWC = 30\%, $T_{suelo}$ = 28°C)
+son supuestos operativos provisionales que deben ser validados con el especialista
+agrícola y ajustados al tipo de cultivo específico de la planta.
+
+\subsection{Propiedades del IEC}
+
+El IEC toma valores en el intervalo $[0, 1]$ donde:
+\begin{itemize}[noitemsep]
+    \item \textbf{IEC próximo a 1}: situación de alto equilibrio entre producción
+        energética y condiciones agronómicas favorables.
+    \item \textbf{IEC próximo a 0}: situación desfavorable en ambas dimensiones
+        (noche, sequía, estrés térmico extremo, etc.).
+    \item Los pesos (0.5/0.5 entre energía y cultivo; 0.4/0.4/0.2 entre componentes
+        agrícolas) son configurables y no han sido validados con criterio agronómico.
+\end{itemize}
+
+\subsection{Distribución del IEC}
+
+La tabla~\ref{tab:iec_summary} muestra los estadísticos descriptivos del IEC sobre
+las 337 observaciones modelables.
+
+\begin{table}[H]
+\centering
+\caption{Estadísticos descriptivos del IEC y sus componentes (n = 337)}
+\label{tab:iec_summary}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Estadístico} & \textbf{energy\_score} & \textbf{crop\_score} & \textbf{IEC} \\
+\midrule
+count  & 416    & 860    & 337   \\
+media  & 0.339  & 0.392  & 0.397 \\
+desv.\ est. & 0.349 & 0.165 & 0.248 \\
+mín.   & 0.000  & 0.112  & 0.063 \\
+Q25    & 0.000  & 0.251  & 0.183 \\
+mediana & 0.225 & 0.378  & 0.360 \\
+Q75    & 0.599  & 0.517  & 0.598 \\
+máx.   & 1.000  & 0.940  & 0.925 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El IEC muestra una distribución asimétrica positiva, con mediana de 0.36 y máximo de
+0.925. La alta varianza del \texttt{energy\_score} (std = 0.35) refleja la alternancia
+entre períodos diurnos con alta irradiancia y períodos nocturnos o nublados. La
+figura~\ref{fig:iec} muestra la evolución temporal y la distribución del IEC.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{outputs_sprint2/iec_overview.png}
+    \caption{Izquierda: evolución temporal del \texttt{energy\_score},
+             \texttt{crop\_score} e IEC sobre el período modelable (jun--oct 2025).
+             Derecha: distribución del IEC (histograma, 35 bins).}
+    \label{fig:iec}
+\end{figure}
+
+% ─── 6. DATASET DE MODELIZACIÓN ─────────────────────────────────────────────
+\newpage
+\section{Dataset de Modelización}
+
+\subsection{Selección del período útil}
+
+El dataset de modelización se construye a partir de las observaciones que cumplen
+simultáneamente:
+\begin{enumerate}[noitemsep]
+    \item El IEC está calculado (no es nulo).
+    \item Al menos el 75\% de las features tienen valor disponible.
+\end{enumerate}
+
+Aplicando estos criterios sobre el dataset integrado (1.462 filas), se obtienen
+\textbf{337 observaciones modelables}, correspondientes al período
+\textbf{2025-06-18 -- 2025-10-05}. Este recorte es consecuencia directa de la baja
+cobertura de irradiancia (28.5\%), que es condición necesaria para calcular el
+\texttt{energy\_score}.
+
+\subsection{Partición temporal}
+
+Se utiliza una partición temporal 80/20, respetando el orden cronológico de las
+observaciones para evitar fuga de información del futuro al pasado (\textit{data leakage}
+temporal):
+
+\begin{table}[H]
+\centering
+\caption{Partición del dataset de modelización}
+\label{tab:split}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Subconjunto} & \textbf{Filas} & \textbf{Inicio} & \textbf{Fin} \\
+\midrule
+Train & 269 & 2025-06-18 12:00 & 2025-09-07 18:00 \\
+Test  &  68 & 2025-09-08 00:00 & 2025-10-05 00:00 \\
+\midrule
+\textbf{Total} & \textbf{337} & \textbf{2025-06-18 12:00} & \textbf{2025-10-05 00:00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Features del modelo}
+
+El vector de features final contiene \textbf{19 variables}, excluyendo explícitamente
+\texttt{GPOA\_S1} y \texttt{GPOA\_S2} por circularidad con el target (ver
+sección~4.2). La tabla~\ref{tab:features} lista las features empleadas, agrupadas
+por categoría.
+
+\begin{table}[H]
+\centering
+\caption{Features del modelo y categoría}
+\label{tab:features}
+\begin{tabular}{ll}
+\toprule
+\textbf{Categoría} & \textbf{Features} \\
+\midrule
+Temporal / astronómica
+    & \texttt{hour\_of\_day}, \texttt{day\_of\_year}, \texttt{solar\_elevation\_deg} \\[4pt]
+Control operativo
+    & \texttt{track\_mean}, \texttt{tracking\_regime} \\[4pt]
+Condiciones radiativas (proxy)
+    & \texttt{Albedo\_S1}, \texttt{Albedo\_S2} \\[4pt]
+Temperatura del aire
+    & \texttt{Tair\_WS}, \texttt{Tair\_S1\_center} \\[4pt]
+Viento
+    & \texttt{wind\_speed\_kmh} \\[4pt]
+Suelo -- temperatura
+    & \texttt{Tsoil\_S1\_mean}, \texttt{Tsoil\_S2\_mean},
+      \texttt{Tsoil\_S1\_mean\_lag\_6h}, \texttt{Tsoil\_S1\_mean\_lag\_12h} \\[4pt]
+Suelo -- humedad
+    & \texttt{VWC\_S1\_mean}, \texttt{VWC\_S2\_mean}, \texttt{VWC\_diff\_S1\_minus\_S2} \\[4pt]
+Cultivo
+    & \texttt{ePAR\_S1\_mean}, \texttt{ePAR\_S2\_mean} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ─── 7. MODELOS ENTRENADOS ───────────────────────────────────────────────────
+\newpage
+\section{Modelos Entrenados}
+
+Se han entrenado dos modelos con objetivos complementarios: uno para
+interpretabilidad (extracción de reglas operativas) y otro para generalización
+predictiva.
+
+\subsection{Decision Tree Regressor}
+
+El árbol de decisión se entrena con el objetivo de obtener reglas operativas del tipo
+\textit{si--entonces} que puedan trasladarse directamente a lógica de control. La
+configuración prioriza la robustez frente al sobreajuste:
+
+\begin{table}[H]
+\centering
+\caption{Hiperparámetros del Decision Tree Regressor}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parámetro} & \textbf{Valor} \\
+\midrule
+\texttt{max\_depth}        & 4 \\
+\texttt{min\_samples\_leaf} & 20 \\
+\texttt{random\_state}     & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El preprocesado aplica imputación por mediana para variables numéricas y
+\textit{one-hot encoding} para \texttt{tracking\_regime}.
+
+\subsection{ElasticNetCV}
+
+La regresión regularizada ElasticNet combina penalización L1 (selección de variables)
+y L2 (estabilidad). Se usa validación cruzada de 5 particiones para seleccionar
+automáticamente la ratio L1/L2 (\texttt{l1\_ratio}) y la intensidad de regularización
+($\alpha$).
+
+\begin{table}[H]
+\centering
+\caption{Hiperparámetros del ElasticNetCV}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parámetro} & \textbf{Valor} \\
+\midrule
+\texttt{l1\_ratio}   & [0.1, 0.5, 0.7, 0.9, 1.0] (búsqueda CV) \\
+\texttt{alphas}      & 30 valores en $[10^{-3}, 10^{1}]$ (escala logarítmica) \\
+\texttt{cv}          & 5 particiones temporales \\
+\texttt{max\_iter}   & 20.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El preprocesado aplica imputación por mediana y estandarización (z-score) para
+variables numéricas.
+
+% ─── 8. RESULTADOS ──────────────────────────────────────────────────────────
+\newpage
+\section{Resultados de Evaluación}
+
+\subsection{Métricas sobre el conjunto de test}
+
+La tabla~\ref{tab:metricas} muestra las métricas de evaluación sobre el conjunto de
+test temporal (n = 68, período septiembre--octubre 2025).
+
+\begin{table}[H]
+\centering
+\caption{Métricas de evaluación en el conjunto de test temporal}
+\label{tab:metricas}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+ElasticNetCV       & 0.0572 & 0.0803 & 0.873 \\
+Decision Tree      & 0.0912 & 0.1101 & 0.762 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Lectura de resultados}
+
+\begin{itemize}
+    \item \textbf{ElasticNet} generaliza mejor, con un R$^2$ de 0.873. El error
+        absoluto medio de 0.057 puntos sobre una escala $[0, 1]$ indica una capacidad
+        predictiva sólida para el período de test.
+
+    \item \textbf{Decision Tree} rinde peor en términos predictivos (R$^2$ = 0.762),
+        pero su ventaja reside en la interpretabilidad directa de las reglas generadas.
+        Un R$^2$ de 0.76 sigue siendo suficientemente bueno para extraer reglas
+        operativas con soporte estadístico.
+
+    \item Los valores de R$^2$ son más modestos que en versiones previas del modelo
+        donde \texttt{GPOA} se incluía como feature (0.95 para ElasticNet). Esa
+        diferencia es \textbf{esperada y correcta}: la versión anterior producía un
+        resultado artificialmente inflado por circularidad con el target.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{outputs_sprint2/model_predictions_vs_actual.png}
+    \caption{Comparación entre valores reales y predichos de IEC sobre el conjunto de
+             test para ambos modelos. La línea discontinua negra representa la
+             predicción perfecta.}
+    \label{fig:predictions}
+\end{figure}
+
+% ─── 9. INTERPRETABILIDAD ───────────────────────────────────────────────────
+\newpage
+\section{Interpretabilidad de los Modelos}
+
+\subsection{Importancia de variables en el árbol}
+
+La tabla~\ref{tab:tree_importance} muestra la importancia relativa de cada variable
+en el árbol de decisión. El árbol concentra casi toda su capacidad explicativa en
+cuatro variables.
+
+\begin{table}[H]
+\centering
+\caption{Importancia de variables en el Decision Tree (top 6)}
+\label{tab:tree_importance}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Variable} & \textbf{Importancia} & \textbf{\%} \\
+\midrule
+\texttt{Albedo\_S1}          & 0.773 & 77.3\% \\
+\texttt{Albedo\_S2}          & 0.112 & 11.2\% \\
+\texttt{solar\_elevation\_deg} & 0.066 & 6.6\% \\
+\texttt{VWC\_S1\_mean}       & 0.048 & 4.8\% \\
+\texttt{Tair\_S1\_center}    & 0.001 & 0.1\% \\
+resto (14 variables)         & 0.000 & 0.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El dominio de \texttt{Albedo\_S1} (77.3\%) refleja que las condiciones radiativas son
+el principal determinante del IEC en este período. Esto es coherente con el hecho de
+que la componente energética representa el 50\% del IEC y está directamente relacionada
+con la irradiancia. \texttt{tracking\_regime} y \texttt{track\_mean} no aparecen en el
+árbol, lo que indica que, una vez fijadas las condiciones meteorológicas, el árbol no
+discrimina entre regímenes de rotación.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{outputs_sprint2/decision_tree_interpretability.png}
+    \caption{Izquierda: top 10 variables por importancia en el árbol. Derecha:
+             representación visual del árbol de decisión (profundidad máxima 4).}
+    \label{fig:tree}
+\end{figure}
+
+\subsection{Estructura del árbol de decisión}
+
+El árbol se puede describir textualmente con las siguientes ramas principales:
+
+\begin{itemize}
+    \item \textbf{Condición raíz}: Si \texttt{Albedo\_S1} $> 55.7$ → rama de alta irradiancia.
+    \item \textbf{Rama alta irradiancia}:
+    \begin{itemize}[noitemsep]
+        \item Si \texttt{solar\_elevation\_deg} $> 68°$ → IEC esperado = \textbf{0.862}
+            (mejor escenario).
+        \item Si \texttt{solar\_elevation\_deg} $\in (54.2°, 68°]$ → IEC = \textbf{0.692}.
+        \item Si \texttt{solar\_elevation\_deg} $\leq 54.2°$ → IEC = \textbf{0.583}.
+    \end{itemize}
+    \item \textbf{Rama baja irradiancia} (\texttt{Albedo\_S1} $\leq 55.7$):
+    \begin{itemize}[noitemsep]
+        \item Si \texttt{Albedo\_S2} $> 18.0$ y \texttt{VWC\_S1} $> 20.0$ → IEC = \textbf{0.435}.
+        \item Si \texttt{Albedo\_S2} $\leq 18.0$ y \texttt{VWC\_S1} $> 22.2$ → IEC $\approx$ \textbf{0.276}.
+        \item Si \texttt{Albedo\_S2} $\leq 18.0$ y \texttt{VWC\_S1} $\leq 22.2$ → IEC $\approx$ \textbf{0.139}
+            (peor escenario).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Coeficientes del ElasticNet}
+
+La tabla~\ref{tab:coef} muestra los coeficientes estandarizados más influyentes del
+modelo ElasticNet. Los signos indican la dirección del efecto sobre el IEC.
+
+\begin{table}[H]
+\centering
+\caption{Coeficientes estandarizados del ElasticNet (top 10 por magnitud absoluta)}
+\label{tab:coef}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Variable} & \textbf{Coeficiente} & \textbf{Dirección} \\
+\midrule
+\texttt{Albedo\_S2}                      & +0.123 & Positivo \\
+\texttt{tracking\_regime\_HORIZONTAL}    & --0.114 & Negativo \\
+\texttt{tracking\_regime\_TRACKING\_PM}  & +0.071 & Positivo \\
+\texttt{Tsoil\_S2\_mean}                 & +0.046 & Positivo \\
+\texttt{VWC\_S2\_mean}                   & +0.036 & Positivo \\
+\texttt{Tsoil\_S1\_mean}                 & --0.035 & Negativo \\
+\texttt{Tair\_WS}                        & +0.034 & Positivo \\
+\texttt{Tair\_S1\_center}                & --0.031 & Negativo \\
+\texttt{VWC\_S1\_mean}                   & +0.025 & Positivo \\
+\texttt{day\_of\_year}                   & --0.024 & Negativo \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Interpretación de los coeficientes más relevantes:}
+
+\begin{itemize}
+    \item \texttt{tracking\_regime\_HORIZONTAL} tiene el segundo coeficiente más alto en
+        valor absoluto y es \textbf{negativo} (--0.114). Esto confirma que operar en
+        modo horizontal penaliza el IEC respecto a otros modos de seguimiento.
+
+    \item \texttt{tracking\_regime\_TRACKING\_PM} tiene coeficiente \textbf{positivo}
+        (+0.071), lo que indica que el seguimiento solar de tarde está asociado a mejor
+        IEC.
+
+    \item \texttt{Albedo\_S2} positivo (+0.123) refleja que mayores condiciones
+        radiativas en la sección~2 contribuyen positivamente al equilibrio
+        energía--cultivo.
+
+    \item Las variables \texttt{Tsoil} muestran efectos opuestos entre secciones, lo que
+        sugiere una dinámica térmica diferencial entre S1 y S2 que merece análisis
+        adicional.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{outputs_sprint2/elasticnet_coefficients.png}
+    \caption{Coeficientes estandarizados del ElasticNet. Verde: efecto positivo sobre
+             el IEC. Naranja: efecto negativo. Solo se muestran los 12 más influyentes.}
+    \label{fig:elastic}
+\end{figure}
+
+% ─── 10. ANÁLISIS POR RÉGIMEN ────────────────────────────────────────────────
+\newpage
+\section{Análisis por Régimen de Operación}
+
+\subsection{Comparativa de IEC por régimen}
+
+El análisis observacional directo por régimen de tracking es la base principal para
+las reglas candidatas de rotación. La tabla~\ref{tab:regime} muestra el IEC estadístico
+por régimen para las 337 observaciones modelables.
+
+\begin{table}[H]
+\centering
+\caption{IEC descriptivo por régimen de operación}
+\label{tab:regime}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Régimen} & \textbf{N observaciones} & \textbf{IEC medio} & \textbf{IEC mediana} \\
+\midrule
+TRACKING\_PM & 84  & \textbf{0.742} & \textbf{0.741} \\
+TRACKING\_AM & 84  & 0.440          & 0.429 \\
+HORIZONTAL   & 169 & 0.204          & 0.184 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados muestran una diferencia muy marcada entre regímenes:
+
+\begin{itemize}
+    \item \textbf{TRACKING\_PM} supera a HORIZONTAL en un \textbf{+0.538 puntos de IEC}
+        de media (equivalente a un 264\% de mejora relativa).
+    \item \textbf{TRACKING\_AM} supera a HORIZONTAL en +0.236 puntos.
+    \item \textbf{HORIZONTAL} queda como el régimen de peor equilibrio energía--cultivo
+        en las condiciones observadas durante junio--octubre 2025.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{outputs_sprint2/policy_rules_diagnostics.png}
+    \caption{Izquierda: IEC medio por franja horaria y régimen (mapa de calor).
+             Derecha: distribución del IEC por régimen (diagrama de caja).}
+    \label{fig:policy}
+\end{figure}
+
+\subsection{Casos de IEC alto por franja horaria}
+
+El análisis de casos con IEC superior al percentil 75 ($\text{IEC} \geq 0.598$) por
+franja horaria y régimen revela los dos escenarios de operación más favorables:
+
+\begin{table}[H]
+\centering
+\caption{Franjas horarias con IEC alto (percentil 75) por régimen}
+\label{tab:high_iec}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Hora} & \textbf{Régimen} & \textbf{N} & \textbf{IEC mediana}
+    & \textbf{Ángulo mediano} & \textbf{VWC\_S1 mediana} \\
+\midrule
+12:00 & TRACKING\_PM & 75 & 0.769 & +31.8° & 24.0\% \\
+06:00 & TRACKING\_AM & 10 & 0.602 & --32.2° & 29.2\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La franja del mediodía con seguimiento PM es el escenario de mayor IEC observado
+con soporte estadístico significativo (n = 75). La franja de las 06:00 con seguimiento
+AM tiene un soporte mucho más reducido (n = 10) y debe interpretarse con cautela.
+
+% ─── 11. REGLAS CANDIDATAS DE ROTACIÓN ──────────────────────────────────────
+\newpage
+\section{Reglas Candidatas de Política de Rotación}
+
+\subsection{Método de derivación}
+
+Las reglas candidatas se derivan de la combinación de tres fuentes complementarias:
+(1) los nodos del árbol de decisión, (2) el análisis observacional por régimen
+(tabla~\ref{tab:regime}), y (3) los casos de IEC alto por franja horaria
+(tabla~\ref{tab:high_iec}). Las reglas son de carácter \textit{observacional} y
+correlacional, no causal: describen qué configuraciones coincidieron con mejor IEC
+en el período junio--octubre 2025, pero no implican causalidad probada.
+
+\subsection{Las seis reglas candidatas}
+
+A continuación se presentan las seis reglas derivadas, ordenadas por IEC esperado
+de mayor a menor.
+
+\vspace{0.4cm}
+\noindent\textbf{Regla 1 -- Prioridad alta: condiciones de máxima productividad}
+
+\begin{reglabox}
+\textbf{Condición:} \texttt{Albedo\_S1} $>$ 55.7 Y elevación solar $>$ 68° \\
+\textbf{Acción:} Priorizar tracking activo de tarde; evitar modos conservadores \\
+\textbf{IEC esperado:} 0.862 \quad \textbf{Soporte:} 33 observaciones \\
+\textit{Nodo de mayor IEC del árbol de decisión.}
+\end{reglabox}
+
+\vspace{0.3cm}
+\noindent\textbf{Regla 2 -- Operativa: mediodía con seguimiento PM}
+
+\begin{reglabox}
+\textbf{Condición:} Franja horaria 12:00 Y sistema en TRACKING\_PM \\
+\textbf{Acción:} Mantener ángulo cercano a +31.8° \\
+\textbf{IEC esperado:} 0.769 \quad \textbf{Soporte:} 75 observaciones \\
+\textit{Mayor soporte estadístico de todas las reglas operativas.}
+\end{reglabox}
+
+\vspace{0.3cm}
+\noindent\textbf{Regla 3 -- Operativa: mañana con seguimiento AM}
+
+\begin{reglabox}
+\textbf{Condición:} Franja horaria 06:00 Y sistema en TRACKING\_AM \\
+\textbf{Acción:} Mantener ángulo cercano a --32.2° \\
+\textbf{IEC esperado:} 0.602 \quad \textbf{Soporte:} 10 observaciones \\
+\textit{Soporte reducido; requiere validación con más datos.}
+\end{reglabox}
+
+\vspace{0.3cm}
+\noindent\textbf{Regla 4 -- Transición: condiciones intermedias}
+
+\begin{reglabox}
+\textbf{Condición:} \texttt{Albedo\_S1} $\leq$ 55.7 Y \texttt{Albedo\_S2} $>$ 18.0
+    Y \texttt{VWC\_S1} $>$ 20.0 \\
+\textbf{Acción:} Usar tracking suave o transición controlada; evitar HORIZONTAL permanente \\
+\textbf{IEC esperado:} 0.435 \quad \textbf{Soporte:} 51 observaciones \\
+\textit{Escenario intermedio del árbol; mejor que HORIZONTAL (IEC medio 0.204).}
+\end{reglabox}
+
+\vspace{0.3cm}
+\noindent\textbf{Regla 5 -- Evitación: HORIZONTAL en franjas productivas}
+
+\begin{reglabox}
+\textbf{Condición:} Sistema en modo HORIZONTAL durante franjas diurnas productivas \\
+\textbf{Acción:} Evitar este modo cuando existan condiciones para tracking activo \\
+\textbf{IEC esperado:} 0.184 \quad \textbf{Soporte:} 169 observaciones \\
+\textit{IEC medio HORIZONTAL = 0.204 vs. TRACKING\_PM = 0.742.
+    El diferencial es de +0.538 puntos.}
+\end{reglabox}
+
+\vspace{0.3cm}
+\noindent\textbf{Regla 6 -- Cautela hídrica: condiciones de excepción}
+
+\begin{reglabox}
+\textbf{Condición:} \texttt{Albedo\_S1} $\leq$ 55.7 Y \texttt{Albedo\_S2} $\leq$ 18.0
+    Y \texttt{VWC\_S1} $\leq$ 22.2 Y \texttt{GPOA\_S2} $\leq$ 35.5 \\
+\textbf{Acción:} No forzar política orientada a producción; tratar como escenario
+    de excepción \\
+\textbf{IEC esperado:} 0.093 \quad \textbf{Soporte:} 43 observaciones \\
+\textit{Nodo de peor IEC del árbol. Baja irradiancia y baja humedad de suelo
+    simultáneas.}
+\end{reglabox}
+
+\subsection{Resumen operativo}
+
+Si hubiera que traducir las reglas a una sola idea operativa:
+
+\begin{center}
+\fbox{\parbox{0.88\textwidth}{
+    \centering\vspace{0.2cm}
+    En las horas productivas, operar con tracking activo y ángulos intermedios
+    (~$-$32° por la mañana y ~+32° al mediodía) produce un IEC hasta 3.6 veces
+    mayor que operar en posición horizontal. Las reglas de cautela se reservan
+    para escenarios de baja irradiancia simultánea con baja humedad del suelo.
+    \vspace{0.2cm}
+}}
+\end{center}
+
+% ─── 12. LIMITACIONES ───────────────────────────────────────────────────────
+\newpage
+\section{Limitaciones y Trabajo Futuro}
+
+\subsection{Limitaciones del Sprint 2}
+
+\begin{enumerate}
+    \item \textbf{IEC provisional}: Los pesos del IEC (0.5/0.5 entre energía y cultivo;
+        0.4/0.4/0.2 entre componentes agrícolas) y los valores de referencia (ePAR = 600,
+        VWC = 30\%, $T_{suelo}$ = 28°C) son supuestos operativos sin validar con
+        el especialista agrícola ni con el tipo de cultivo específico de la planta.
+
+    \item \textbf{Ventana temporal parcial}: El período modelable (junio--octubre 2025)
+        corresponde a los meses de verano y principio de otoño. El modelo no ha visto
+        datos de invierno ni primavera, lo que limita la generalización de las reglas
+        a otras estaciones.
+
+    \item \textbf{N reducido}: 337 observaciones modelables con 68 en test es un
+        tamaño de muestra pequeño para evaluación robusta. Los resultados deben
+        interpretarse como indicativos, no como estimaciones definitivas.
+
+    \item \textbf{Árbol sin uso de variables de control}: El árbol de decisión no usa
+        \texttt{tracking\_regime} ni \texttt{track\_mean} como variables de split. Esto
+        refleja que, en este período, las condiciones meteorológicas dominan la
+        variabilidad del IEC y el árbol las captura antes de llegar a las variables de
+        control. Las reglas operativas de rotación se derivan del análisis observacional
+        por régimen, no del árbol directamente.
+
+    \item \textbf{Correlación vs.\ causalidad}: Las reglas son correlacionales. El
+        sistema observó que ciertos regímenes coincidieron con mejor IEC, pero no se
+        puede concluir causalidad sin un diseño experimental controlado. La validación
+        con el especialista agrícola es imprescindible antes de automatizar estas reglas.
+
+    \item \textbf{Latitud como proxy}: El ángulo solar teórico se calcula con latitud
+        41.39°N. Si la planta está en otra latitud, este valor introduce un error
+        sistemático en la variable \texttt{solar\_elevation\_deg}.
+
+    \item \textbf{Trackers M02, M06, M10}: El estado real de estos trackers no ha podido
+        confirmarse con el equipo de planta. Si alguno estuviera en stow fijo permanente,
+        el \texttt{track\_mean} podría estar sesgado.
+\end{enumerate}
+
+\subsection{Trabajo futuro (Sprint 3 y Sprint 4)}
+
+\begin{itemize}[noitemsep]
+    \item Validar el IEC y sus umbrales con el especialista agrícola antes de integrarlo
+        en el dashboard.
+    \item Integrar las 6 reglas candidatas en la lógica de recomendación del dashboard,
+        marcándolas como pendientes de validación agronómica.
+    \item Revisar el estado de los trackers M02, M06 y M10 con el equipo de planta.
+    \item Confirmar la latitud real de la instalación para corregir \texttt{solar\_elevation\_deg}.
+    \item Cuando se disponga de datos de invierno/primavera, reentrenar el modelo para
+        cubrir el ciclo anual completo.
+\end{itemize}
+
+% ─── 13. CONCLUSIONES ───────────────────────────────────────────────────────
+\section{Conclusiones}
+
+El Sprint~2 ha producido una primera política de rotación cuantificada y trazable,
+con los siguientes hallazgos principales:
+
+\begin{enumerate}
+    \item \textbf{El régimen TRACKING\_PM es el de mayor IEC observado}, con una
+        mediana de 0.741, frente a 0.184 de HORIZONTAL. La diferencia absoluta de
+        +0.557 en la mediana representa el potencial de mejora más directo y accionable
+        del sistema.
+
+    \item \textbf{Se han definido 6 reglas operativas candidatas}, con soporte
+        estadístico documentado y trazabilidad a los datos de origen. Las dos reglas
+        con mayor soporte (n = 75 y n = 51 respectivamente) apuntan al tracking activo
+        en franjas productivas y a evitar el modo horizontal.
+
+    \item \textbf{El modelo ElasticNet alcanza R$^2$ = 0.873} con un error absoluto medio
+        de 0.057 sobre el conjunto de test temporal, confirmando la capacidad predictiva
+        del IEC como variable objetivo.
+
+    \item \textbf{El pipeline de datos queda formalizado y reproducible}: las funciones
+        de limpieza, integración y resampleado están documentadas en el notebook y son
+        reutilizables para el Sprint~3.
+
+    \item \textbf{El IEC propuesto es operativo pero provisional}: su validación con
+        criterio agronómico es la principal deuda técnica que debe resolverse antes
+        de la entrega final.
+
+\end{enumerate}
+
+El Sprint~3 debe centrarse en integrar estas reglas y el modelo predictivo en el
+dashboard operativo, con las alertas y visualizaciones necesarias para facilitar la
+toma de decisiones al equipo de planta.
+
+% ─── APÉNDICE ───────────────────────────────────────────────────────────────
+\newpage
+\appendix
+\section{Archivos generados}
+
+Los siguientes archivos se han generado en la carpeta \texttt{sprint2/outputs\_sprint2/}:
+
+\begin{table}[H]
+\centering
+\caption{Outputs del Sprint 2}
+\begin{tabular}{ll}
+\toprule
+\textbf{Archivo} & \textbf{Contenido} \\
+\midrule
+\texttt{dataset\_integrado\_6h.csv}          & Dataset completo integrado a 6h \\
+\texttt{dataset\_integrado\_cobertura.csv}   & Cobertura por variable (\%) \\
+\texttt{dataset\_integrado\_cobertura.png}   & Mapa de cobertura temporal \\
+\texttt{dataset\_modelizacion\_6h.csv}       & Dataset final de modelización (337 filas) \\
+\texttt{iec\_summary.csv}                    & Estadísticos descriptivos del IEC \\
+\texttt{iec\_overview.png}                   & Evolución temporal e histograma del IEC \\
+\texttt{tracker\_variance\_diagnostic.csv}   & Varianza por tracker \\
+\texttt{tracker\_variance\_diagnostic.png}   & Gráfico diagnóstico de trackers \\
+\texttt{model\_metrics.csv}                  & Métricas MAE/RMSE/R² por modelo \\
+\texttt{model\_predictions\_vs\_actual.png}  & Real vs.\ predicho (test set) \\
+\texttt{decision\_tree\_rules.txt}           & Árbol en texto \\
+\texttt{decision\_tree\_feature\_importance.csv} & Importancia de variables \\
+\texttt{decision\_tree\_interpretability.png}    & Árbol visualizado \\
+\texttt{elasticnet\_coefficients.csv}        & Coeficientes del ElasticNet \\
+\texttt{elasticnet\_coefficients.png}        & Gráfico de coeficientes \\
+\texttt{regime\_summary\_iec.csv}            & IEC estadístico por régimen \\
+\texttt{high\_iec\_policy\_table.csv}        & Casos de IEC alto por franja y régimen \\
+\texttt{candidate\_rotation\_rules.csv}      & Las 6 reglas candidatas de rotación \\
+\texttt{policy\_rules\_diagnostics.png}      & Mapa de calor y boxplot por régimen \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Historial de versiones}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+\textbf{Versión} & \textbf{Fecha} & \textbf{Autor} & \textbf{Cambios} \\
+\midrule
+0.1 & Abril 2026 & Equipo Chacorocalfarobar & Versión inicial \\
+1.0 & Abril 2026 & Equipo Chacorocalfarobar & Revisión GPOA; carpeta outputs\_sprint2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

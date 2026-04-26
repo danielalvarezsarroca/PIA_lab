@@ -1,10 +1,10 @@
 |--- Albedo_S1 <= 55.705
 |   |--- Albedo_S2 <= 18.015
 |   |   |--- VWC_S1_mean <= 22.225
-|   |   |   |--- GPOA_S2 <= 35.482
-|   |   |   |   |--- value: [0.093]
-|   |   |   |--- GPOA_S2 >  35.482
-|   |   |   |   |--- value: [0.167]
+|   |   |   |--- Albedo_S1 <= 7.769
+|   |   |   |   |--- value: [0.100]
+|   |   |   |--- Albedo_S1 >  7.769
+|   |   |   |   |--- value: [0.177]
 |   |   |--- VWC_S1_mean >  22.225
 |   |   |   |--- Tair_S1_center <= 23.150
 |   |   |   |   |--- value: [0.260]
@@ -17,9 +17,9 @@
 |   |   |   |--- value: [0.435]
 |--- Albedo_S1 >  55.705
 |   |--- solar_elevation_deg <= 68.005
-|   |   |--- GPOA_S1 <= 727.500
-|   |   |   |--- value: [0.590]
-|   |   |--- GPOA_S1 >  727.500
-|   |   |   |--- value: [0.701]
+|   |   |--- solar_elevation_deg <= 54.204
+|   |   |   |--- value: [0.583]
+|   |   |--- solar_elevation_deg >  54.204
+|   |   |   |--- value: [0.692]
 |   |--- solar_elevation_deg >  68.005
 |   |   |--- value: [0.862]
