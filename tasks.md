@@ -315,7 +315,7 @@ Incorporar el feedback de sprints anteriores, completar la versión final del da
 - **Sprint 3 Review**
 - **Sprint 3 Retrospective**
 - E06
-- E07
+- E07a
 - E08
 - E09
 - Seguimiento de presupuesto Sprint 4 y total
