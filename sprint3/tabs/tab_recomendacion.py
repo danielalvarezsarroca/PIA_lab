@@ -68,6 +68,7 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
             lbdr = "3px solid #22c55e" if is_active else "1px solid #e5e7eb"
             tipo_bg  = "#dcfce7" if "alta" in str(row.get("tipo", "")) else "#eff6ff"
             tipo_clr = "#15803d" if "alta" in str(row.get("tipo", "")) else "#1d4ed8"
+            active_badge = '<span style="font-size:9px;font-weight:700;color:#16a34a;">● ACTIVA</span>' if is_active else ""
 
             st.markdown(
                 f'<div style="background:{bg};border:{bdr};border-radius:10px;'
@@ -79,7 +80,7 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
                 f'<span style="font-size:10px;color:#6b7280;">IEC mediana: '
                 f'<b style="color:#16a34a;">{float(row.get("iec_mediana",0)):.2f}</b> · '
                 f'n={int(row.get("soporte_obs",0))}</span>'
-                f'{"<span style=\"font-size:9px;font-weight:700;color:#16a34a;\">● ACTIVA</span>" if is_active else ""}'
+                f'{active_badge}'
                 f'</div>'
                 f'<div style="font-size:10px;color:#374151;line-height:1.5;">{row.get("regla","—")}</div>'
                 f'<div style="font-size:9px;color:#6b7280;margin-top:4px;">{row.get("comentario","")}</div>'

@@ -1,0 +1,93 @@
+<h2>¿Qué layout prefieres para el dashboard?</h2>
+<p class="subtitle">Las tres opciones incluyen los mismos módulos: estado de sensores, series temporales, recomendación de rotación y alertas.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="sidebar" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;display:flex;gap:8px;">
+      <div style="width:28%;background:#1e293b;border-radius:4px;padding:8px;display:flex;flex-direction:column;gap:6px;">
+        <div style="color:#22d3ee;font-weight:700;font-size:10px;margin-bottom:4px;">☀ AGROVOLTAIC</div>
+        <div style="background:#334155;border-radius:3px;padding:4px 6px;color:#e2e8f0;font-size:9px;">📊 Estado actual</div>
+        <div style="background:#0f172a;border-radius:3px;padding:4px 6px;font-size:9px;">📈 Series temporales</div>
+        <div style="background:#0f172a;border-radius:3px;padding:4px 6px;font-size:9px;">🔄 Recomendación</div>
+        <div style="background:#0f172a;border-radius:3px;padding:4px 6px;font-size:9px;">🚨 Alertas</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+        <div style="background:#1e293b;border-radius:4px;padding:8px;flex:1;">
+          <div style="color:#e2e8f0;font-size:9px;font-weight:700;margin-bottom:6px;">Estado actual — sensores clave</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+            <div style="background:#0f172a;border-radius:3px;padding:4px;text-align:center;"><div style="color:#22d3ee;font-size:12px;font-weight:700;">34.2°</div><div style="color:#64748b;font-size:8px;">Tracking</div></div>
+            <div style="background:#0f172a;border-radius:3px;padding:4px;text-align:center;"><div style="color:#4ade80;font-size:12px;font-weight:700;">412</div><div style="color:#64748b;font-size:8px;">ePAR</div></div>
+            <div style="background:#0f172a;border-radius:3px;padding:4px;text-align:center;"><div style="color:#f59e0b;font-size:12px;font-weight:700;">0.28</div><div style="color:#64748b;font-size:8px;">VWC</div></div>
+          </div>
+        </div>
+        <div style="background:#1e293b;border-radius:4px;padding:8px;flex:2;">
+          <div style="color:#e2e8f0;font-size:9px;font-weight:700;margin-bottom:4px;">Series temporales</div>
+          <div style="height:40px;background:#0f172a;border-radius:3px;display:flex;align-items:flex-end;padding:4px;gap:2px;">
+            <div style="height:60%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:80%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:40%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:90%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:70%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:50%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+            <div style="height:85%;width:6px;background:#22d3ee;border-radius:2px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Sidebar fijo</h3>
+      <p>Navegación lateral persistente. Cada sección ocupa la pantalla completa. Aspecto profesional tipo herramienta operativa.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="tabs" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:0;border-bottom:1px solid #334155;">
+        <div style="background:#1d4ed8;color:#fff;padding:5px 10px;border-radius:4px 4px 0 0;font-size:9px;font-weight:700;">📊 Estado</div>
+        <div style="padding:5px 10px;font-size:9px;color:#64748b;">📈 Series</div>
+        <div style="padding:5px 10px;font-size:9px;color:#64748b;">🔄 Rotación</div>
+        <div style="padding:5px 10px;font-size:9px;color:#ef4444;">🚨 Alertas (2)</div>
+      </div>
+      <div style="background:#1e293b;border-radius:4px;padding:10px;flex:1;display:flex;flex-direction:column;gap:6px;">
+        <div style="color:#e2e8f0;font-size:9px;font-weight:700;">Estado actual — sensores clave</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+          <div style="background:#0f172a;border-radius:3px;padding:6px;text-align:center;"><div style="color:#22d3ee;font-size:14px;font-weight:700;">34.2°</div><div style="color:#64748b;font-size:8px;">Tracking</div></div>
+          <div style="background:#0f172a;border-radius:3px;padding:6px;text-align:center;"><div style="color:#4ade80;font-size:14px;font-weight:700;">412</div><div style="color:#64748b;font-size:8px;">ePAR</div></div>
+          <div style="background:#0f172a;border-radius:3px;padding:6px;text-align:center;"><div style="color:#f59e0b;font-size:14px;font-weight:700;">0.28</div><div style="color:#64748b;font-size:8px;">VWC</div></div>
+          <div style="background:#0f172a;border-radius:3px;padding:6px;text-align:center;"><div style="color:#a78bfa;font-size:14px;font-weight:700;">0.71</div><div style="color:#64748b;font-size:8px;">IEC</div></div>
+        </div>
+        <div style="background:#0f172a;border-radius:3px;padding:6px;flex:1;display:flex;align-items:center;justify-content:center;color:#334155;font-size:9px;">Área principal de contenido</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Tabs horizontales</h3>
+      <p>Cada sección en su propia pestaña. Limpio y familiar. Las alertas muestran badge con conteo visible siempre.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="scroll" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;color:#94a3b8;min-height:160px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+      <div style="background:#1e293b;border-radius:4px;padding:6px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:#22d3ee;font-weight:700;font-size:10px;">☀ AGROVOLTAIC DASHBOARD</span>
+        <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:8px;">2 alertas activas</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+        <div style="background:#1e293b;border-radius:3px;padding:4px;text-align:center;"><div style="color:#22d3ee;font-size:10px;font-weight:700;">34.2°</div><div style="color:#64748b;font-size:7px;">Tracking</div></div>
+        <div style="background:#1e293b;border-radius:3px;padding:4px;text-align:center;"><div style="color:#4ade80;font-size:10px;font-weight:700;">412</div><div style="color:#64748b;font-size:7px;">ePAR</div></div>
+        <div style="background:#1e293b;border-radius:3px;padding:4px;text-align:center;"><div style="color:#f59e0b;font-size:10px;font-weight:700;">0.28</div><div style="color:#64748b;font-size:7px;">VWC</div></div>
+        <div style="background:#1e293b;border-radius:3px;padding:4px;text-align:center;"><div style="color:#a78bfa;font-size:10px;font-weight:700;">0.71</div><div style="color:#64748b;font-size:7px;">IEC</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div style="background:#1e293b;border-radius:3px;padding:6px;"><div style="color:#e2e8f0;font-size:8px;margin-bottom:4px;font-weight:700;">Recomendación rotación</div><div style="color:#4ade80;font-size:8px;">→ Mantener 30–40° (IEC alto)</div></div>
+        <div style="background:#1e293b;border-radius:3px;padding:6px;"><div style="color:#e2e8f0;font-size:8px;margin-bottom:4px;font-weight:700;">Alertas activas</div><div style="color:#ef4444;font-size:8px;">⚠ Tracker M02 anómalo</div></div>
+      </div>
+      <div style="background:#1e293b;border-radius:3px;padding:4px;flex:1;display:flex;align-items:center;justify-content:center;color:#334155;font-size:8px;">Series temporales (scroll abajo)</div>
+    </div>
+    <div class="card-body">
+      <h3>C — Single page (scroll)</h3>
+      <p>Todo visible en una sola página con scroll. Vista de operador: estado + recomendación + alertas de un vistazo. Series temporales más abajo.</p>
+    </div>
+  </div>
+
+</div>

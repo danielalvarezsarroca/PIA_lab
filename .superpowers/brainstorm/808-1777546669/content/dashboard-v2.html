@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Mockup v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f0fdf4;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    color: #1a1a1a;
+    padding: 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .page-q {
+    text-align: center;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 24px;
+  }
+
+  /* BROWSER SHELL */
+  .browser {
+    max-width: 980px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.12);
+  }
+  .browser-bar {
+    background: #f5f5f7;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .url { background: #fff; border-radius: 6px; padding: 4px 14px; font-size: 10px; color: #9ca3af; flex: 1; border: 1px solid #e5e7eb; }
+
+  /* DASHBOARD */
+  .dash { background: #ffffff; }
+
+  /* HEADER */
+  .header {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-wrap {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 2px 8px rgba(22,163,74,0.3);
+  }
+  .header-title { font-size: 15px; font-weight: 700; color: #111827; letter-spacing: -0.02em; }
+  .header-sub { font-size: 11px; color: #6b7280; margin-top: 1px; font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .timestamp { font-size: 11px; color: #9ca3af; }
+  .status-badge {
+    display: flex; align-items: center; gap: 5px;
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    color: #15803d; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .status-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* TABS */
+  .tabs {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 24px;
+    display: flex;
+    gap: 0;
+  }
+  .tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.15s;
+  }
+  .tab.active { color: #16a34a; border-bottom-color: #16a34a; font-weight: 600; }
+  .tab .badge {
+    background: #fef2f2; color: #dc2626;
+    border-radius: 10px; padding: 1px 6px; font-size: 9px; font-weight: 700;
+  }
+
+  /* CONTENT */
+  .content { padding: 20px 24px; background: #f9fafb; }
+
+  /* KPI CARDS */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .kpi-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .kpi-icon.green { background: #f0fdf4; }
+  .kpi-icon.blue { background: #eff6ff; }
+  .kpi-icon.amber { background: #fffbeb; }
+  .kpi-icon.purple { background: #faf5ff; }
+  .kpi-icon.red { background: #fef2f2; }
+  .kpi-delta-pill { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 6px; }
+  .kpi-delta-pill.up { background: #f0fdf4; color: #16a34a; }
+  .kpi-delta-pill.down { background: #fef2f2; color: #dc2626; }
+  .kpi-delta-pill.flat { background: #f3f4f6; color: #6b7280; }
+  .kpi-val { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; color: #111827; line-height: 1; }
+  .kpi-lbl { font-size: 10px; color: #6b7280; margin-top: 3px; font-weight: 500; }
+  .kpi-sub { font-size: 9px; color: #9ca3af; margin-top: 2px; }
+
+  /* MAIN GRID */
+  .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+  .left-col { display: flex; flex-direction: column; gap: 12px; }
+  .right-col { display: flex; flex-direction: column; gap: 12px; }
+
+  /* CARDS */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title { font-size: 12px; font-weight: 600; color: #111827; display: flex; align-items: center; gap: 6px; }
+  .card-title .icon { font-size: 14px; }
+  .card-body { padding: 14px 16px; }
+  .card-tag { font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .tag-green { background: #dcfce7; color: #15803d; }
+  .tag-orange { background: #fff7ed; color: #c2410c; }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+  .tag-blue { background: #eff6ff; color: #1d4ed8; }
+
+  /* TRACKER GRID */
+  .tracker-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .tracker {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+  }
+  .tracker.ok { border-color: #bbf7d0; background: #f0fdf4; }
+  .tracker.warn { border-color: #fca5a5; background: #fef2f2; }
+  .tracker-id { font-size: 9px; font-weight: 700; color: #374151; }
+  .tracker.warn .tracker-id { color: #dc2626; }
+  .tracker-ang { font-size: 8px; color: #6b7280; margin-top: 2px; }
+  .tracker.warn .tracker-ang { color: #ef4444; }
+
+  /* IEC GAUGE */
+  .iec-wrap { text-align: center; padding: 6px 0; }
+  .iec-num { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; color: #16a34a; }
+  .iec-lbl { font-size: 10px; color: #6b7280; font-weight: 500; margin-bottom: 8px; }
+  .iec-track { background: #f3f4f6; border-radius: 6px; height: 8px; overflow: hidden; margin: 6px 0; position: relative; }
+  .iec-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #dc2626 0%, #f59e0b 40%, #22c55e 80%); width: 71%; }
+  .iec-marker { position: absolute; top: -2px; left: 71%; width: 12px; height: 12px; background: #16a34a; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transform: translateX(-50%); }
+  .iec-axis { display: flex; justify-content: space-between; font-size: 8px; color: #9ca3af; }
+  .iec-status { font-size: 11px; font-weight: 600; color: #16a34a; margin-top: 6px; }
+
+  /* REC BOX */
+  .rec-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .rec-title { font-size: 9px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .rec-val { font-size: 14px; font-weight: 700; color: #15803d; }
+  .rec-sub { font-size: 9px; color: #6b7280; margin-top: 3px; }
+
+  /* ALERT ITEMS */
+  .alert-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .alert-dot.red { background: #dc2626; }
+  .alert-dot.orange { background: #f59e0b; }
+  .alert-title { font-size: 11px; font-weight: 600; color: #111827; }
+  .alert-desc { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .alert-sev { font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 8px; flex-shrink: 0; margin-top: 2px; }
+  .alert-sev.critical { background: #fef2f2; color: #dc2626; }
+  .alert-sev.warning { background: #fff7ed; color: #c2410c; }
+
+  /* ===== SOLAR PANEL VISUALIZATION ===== */
+  .solar-viz-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .solar-viz-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .solar-viz-body {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 16px;
+    align-items: center;
+  }
+  .svg-scene { width: 100%; }
+  .solar-info { display: flex; flex-direction: column; gap: 10px; }
+  .solar-stat { background: #f9fafb; border-radius: 8px; padding: 10px 12px; border: 1px solid #e5e7eb; }
+  .solar-stat-lbl { font-size: 9px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; }
+  .solar-stat-val { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: #111827; margin-top: 2px; }
+  .solar-stat-val.green { color: #16a34a; }
+  .solar-stat-val.blue { color: #1d4ed8; }
+  .solar-stat-val.orange { color: #c2410c; }
+
+  /* TIME SLIDER */
+  .time-slider-wrap {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+  }
+  .time-slider-label { font-size: 9px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .slider-track { background: #e5e7eb; border-radius: 4px; height: 4px; position: relative; margin: 4px 0 8px; }
+  .slider-fill { background: linear-gradient(90deg, #fb923c, #fbbf24, #16a34a, #fbbf24, #fb923c); height: 100%; border-radius: 4px; width: 65%; }
+  .slider-thumb { position: absolute; top: -5px; left: 65%; width: 14px; height: 14px; background: #fff; border: 2px solid #16a34a; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transform: translateX(-50%); }
+  .time-ticks { display: flex; justify-content: space-between; font-size: 8px; color: #9ca3af; }
+
+  /* MINI CHART */
+  .mini-chart { height: 50px; display: flex; align-items: flex-end; gap: 2px; }
+  .mc-bar { border-radius: 2px 2px 0 0; flex: 1; }
+
+  /* RULES TABLE */
+  .rtable { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .rtable th { background: #f9fafb; color: #6b7280; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  .rtable td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; color: #374151; font-size: 10px; }
+  .rtable tr.active-rule td { background: #f0fdf4; font-weight: 600; }
+  .rtable tr.active-rule td:first-child { border-left: 3px solid #22c55e; }
+</style>
+</head>
+<body>
+
+<p class="page-label">Dashboard Sprint 3 — Mockup v2</p>
+<p class="page-q">Fondo blanco · tipografía Apple · paleta multicolor · visualización panel solar</p>
+
+<div class="browser">
+  <div class="browser-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <div class="url">localhost:8501 — Agrovoltaic Decision Dashboard</div>
+  </div>
+
+  <div class="dash">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <div class="logo-wrap">🌿</div>
+        <div>
+          <div class="header-title">Agrovoltaic Dashboard</div>
+          <div class="header-sub">Sostenibilidad y Ciencia · Análisis Operativo</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="timestamp">Último registro · 14 ago 2025 · 18:00</div>
+        <div class="status-badge"><div class="status-dot"></div> Sistema activo</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active">📊 Estado actual</div>
+      <div class="tab">📈 Series temporales</div>
+      <div class="tab">☀️ Panel solar</div>
+      <div class="tab">🔄 Recomendación</div>
+      <div class="tab">🚨 Alertas <span class="badge">2</span></div>
+    </div>
+
+    <!-- CONTENT: TAB 1 (Estado actual) -->
+    <div class="content">
+
+      <!-- KPI ROW -->
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-icon blue">🔩</div>
+            <div class="kpi-delta-pill flat">→ 0°</div>
+          </div>
+          <div class="kpi-val">34.2°</div>
+          <div class="kpi-lbl">Ángulo tracking</div>
+          <div class="kpi-sub">M01 · referencia</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-icon green">🌿</div>
+            <div class="kpi-delta-pill up">↑ óptimo</div>
+          </div>
+          <div class="kpi-val">412</div>
+          <div class="kpi-lbl">ePAR (µmol/m²/s)</div>
+          <div class="kpi-sub">rango 200–600</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-icon amber">💧</div>
+            <div class="kpi-delta-pill down">↓ −0.03/día</div>
+          </div>
+          <div class="kpi-val">0.28</div>
+          <div class="kpi-lbl">VWC suelo (m³/m³)</div>
+          <div class="kpi-sub">umbral crítico: 0.20</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-icon purple">⚡</div>
+            <div class="kpi-delta-pill up">↑ zona óptima</div>
+          </div>
+          <div class="kpi-val">0.71</div>
+          <div class="kpi-lbl">Índice IEC</div>
+          <div class="kpi-sub">energía–cultivo</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-top">
+            <div class="kpi-icon red">⚠️</div>
+            <div class="kpi-delta-pill down">3 fallos</div>
+          </div>
+          <div class="kpi-val" style="color:#dc2626;">3/10</div>
+          <div class="kpi-lbl">Trackers anómalos</div>
+          <div class="kpi-sub">M02 · M06 · M10</div>
+        </div>
+      </div>
+
+      <!-- MAIN GRID -->
+      <div class="main-grid">
+        <div class="left-col">
+
+          <!-- TRACKER STATUS -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🔩</span> Estado de trackers (10 unidades)</div>
+              <span class="card-tag tag-red">3 anomalías detectadas</span>
+            </div>
+            <div class="card-body">
+              <div class="tracker-grid">
+                <div class="tracker ok"><div class="tracker-id">M01</div><div class="tracker-ang">34.2°</div></div>
+                <div class="tracker warn"><div class="tracker-id">M02 ⚠</div><div class="tracker-ang">50.6° fijo</div></div>
+                <div class="tracker ok"><div class="tracker-id">M03</div><div class="tracker-ang">34.1°</div></div>
+                <div class="tracker ok"><div class="tracker-id">M04</div><div class="tracker-ang">34.3°</div></div>
+                <div class="tracker ok"><div class="tracker-id">M05</div><div class="tracker-ang">33.9°</div></div>
+                <div class="tracker warn"><div class="tracker-id">M06 ⚠</div><div class="tracker-ang">50.6° fijo</div></div>
+                <div class="tracker ok"><div class="tracker-id">M07</div><div class="tracker-ang">34.0°</div></div>
+                <div class="tracker ok"><div class="tracker-id">M08</div><div class="tracker-ang">34.2°</div></div>
+                <div class="tracker ok"><div class="tracker-id">M09</div><div class="tracker-ang">34.1°</div></div>
+                <div class="tracker warn"><div class="tracker-id">M10 ⚠</div><div class="tracker-ang">50.6° fijo</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SOLAR PANEL VIZ PREVIEW (dentro del tab Estado) -->
+          <div class="solar-viz-card">
+            <div class="solar-viz-header">
+              <div class="card-title"><span class="icon">☀️</span> Posición del panel solar — ahora</div>
+              <span class="card-tag tag-blue">Ver detalle completo → Tab "Panel Solar"</span>
+            </div>
+            <div class="solar-viz-body">
+              <!-- SVG SCENE -->
+              <svg class="svg-scene" viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg">
+                <!-- SKY GRADIENT -->
+                <defs>
+                  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#dbeafe"/>
+                    <stop offset="100%" stop-color="#f0f9ff"/>
+                  </linearGradient>
+                  <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#bbf7d0"/>
+                    <stop offset="100%" stop-color="#86efac"/>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+
+                <!-- SKY -->
+                <rect x="0" y="0" width="400" height="145" fill="url(#sky)" rx="8"/>
+
+                <!-- SUN ARC PATH -->
+                <path d="M 30 145 Q 200 20 370 145" stroke="#fed7aa" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity="0.7"/>
+
+                <!-- SUN POSITION (65% of day = afternoon, ~15:00) -->
+                <!-- At t=0.65 on the arc: x = 30 + 2*0.65*(1-0.65)*370 + 0.65^2*370 ≈ approx -->
+                <!-- Quadratic bezier: B(t) = (1-t)^2*P0 + 2t(1-t)*P1 + t^2*P2 -->
+                <!-- t=0.65: (0.35^2)*30 + 2*0.65*0.35*200 + (0.65^2)*370 = 3.675 + 91 + 156.325 = 251 -->
+                <!-- y: (0.35^2)*145 + 2*0.65*0.35*20 + (0.65^2)*145 = 17.76 + 9.1 + 61.36 = 88.2 → ~62 from top -->
+                <circle cx="251" cy="62" r="18" fill="#fbbf24" filter="url(#glow)" opacity="0.95"/>
+                <circle cx="251" cy="62" r="12" fill="#fde68a"/>
+                <!-- Sun rays -->
+                <g stroke="#fbbf24" stroke-width="1.5" opacity="0.7">
+                  <line x1="251" y1="38" x2="251" y2="30"/>
+                  <line x1="251" y1="86" x2="251" y2="94"/>
+                  <line x1="227" y1="62" x2="219" y2="62"/>
+                  <line x1="275" y1="62" x2="283" y2="62"/>
+                  <line x1="234" y1="45" x2="228" y2="39"/>
+                  <line x1="268" y1="79" x2="274" y2="85"/>
+                  <line x1="268" y1="45" x2="274" y2="39"/>
+                  <line x1="234" y1="79" x2="228" y2="85"/>
+                </g>
+
+                <!-- SUN TIME MARKERS -->
+                <text x="20" y="158" font-size="8" fill="#6b7280" font-family="-apple-system,sans-serif">06:00</text>
+                <text x="180" y="152" font-size="8" fill="#6b7280" font-family="-apple-system,sans-serif">13:00</text>
+                <text x="355" y="158" font-size="8" fill="#6b7280" font-family="-apple-system,sans-serif">21:00</text>
+
+                <!-- CURRENT TIME MARKER -->
+                <line x1="251" y1="145" x2="251" y2="155" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2"/>
+                <text x="240" y="165" font-size="8" fill="#d97706" font-family="-apple-system,sans-serif" font-weight="600">18:00</text>
+
+                <!-- GROUND -->
+                <rect x="0" y="145" width="400" height="35" fill="url(#ground)" rx="0"/>
+                <text x="10" y="162" font-size="8" fill="#15803d" font-family="-apple-system,sans-serif" font-weight="500">Suelo cultivado</text>
+
+                <!-- PANEL MOUNT (pivot point) -->
+                <line x1="170" y1="145" x2="170" y2="118" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>
+
+                <!-- PANEL at 34.2° tilt from horizontal -->
+                <!-- Panel rotated ~34° from horizontal, pivoting at (170,118) -->
+                <!-- Panel length ~70px. From pivot: dx=cos(34°)*35≈29, dy=-sin(34°)*35≈-20 -->
+                <!-- So: from (170-29, 118+20) to (170+29, 118-20) = (141,138) to (199,98) -->
+                <rect x="0" y="0" width="70" height="7" rx="2" fill="#1d4ed8"
+                  transform="rotate(-34, 170, 118) translate(133, 114)"/>
+                <!-- Panel glass shine -->
+                <rect x="0" y="0" width="70" height="2" rx="1" fill="rgba(255,255,255,0.4)"
+                  transform="rotate(-34, 170, 118) translate(133, 114)"/>
+
+                <!-- ANGLE ARC -->
+                <path d="M 170 118 L 210 118" stroke="#e5e7eb" stroke-width="1"/>
+                <path d="M 185 118 A 15 15 0 0 0 177.5 107" stroke="#16a34a" stroke-width="1.5" fill="none"/>
+                <text x="190" y="114" font-size="9" fill="#16a34a" font-family="-apple-system,sans-serif" font-weight="700">34.2°</text>
+
+                <!-- IRRADIANCE ARROW (sun to panel) -->
+                <line x1="240" y1="75" x2="190" y2="105" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr)" opacity="0.8"/>
+                <defs>
+                  <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                    <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b"/>
+                  </marker>
+                </defs>
+                <text x="215" y="84" font-size="8" fill="#d97706" font-family="-apple-system,sans-serif">623 W/m²</text>
+
+                <!-- LEGEND: RECOMMENDED ANGLE GHOST -->
+                <rect x="0" y="0" width="70" height="7" rx="2" fill="none" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,2"
+                  transform="rotate(-38, 170, 118) translate(133, 114)" opacity="0.5"/>
+                <text x="106" y="94" font-size="8" fill="#16a34a" font-family="-apple-system,sans-serif" opacity="0.7">→ objetivo: 38°</text>
+              </svg>
+
+              <!-- INFO PANEL RIGHT -->
+              <div class="solar-info">
+                <div class="solar-stat">
+                  <div class="solar-stat-lbl">Ángulo actual</div>
+                  <div class="solar-stat-val blue">34.2°</div>
+                </div>
+                <div class="solar-stat">
+                  <div class="solar-stat-lbl">Ángulo recomendado</div>
+                  <div class="solar-stat-val green">30–40°</div>
+                </div>
+                <div class="solar-stat">
+                  <div class="solar-stat-lbl">Elevación solar</div>
+                  <div class="solar-stat-val orange">47°</div>
+                </div>
+                <div class="solar-stat" style="border-color:#bbf7d0;background:#f0fdf4;">
+                  <div class="solar-stat-lbl">Estado</div>
+                  <div class="solar-stat-val green" style="font-size:13px;">✓ En rango óptimo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end left col -->
+
+        <!-- RIGHT COL -->
+        <div class="right-col">
+          <!-- IEC -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">⚡</span> Índice IEC</div>
+              <span class="card-tag tag-green">Óptimo</span>
+            </div>
+            <div class="card-body">
+              <div class="iec-wrap">
+                <div class="iec-num">0.71</div>
+                <div class="iec-lbl">Equilibrio Energía–Cultivo</div>
+                <div class="iec-track">
+                  <div class="iec-fill"></div>
+                  <div class="iec-marker"></div>
+                </div>
+                <div class="iec-axis"><span>0 Crítico</span><span>0.5</span><span>1.0 Óptimo</span></div>
+                <div class="iec-status">● Zona óptima confirmada</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RECOMMENDATION -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🔄</span> Recomendación activa</div>
+            </div>
+            <div class="card-body">
+              <div class="rec-box">
+                <div class="rec-title">Ángulo óptimo</div>
+                <div class="rec-val">→ Mantener 30–40°</div>
+                <div class="rec-sub">Regla R2 · IEC: 0.71 · ePAR en rango</div>
+              </div>
+              <div style="font-size:10px;color:#6b7280;margin-bottom:8px;">Reglas activas del Sprint 2</div>
+              <table class="rtable">
+                <tr><th>ID</th><th>Condición</th><th>Ángulo</th></tr>
+                <tr><td style="color:#9ca3af;">R1</td><td style="color:#9ca3af;">ePAR &lt;200</td><td style="color:#9ca3af;">0–15°</td></tr>
+                <tr class="active-rule"><td>R2</td><td>ePAR 200–600</td><td>30–40°</td></tr>
+                <tr><td style="color:#9ca3af;">R3</td><td style="color:#9ca3af;">VWC &lt;0.20</td><td style="color:#9ca3af;">20–30°</td></tr>
+                <tr><td style="color:#9ca3af;">R4</td><td style="color:#9ca3af;">Irrad &gt;800</td><td style="color:#9ca3af;">45–55°</td></tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- ALERTS SUMMARY -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><span class="icon">🚨</span> Alertas</div>
+              <span class="card-tag tag-red">2 activas</span>
+            </div>
+            <div class="card-body">
+              <div class="alert-row">
+                <div class="alert-dot red"></div>
+                <div class="alert-text">
+                  <div class="alert-title">Trackers M02, M06, M10</div>
+                  <div class="alert-desc">Ángulo fijo 50.6° · varianza cero</div>
+                </div>
+                <div class="alert-sev critical">CRÍTICO</div>
+              </div>
+              <div class="alert-row">
+                <div class="alert-dot orange"></div>
+                <div class="alert-text">
+                  <div class="alert-title">VWC descendente</div>
+                  <div class="alert-desc">0.28 → tendencia negativa · umbral 0.20</div>
+                </div>
+                <div class="alert-sev warning">AVISO</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- end right col -->
+      </div><!-- end main grid -->
+
+    </div><!-- end content -->
+  </div><!-- end dash -->
+</div><!-- end browser -->
+
+<!-- TAB PREVIEWS ROW -->
+<div style="max-width:980px;margin:16px auto;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+  <!-- TAB: PANEL SOLAR (full) -->
+  <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">
+    <div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;font-weight:600;color:#111827;display:flex;align-items:center;gap:6px;font-family:-apple-system,sans-serif;">☀️ Tab — Panel Solar (detalle completo)</div>
+      <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:#eff6ff;color:#1d4ed8;">Vista interactiva</span>
+    </div>
+    <div style="padding:14px 16px;font-family:-apple-system,sans-serif;">
+
+      <!-- LARGE SVG scene -->
+      <svg viewBox="0 0 460 200" width="100%" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:10px;">
+        <defs>
+          <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#bfdbfe"/>
+            <stop offset="100%" stop-color="#e0f2fe"/>
+          </linearGradient>
+          <linearGradient id="ground2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="100%" stop-color="#86efac"/>
+          </linearGradient>
+          <filter id="glow2">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <marker id="arr2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b"/>
+          </marker>
+        </defs>
+
+        <!-- SKY -->
+        <rect x="0" y="0" width="460" height="158" fill="url(#sky2)" rx="8"/>
+
+        <!-- SUN ARC (full day) -->
+        <path d="M 30 158 Q 230 15 430 158" stroke="#fed7aa" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.6"/>
+
+        <!-- HOUR DOTS on arc -->
+        <!-- Bezier at t=0.1 (7am), 0.3 (10am), 0.5 (noon), 0.7 (15:00), 0.9 (19:00) -->
+        <circle cx="68" cy="130" r="3" fill="#fde68a" opacity="0.6"/>
+        <circle cx="145" cy="68" r="3" fill="#fde68a" opacity="0.6"/>
+        <circle cx="230" cy="43" r="3" fill="#fde68a" opacity="0.6"/>
+        <circle cx="315" cy="68" r="3" fill="#fde68a" opacity="0.6"/>
+        <circle cx="392" cy="130" r="3" fill="#fde68a" opacity="0.6"/>
+
+        <!-- Hour labels -->
+        <text x="55" y="145" font-size="7" fill="#6b7280" font-family="-apple-system,sans-serif">07h</text>
+        <text x="133" y="63" font-size="7" fill="#6b7280" font-family="-apple-system,sans-serif">10h</text>
+        <text x="218" y="38" font-size="7" fill="#6b7280" font-family="-apple-system,sans-serif">13h</text>
+        <text x="304" y="63" font-size="7" fill="#6b7280" font-family="-apple-system,sans-serif">16h</text>
+        <text x="382" y="145" font-size="7" fill="#6b7280" font-family="-apple-system,sans-serif">19h</text>
+
+        <!-- SUN at 18:00 (~t=0.75) -->
+        <!-- B(0.75)= 0.0625*30 + 2*0.75*0.25*230 + 0.5625*430 = 1.875+86.25+241.875=330 -->
+        <!-- y= 0.0625*158 + 2*0.75*0.25*15 + 0.5625*158=9.875+5.625+88.875=104.375 → ~85 -->
+        <circle cx="330" cy="85" r="22" fill="#fbbf24" filter="url(#glow2)" opacity="0.9"/>
+        <circle cx="330" cy="85" r="14" fill="#fde68a"/>
+        <g stroke="#fbbf24" stroke-width="1.5" opacity="0.6">
+          <line x1="330" y1="57" x2="330" y2="49"/>
+          <line x1="330" y1="113" x2="330" y2="121"/>
+          <line x1="302" y1="85" x2="294" y2="85"/>
+          <line x1="358" y1="85" x2="366" y2="85"/>
+          <line x1="310" y1="65" x2="304" y2="59"/>
+          <line x1="350" y1="105" x2="356" y2="111"/>
+          <line x1="350" y1="65" x2="356" y2="59"/>
+          <line x1="310" y1="105" x2="304" y2="111"/>
+        </g>
+        <!-- Sun label -->
+        <text x="344" y="75" font-size="8" fill="#d97706" font-family="-apple-system,sans-serif" font-weight="700">18:00</text>
+
+        <!-- GROUND -->
+        <rect x="0" y="158" width="460" height="42" fill="url(#ground2)"/>
+
+        <!-- PANEL STRUCTURE (3 panels with shadows) -->
+        <!-- Panel 1 at x=120 -->
+        <line x1="120" y1="158" x2="120" y2="128" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="0" y="0" width="80" height="9" rx="3" fill="#1e40af" transform="rotate(-34, 120, 128) translate(80, 123)"/>
+        <rect x="0" y="0" width="80" height="2" rx="1" fill="rgba(255,255,255,0.3)" transform="rotate(-34, 120, 128) translate(80, 123)"/>
+
+        <!-- Panel 2 at x=230 (reference panel — highlighted) -->
+        <line x1="230" y1="158" x2="230" y2="125" stroke="#374151" stroke-width="3" stroke-linecap="round"/>
+        <rect x="0" y="0" width="85" height="10" rx="3" fill="#1d4ed8" transform="rotate(-34, 230, 125) translate(187, 120)"/>
+        <rect x="0" y="0" width="85" height="3" rx="1" fill="rgba(255,255,255,0.35)" transform="rotate(-34, 230, 125) translate(187, 120)"/>
+        <!-- Ghost recommended angle (38°) -->
+        <rect x="0" y="0" width="85" height="10" rx="3" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" transform="rotate(-38, 230, 125) translate(187, 120)" opacity="0.6"/>
+
+        <!-- Panel 3 at x=340 -->
+        <line x1="340" y1="158" x2="340" y2="128" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="0" y="0" width="80" height="9" rx="3" fill="#1e40af" transform="rotate(-34, 340, 128) translate(300, 123)"/>
+        <rect x="0" y="0" width="80" height="2" rx="1" fill="rgba(255,255,255,0.3)" transform="rotate(-34, 340, 128) translate(300, 123)"/>
+
+        <!-- IRRADIANCE ARROWS -->
+        <line x1="318" y1="97" x2="248" y2="115" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr2)" opacity="0.8"/>
+        <text x="270" y="100" font-size="7.5" fill="#d97706" font-family="-apple-system,sans-serif" font-weight="600">623 W/m²</text>
+
+        <!-- CROP REPRESENTATION -->
+        <text x="15" y="175" font-size="9" fill="#15803d" font-family="-apple-system,sans-serif">🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱</text>
+
+        <!-- LABELS -->
+        <text x="172" y="192" font-size="7.5" fill="#374151" font-family="-apple-system,sans-serif" font-weight="600">M01 — 34.2°</text>
+        <text x="200" y="175" font-size="7.5" fill="#16a34a" font-family="-apple-system,sans-serif">--- objetivo 38°</text>
+
+        <!-- ANGLE ARC (panel 2) -->
+        <path d="M 230 125 L 275 125" stroke="#e5e7eb" stroke-width="1"/>
+        <path d="M 250 125 A 20 20 0 0 0 238 110" stroke="#16a34a" stroke-width="1.5" fill="none"/>
+        <text x="255" y="120" font-size="9" fill="#16a34a" font-family="-apple-system,sans-serif" font-weight="700">34.2°</text>
+
+        <!-- SHADOW ON GROUND (crop shading) -->
+        <ellipse cx="218" cy="161" rx="28" ry="4" fill="rgba(30,64,175,0.12)"/>
+        <ellipse cx="108" cy="161" rx="25" ry="3.5" fill="rgba(30,64,175,0.08)"/>
+        <ellipse cx="328" cy="161" rx="25" ry="3.5" fill="rgba(30,64,175,0.08)"/>
+      </svg>
+
+      <!-- TIME SLIDER -->
+      <div class="time-slider-wrap">
+        <div class="time-slider-label">
+          <span>Hora del día — desplaza para simular la posición del sol</span>
+          <span style="color:#16a34a;font-weight:700;">18:00</span>
+        </div>
+        <div class="slider-track">
+          <div class="slider-fill"></div>
+          <div class="slider-thumb"></div>
+        </div>
+        <div class="time-ticks">
+          <span>06:00 🌅</span>
+          <span>09:00</span>
+          <span>12:00 ☀️</span>
+          <span>15:00</span>
+          <span>18:00</span>
+          <span>21:00 🌙</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: SERIES TEMPORALES -->
+  <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden;">
+    <div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;font-weight:600;color:#111827;display:flex;align-items:center;gap:6px;font-family:-apple-system,sans-serif;">📈 Tab — Series temporales</div>
+      <span style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:#f0fdf4;color:#15803d;">Plotly · filtros dinámicos</span>
+    </div>
+    <div style="padding:14px 16px;font-family:-apple-system,sans-serif;">
+      <!-- Filter chips -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:9px;color:#6b7280;font-weight:600;">Variable:</span>
+        <span style="background:#dcfce7;color:#15803d;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:600;">ePAR</span>
+        <span style="background:#f3f4f6;color:#6b7280;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:500;">VWC</span>
+        <span style="background:#f3f4f6;color:#6b7280;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:500;">Tracking °</span>
+        <span style="background:#f3f4f6;color:#6b7280;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:500;">IEC</span>
+        <span style="background:#eff6ff;color:#1d4ed8;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:600;">Irradiancia</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;">
+        <span style="font-size:9px;color:#6b7280;font-weight:600;">Sección:</span>
+        <span style="background:#dcfce7;color:#15803d;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:600;">S1</span>
+        <span style="background:#dcfce7;color:#15803d;border-radius:10px;padding:3px 10px;font-size:9px;font-weight:600;">S2</span>
+        <span style="font-size:9px;color:#6b7280;font-weight:600;margin-left:8px;">Rango:</span>
+        <span style="background:#f3f4f6;color:#374151;border-radius:6px;padding:3px 8px;font-size:9px;border:1px solid #e5e7eb;">Jun 2025 → Ago 2025</span>
+      </div>
+      <!-- Chart area simulation -->
+      <div style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;padding:12px;height:140px;position:relative;overflow:hidden;">
+        <!-- Y axis labels -->
+        <div style="position:absolute;left:4px;top:10px;font-size:7px;color:#9ca3af;font-family:-apple-system,sans-serif;">600</div>
+        <div style="position:absolute;left:4px;top:45px;font-size:7px;color:#9ca3af;font-family:-apple-system,sans-serif;">400</div>
+        <div style="position:absolute;left:4px;top:80px;font-size:7px;color:#9ca3af;font-family:-apple-system,sans-serif;">200</div>
+        <div style="position:absolute;left:4px;top:115px;font-size:7px;color:#9ca3af;font-family:-apple-system,sans-serif;">0</div>
+        <!-- Grid lines -->
+        <div style="position:absolute;left:20px;right:0;top:18px;height:1px;background:#e5e7eb;opacity:0.6;"></div>
+        <div style="position:absolute;left:20px;right:0;top:53px;height:1px;background:#e5e7eb;opacity:0.6;"></div>
+        <div style="position:absolute;left:20px;right:0;top:88px;height:1px;background:#e5e7eb;opacity:0.6;"></div>
+        <!-- Threshold line (critical) -->
+        <div style="position:absolute;left:20px;right:0;top:106px;height:1px;background:#dc2626;opacity:0.5;border-top:1px dashed #dc2626;"></div>
+        <div style="position:absolute;right:4px;top:100px;font-size:7px;color:#dc2626;font-family:-apple-system,sans-serif;font-weight:600;">umbral 200</div>
+        <!-- ePAR line (green) -->
+        <svg style="position:absolute;left:20px;right:0;top:0;bottom:0;width:calc(100% - 20px);height:100%;" viewBox="0 0 300 120" preserveAspectRatio="none">
+          <polyline points="0,90 15,70 30,45 45,30 60,25 75,40 90,35 105,55 120,30 135,20 150,35 165,50 180,40 195,55 210,45 225,60 240,35 255,50 270,65 285,55 300,60"
+            stroke="#16a34a" stroke-width="2" fill="none" stroke-linejoin="round"/>
+          <polyline points="0,90 15,70 30,45 45,30 60,25 75,40 90,35 105,55 120,30 135,20 150,35 165,50 180,40 195,55 210,45 225,60 240,35 255,50 270,65 285,55 300,60 300,120 0,120"
+            fill="rgba(22,163,74,0.08)"/>
+          <!-- Irradiance line (blue) -->
+          <polyline points="0,100 15,85 30,60 45,40 60,30 75,45 90,38 105,65 120,35 135,25 150,42 165,58 180,48 195,62 210,52 225,68 240,42 255,58 270,72 285,62 300,68"
+            stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-dasharray="4,2"/>
+        </svg>
+        <!-- Legend -->
+        <div style="position:absolute;bottom:6px;left:24px;display:flex;gap:10px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:3px;"><div style="width:12px;height:2px;background:#16a34a;border-radius:1px;"></div><span style="font-size:7px;color:#374151;font-family:-apple-system,sans-serif;">ePAR (S1+S2)</span></div>
+          <div style="display:flex;align-items:center;gap:3px;"><div style="width:12px;height:2px;background:#3b82f6;border-radius:1px;border-top:1px dashed #3b82f6;"></div><span style="font-size:7px;color:#374151;font-family:-apple-system,sans-serif;">Irradiancia</span></div>
+          <div style="display:flex;align-items:center;gap:3px;"><div style="width:12px;height:1px;background:#dc2626;border-top:1px dashed #dc2626;"></div><span style="font-size:7px;color:#dc2626;font-family:-apple-system,sans-serif;">umbral crítico</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER NOTE -->
+<div style="max-width:980px;margin:12px auto;background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:14px 18px;font-family:-apple-system,sans-serif;">
+  <div style="font-size:11px;font-weight:600;color:#111827;margin-bottom:6px;">Stack técnico confirmado</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> Streamlit + st.tabs() + CSS custom inyectado</div>
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> Plotly Express para series temporales interactivas</div>
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> SVG dinámico para visualización del panel solar</div>
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> pandas para carga de dataset_integrado_6h.csv</div>
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> candidate_rotation_rules.csv → reglas activas</div>
+    <div style="font-size:10px;color:#6b7280;display:flex;gap:5px;"><span style="color:#16a34a;">→</span> tracker_variance_diagnostic.csv → alertas M02/M06/M10</div>
+  </div>
+</div>
+
+</body>
+</html>
