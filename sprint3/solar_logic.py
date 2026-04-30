@@ -23,11 +23,15 @@ def estimate_solar_elevation(hour: float) -> float:
 
 def get_recommended_angle(hour: int, df_modelo: pd.DataFrame) -> float:
     """
-    Return the track_mean of the record at `hour` with the highest IEC.
-    This gives the historically best-performing angle for that hour.
+    Return the track_mean of the best-IEC record at the nearest available hour.
+    Dataset has 6h resolution (hours 0, 6, 12, 18), so snaps to nearest instead
+    of returning 0 for hours without data.
     """
-    hour_data = df_modelo[df_modelo["hour_of_day"] == hour].dropna(subset=["IEC", "track_mean"])
-    if hour_data.empty:
+    valid = df_modelo.dropna(subset=["IEC", "track_mean"])
+    if valid.empty:
         return 0.0
+    available = valid["hour_of_day"].unique()
+    nearest = available[(available - hour).__abs__().argmin()]
+    hour_data = valid[valid["hour_of_day"] == nearest]
     best_idx = hour_data["IEC"].idxmax()
     return float(hour_data.loc[best_idx, "track_mean"])
