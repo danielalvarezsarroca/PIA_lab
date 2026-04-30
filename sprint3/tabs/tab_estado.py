@@ -2,6 +2,7 @@ import math
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from alert_logic import build_alert_list, get_anomalous_trackers
 from rule_engine import format_regime_label, get_active_rule_index
@@ -67,7 +68,12 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
             solar_elevation=solar_elev,
             irradiance=400.0,
         )
-        st.markdown(svg_html, unsafe_allow_html=True)
+        # st.markdown strips SVG defs/gradients/filters — use components.html (iframe, no sanitizer)
+        components.html(
+            f"<html><body style='margin:0;padding:0;background:transparent;'>{svg_html}</body></html>",
+            height=252,
+            scrolling=False,
+        )
         status_txt = "✓ En rango óptimo" if in_range else "⚠ Fuera del rango recomendado"
         status_clr = COLOR["green"] if in_range else COLOR["orange"]
         st.markdown(
