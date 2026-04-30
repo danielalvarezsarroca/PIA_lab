@@ -27,6 +27,92 @@ def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
     return valid.loc[idx]
 
 
+def _angle_justification(
+    hour: int,
+    track_angle: float,
+    rec_angle: float,
+    regime: str,
+    iec_safe: float,
+    in_range: bool,
+    solar_elev: float,
+) -> tuple[str, str, str]:
+    """Return (icon, title, body) for the natural-language explanation box."""
+    direction = "oeste" if track_angle > 0 else "este"
+    angle_abs = abs(track_angle)
+
+    if regime == "TRACKING_PM":
+        icon  = "☀️"
+        title = "Tracking de tarde — máximo rendimiento agrovoltaico"
+        body  = (
+            f"A las {hour:02d}:00h el sol está en su punto más alto (elevación {solar_elev:.0f}°). "
+            f"Los paneles se inclinan <b>{angle_abs:.0f}° hacia el {direction}</b> siguiendo la regla de "
+            f"Tracking PM, el régimen con mayor IEC registrado históricamente. "
+            f"El ángulo {'coincide con' if in_range else 'se desvía del'} óptimo recomendado ({rec_angle:.0f}°). "
+            f"IEC actual: <b>{iec_safe:.2f}</b> — zona {'óptima' if iec_safe >= 0.6 else 'media' if iec_safe >= 0.35 else 'crítica'}."
+        )
+    elif regime == "TRACKING_AM":
+        icon  = "🌅"
+        title = "Tracking de mañana — seguimiento del sol naciente"
+        body  = (
+            f"A las {hour:02d}:00h el sol sale por el este (elevación {solar_elev:.0f}°). "
+            f"Los paneles apuntan <b>{angle_abs:.0f}° hacia el {direction}</b> para aprovechar "
+            f"la irradiancia matinal. La regla de Tracking AM maximiza la producción en las primeras "
+            f"horas del día, aunque el IEC ({iec_safe:.2f}) es menor que en la tarde."
+        )
+    elif regime == "HORIZONTAL":
+        if hour <= 8 or hour >= 17:
+            reason = (
+                "el sol está bajo en el horizonte o ausente — "
+                "los trackers se colocan en posición de reposo horizontal para protegerse del viento"
+            )
+        else:
+            reason = "el sistema mantiene posición horizontal según la política activa"
+        icon  = "🌙"
+        title = "Posición horizontal — régimen de reposo"
+        body  = (
+            f"A las {hour:02d}:00h {reason}. "
+            f"Ángulo ≈ {track_angle:.1f}° (prácticamente plano). "
+            f"En este régimen el IEC es bajo ({iec_safe:.2f}) al no haber seguimiento activo del sol."
+        )
+    else:
+        icon  = "🔧"
+        title = f"Régimen: {format_regime_label(regime)}"
+        body  = f"Ángulo actual {track_angle:.1f}° · elevación solar {solar_elev:.0f}° · IEC {iec_safe:.2f}."
+
+    return icon, title, body
+
+
+def _epar_label(v: float) -> tuple[str, str]:
+    """Return (label, color) for an ePAR value."""
+    if math.isnan(v):
+        return "Sin datos", COLOR["muted"]
+    if v >= 500:
+        return "Alta irradiancia PAR — condiciones óptimas", COLOR["green"]
+    if v >= 200:
+        return "Irradiancia PAR normal — cultivo activo", COLOR["green"]
+    return "⚠ Bajo umbral crítico (200 µmol/m²/s)", COLOR["red"]
+
+
+def _vwc_label(v: float) -> tuple[str, str]:
+    """Return (label, color) for a VWC value."""
+    if math.isnan(v):
+        return "Sin datos", COLOR["muted"]
+    if v >= 0.30:
+        return "Suelo bien hidratado", COLOR["green"]
+    if v >= 0.20:
+        return "Humedad adecuada", COLOR["amber"]
+    return "⚠ Humedad crítica — riego necesario", COLOR["red"]
+
+
+def _tracker_label(variance: float) -> tuple[str, str, str]:
+    """Return (status_text, bg_color, border_color) for a tracker variance."""
+    if math.isnan(variance):
+        return "Sin datos", "#f9fafb", "#e5e7eb"
+    if variance > _ANOMALY_THRESHOLD:
+        return "⚠ Alta varianza", "#fef2f2", "#fca5a5"
+    return "✓ Normal", "#f0fdf4", "#bbf7d0"
+
+
 @st.fragment
 def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame) -> None:
     # ── Slider ────────────────────────────────────────────────────────────────
@@ -42,20 +128,37 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     )
 
     # ── Compute all values for selected hour ──────────────────────────────────
-    row         = _get_hour_record(df_modelo, hour)
-    track_angle = float(row.get("track_mean", 0.0))
-    iec_val     = float(row.get("IEC", float("nan")))
-    regime      = str(row.get("tracking_regime", "—"))
-    epar_s1     = float(row.get("ePAR_S1_mean", float("nan")))
-    epar_s2     = float(row.get("ePAR_S2_mean", float("nan")))
-    vwc_s1      = float(row.get("VWC_S1_mean", float("nan")))
-    vwc_s2      = float(row.get("VWC_S2_mean", float("nan")))
-    solar_elev  = float(row.get("solar_elevation_deg", estimate_solar_elevation(float(hour))))
-    rec_angle   = get_recommended_angle(hour, df_modelo)
+    row          = _get_hour_record(df_modelo, hour)
+    track_angle  = float(row.get("track_mean", 0.0))
+    iec_val      = float(row.get("IEC", float("nan")))
+    regime       = str(row.get("tracking_regime", "—"))
+    epar_s1      = float(row.get("ePAR_S1_mean", float("nan")))
+    epar_s2      = float(row.get("ePAR_S2_mean", float("nan")))
+    vwc_s1       = float(row.get("VWC_S1_mean", float("nan")))
+    vwc_s2       = float(row.get("VWC_S2_mean", float("nan")))
+    solar_elev   = float(row.get("solar_elevation_deg", estimate_solar_elevation(float(hour))))
+    rec_angle    = get_recommended_angle(hour, df_modelo)
     regime_label = format_regime_label(regime)
-    iec_safe    = iec_val if not math.isnan(iec_val) else 0.0
-    active_idx  = get_active_rule_index(df_rules, iec_safe)
-    in_range    = abs(track_angle - rec_angle) <= 5
+    iec_safe     = iec_val if not math.isnan(iec_val) else 0.0
+    active_idx   = get_active_rule_index(df_rules, iec_safe)
+    in_range     = abs(track_angle - rec_angle) <= 5
+
+    # ── Natural language justification ────────────────────────────────────────
+    icon, just_title, just_body = _angle_justification(
+        hour, track_angle, rec_angle, regime, iec_safe, in_range, solar_elev
+    )
+    box_bg  = "#f0fdf4" if regime == "TRACKING_PM" else "#eff6ff" if regime == "TRACKING_AM" else "#f9fafb"
+    box_bdr = "#bbf7d0" if regime == "TRACKING_PM" else "#bfdbfe" if regime == "TRACKING_AM" else "#e5e7eb"
+    box_clr = "#15803d" if regime == "TRACKING_PM" else "#1d4ed8" if regime == "TRACKING_AM" else "#6b7280"
+    st.markdown(
+        f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:12px;'
+        f'padding:14px 18px;margin-bottom:16px;">'
+        f'<div style="font-size:15px;font-weight:700;color:{box_clr};margin-bottom:6px;">'
+        f'{icon} {just_title}</div>'
+        f'<div style="font-size:13px;color:#374151;line-height:1.7;">{just_body}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     # ── SVG panel (left) + metric cards (right) ───────────────────────────────
     col_svg, col_info = st.columns([3, 2])
@@ -103,18 +206,24 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
 
     st.markdown("<div style='margin:14px 0;'></div>", unsafe_allow_html=True)
 
-    # ── ePAR + VWC KPI cards ─────────────────────────────────────────────────
-    k1, k2, k3, k4 = st.columns(4)
+    # ── ePAR + VWC KPI cards with contextual status ───────────────────────────
     def _fmt(v: float, decimals: int) -> str:
         return f"{v:.{decimals}f}" if not math.isnan(v) else "—"
+
+    k1, k2, k3, k4 = st.columns(4)
+    epar_s1_lbl, epar_s1_clr = _epar_label(epar_s1)
+    epar_s2_lbl, epar_s2_clr = _epar_label(epar_s2)
+    vwc_s1_lbl,  vwc_s1_clr  = _vwc_label(vwc_s1)
+    vwc_s2_lbl,  vwc_s2_clr  = _vwc_label(vwc_s2)
+
     with k1:
-        st.markdown(card_html("ePAR S1", _fmt(epar_s1, 0), "µmol/m²/s", COLOR["green"]), unsafe_allow_html=True)
+        st.markdown(card_html("ePAR S1", _fmt(epar_s1, 0), epar_s1_lbl, epar_s1_clr), unsafe_allow_html=True)
     with k2:
-        st.markdown(card_html("ePAR S2", _fmt(epar_s2, 0), "µmol/m²/s", COLOR["green"]), unsafe_allow_html=True)
+        st.markdown(card_html("ePAR S2", _fmt(epar_s2, 0), epar_s2_lbl, epar_s2_clr), unsafe_allow_html=True)
     with k3:
-        st.markdown(card_html("VWC S1", _fmt(vwc_s1, 2), "m³/m³", COLOR["amber"]), unsafe_allow_html=True)
+        st.markdown(card_html("VWC S1", _fmt(vwc_s1, 2), vwc_s1_lbl, vwc_s1_clr), unsafe_allow_html=True)
     with k4:
-        st.markdown(card_html("VWC S2", _fmt(vwc_s2, 2), "m³/m³", COLOR["amber"]), unsafe_allow_html=True)
+        st.markdown(card_html("VWC S2", _fmt(vwc_s2, 2), vwc_s2_lbl, vwc_s2_clr), unsafe_allow_html=True)
 
     st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
 
@@ -178,7 +287,14 @@ def render_tab_estado(
     with col_trackers:
         st.markdown(
             '<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
-            'letter-spacing:0.06em;margin-bottom:10px;">🔩 Estado de los 10 trackers</div>',
+            'letter-spacing:0.06em;margin-bottom:6px;">🔩 Estado de los 10 trackers</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">'
+            'La varianza angular mide la estabilidad del seguimiento. '
+            'Una varianza alta (&gt;450 deg²) indica que el tracker no sigue con precisión '
+            'las consignas — posible fallo mecánico o de comunicación.</div>',
             unsafe_allow_html=True,
         )
         cols = st.columns(5)
@@ -186,16 +302,16 @@ def render_tab_estado(
             is_anomaly = tracker_id in anomalous
             diag_rows  = [r for r in df_diagnostic.index if tracker_id in r]
             variance   = float(df_diagnostic.loc[diag_rows[0], "varianza_deg2"]) if diag_rows else float("nan")
-            bg   = "#fef2f2" if is_anomaly else "#f0fdf4"
-            bdr  = "#fca5a5" if is_anomaly else "#bbf7d0"
+            status_txt, bg, bdr = _tracker_label(variance)
             clr  = COLOR["red"] if is_anomaly else COLOR["green"]
-            icon = " ⚠" if is_anomaly else ""
             with cols[i % 5]:
                 st.markdown(
                     f'<div style="background:{bg};border:1px solid {bdr};border-radius:8px;'
-                    f'padding:9px;text-align:center;margin-bottom:6px;">'
-                    f'<div style="font-size:13px;font-weight:700;color:{clr};">{tracker_id}{icon}</div>'
-                    f'<div style="font-size:11px;color:#6b7280;margin-top:3px;">{variance:.0f} deg²</div>'
+                    f'padding:10px 8px;text-align:center;margin-bottom:6px;">'
+                    f'<div style="font-size:13px;font-weight:700;color:{clr};">{tracker_id}</div>'
+                    f'<div style="font-size:10px;color:#6b7280;margin-top:2px;">{variance:.0f} deg²</div>'
+                    f'<div style="font-size:10px;font-weight:600;color:{clr};margin-top:3px;">'
+                    f'{status_txt}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
