@@ -2,10 +2,11 @@ import streamlit as st
 
 CSS_STYLES = """
 <style>
-/* Apple typography */
+/* Apple typography — base size increase */
 html, body, [class*="css"], .stApp, button, input, select, textarea {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
                  "Helvetica Neue", Arial, sans-serif !important;
+    font-size: 15px !important;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -17,7 +18,7 @@ section[data-testid="stSidebar"] { background: #fff !important; }
 .block-container {
     padding-top: 1.5rem !important;
     padding-bottom: 2rem !important;
-    max-width: 1100px !important;
+    max-width: 1200px !important;
 }
 
 /* Tabs */
@@ -29,20 +30,32 @@ section[data-testid="stSidebar"] { background: #fff !important; }
 }
 .stTabs [data-baseweb="tab"] {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-    font-size: 13px !important;
+    font-size: 14px !important;
     font-weight: 500 !important;
     color: #6b7280 !important;
-    padding: 10px 18px !important;
+    padding: 12px 20px !important;
     border-bottom: 2px solid transparent !important;
     background: transparent !important;
 }
 .stTabs [aria-selected="true"] {
     color: #16a34a !important;
     border-bottom: 2px solid #16a34a !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
 }
 
-/* Metric cards */
+/* Slider — bigger label */
+.stSlider label, .stSlider [data-testid="stWidgetLabel"] {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+.stSlider [data-testid="stThumbValue"],
+.stSlider [data-testid="stTickBarMin"],
+.stSlider [data-testid="stTickBarMax"] {
+    font-size: 13px !important;
+}
+
+/* Metric cards (st.metric) */
 [data-testid="stMetric"] {
     background: #ffffff;
     border: 1px solid #e5e7eb;
@@ -51,19 +64,19 @@ section[data-testid="stSidebar"] { background: #fff !important; }
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 [data-testid="stMetricLabel"] {
-    font-size: 11px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
     color: #6b7280 !important;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 [data-testid="stMetricValue"] {
-    font-size: 24px !important;
+    font-size: 30px !important;
     font-weight: 700 !important;
     letter-spacing: -0.02em !important;
     color: #111827 !important;
 }
-[data-testid="stMetricDelta"] { font-size: 11px !important; }
+[data-testid="stMetricDelta"] { font-size: 12px !important; }
 
 /* Dataframe / tables */
 .stDataFrame { border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; }
@@ -72,14 +85,20 @@ section[data-testid="stSidebar"] { background: #fff !important; }
 .stButton button {
     border-radius: 8px !important;
     font-weight: 600 !important;
-    font-size: 13px !important;
+    font-size: 14px !important;
 }
 
-/* Selectbox / slider labels */
-.stSelectbox label, .stSlider label, .stMultiSelect label {
-    font-size: 12px !important;
+/* Selectbox / multiselect labels */
+.stSelectbox label, .stMultiSelect label {
+    font-size: 13px !important;
     font-weight: 600 !important;
     color: #374151 !important;
+}
+
+/* Caption text */
+.stCaption, [data-testid="stCaptionContainer"] {
+    font-size: 12px !important;
+    color: #9ca3af !important;
 }
 
 /* Dividers */
@@ -111,16 +130,16 @@ def card_html(title: str, value: str, subtitle: str = "", color: str = "#16a34a"
     """Return HTML for a KPI-style card using inline styles."""
     return f"""
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;
-                padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
+                padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
                 border-top:3px solid {color};">
-      <div style="font-size:10px;font-weight:600;color:#6b7280;
-                  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">
+      <div style="font-size:13px;font-weight:600;color:#6b7280;
+                  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
         {title}
       </div>
-      <div style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:#111827;">
+      <div style="font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#111827;">
         {value}
       </div>
-      <div style="font-size:10px;color:#9ca3af;margin-top:3px;">{subtitle}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{subtitle}</div>
     </div>"""
 
 
@@ -136,24 +155,24 @@ def iec_gauge_html(iec_value: float) -> str:
 
     return f"""
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;
-                padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-align:center;">
-      <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;
-                  letter-spacing:0.06em;margin-bottom:6px;">Índice IEC</div>
-      <div style="font-size:36px;font-weight:700;letter-spacing:-0.04em;color:{status_color};">
+                padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-align:center;">
+      <div style="font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;
+                  letter-spacing:0.06em;margin-bottom:8px;">Índice IEC</div>
+      <div style="font-size:42px;font-weight:700;letter-spacing:-0.04em;color:{status_color};">
         {iec_value:.2f}
       </div>
-      <div style="font-size:10px;color:#6b7280;margin-bottom:8px;">Equilibrio Energía–Cultivo</div>
-      <div style="background:#f3f4f6;border-radius:6px;height:8px;overflow:visible;position:relative;margin:4px 0;">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">Equilibrio Energía–Cultivo</div>
+      <div style="background:#f3f4f6;border-radius:6px;height:10px;overflow:visible;position:relative;margin:4px 0;">
         <div style="height:100%;border-radius:6px;width:{pct:.0f}%;
                     background:linear-gradient(90deg,#dc2626 0%,#f59e0b 40%,#22c55e 80%);"></div>
-        <div style="position:absolute;top:-4px;left:calc({pct:.0f}% - 6px);width:12px;height:12px;
+        <div style="position:absolute;top:-4px;left:calc({pct:.0f}% - 7px);width:14px;height:14px;
                     background:#fff;border:2px solid {status_color};border-radius:50%;
                     box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:8px;color:#9ca3af;margin-top:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:8px;">
         <span>0 Crítico</span><span>0.5</span><span>1.0 Óptimo</span>
       </div>
-      <div style="font-size:11px;font-weight:600;color:{status_color};margin-top:8px;">
+      <div style="font-size:13px;font-weight:700;color:{status_color};margin-top:10px;">
         ● {status}
       </div>
     </div>"""
