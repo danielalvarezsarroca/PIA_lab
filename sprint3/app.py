@@ -31,7 +31,7 @@ df_rules      = load_rules()
 df_diagnostic = load_tracker_diagnostic()
 
 # ── Header ────────────────────────────────────────────────────────────────────
-col_logo, col_title, col_badge = st.columns([0.06, 0.8, 0.14])
+col_logo, col_title, col_badge = st.columns([0.07, 0.68, 0.25])
 with col_logo:
     st.markdown(
         '<div style="background:linear-gradient(135deg,#16a34a,#15803d);'
@@ -42,10 +42,11 @@ with col_logo:
     )
 with col_title:
     st.markdown(
-        '<div style="padding-top:2px;">'
-        '<span style="font-size:20px;font-weight:700;color:#111827;letter-spacing:-0.02em;">'
-        'Agrovoltaic Decision Dashboard</span><br>'
-        '<span style="font-size:13px;color:#6b7280;">Sostenibilidad y Ciencia · Análisis Operativo</span>'
+        '<div style="padding-top:1px;min-width:0;line-height:1.25;">'
+        '<div style="font-size:22px;font-weight:700;color:#111827;letter-spacing:0;'
+        'white-space:normal;overflow:visible;">Agrovoltaic Decision Dashboard</div>'
+        '<div style="font-size:13px;color:#6b7280;white-space:normal;overflow:visible;">'
+        'Sostenibilidad y Ciencia · Análisis Operativo</div>'
         '</div>',
         unsafe_allow_html=True,
     )

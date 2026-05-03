@@ -1,0 +1,10 @@
+escenario,peso_energia,peso_cultivo,tracking_regime,n,iec_original_mediana,iec_ponderado_mediana,energy_mediana,crop_mediana,angulo_mediano
+Equilibrado,0.5,0.5,HORIZONTAL,169,0.184,0.184,0.0,0.264,-0.035
+Equilibrado,0.5,0.5,TRACKING_AM,84,0.429,0.429,0.442,0.485,-31.25
+Equilibrado,0.5,0.5,TRACKING_PM,84,0.741,0.741,0.908,0.626,31.55
+Priorizar energia,0.7,0.3,HORIZONTAL,169,0.184,0.142,0.0,0.264,-0.035
+Priorizar energia,0.7,0.3,TRACKING_AM,84,0.429,0.419,0.442,0.485,-31.25
+Priorizar energia,0.7,0.3,TRACKING_PM,84,0.741,0.811,0.908,0.626,31.55
+Priorizar cultivo,0.3,0.7,HORIZONTAL,169,0.184,0.208,0.0,0.264,-0.035
+Priorizar cultivo,0.3,0.7,TRACKING_AM,84,0.429,0.444,0.442,0.485,-31.25
+Priorizar cultivo,0.3,0.7,TRACKING_PM,84,0.741,0.695,0.908,0.626,31.55

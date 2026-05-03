@@ -6,7 +6,16 @@ import streamlit.components.v1 as components
 
 from alert_logic import build_alert_list, get_anomalous_trackers
 from rule_engine import format_regime_label, get_active_rule_index
-from solar_logic import estimate_solar_elevation, get_recommended_angle
+from solar_logic import (
+    WEIGHT_PRESETS,
+    estimate_solar_elevation,
+    get_iec_angle_scenario,
+    get_iec_bounds,
+    get_recommended_angle,
+    get_scenario_confidence,
+    get_weight_preset,
+    weighted_iec,
+)
 from svg_generator import generate_solar_svg
 from styles import COLOR, card_html, iec_gauge_html
 
@@ -14,7 +23,21 @@ _ALL_TRACKERS = ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09", 
 _ANOMALY_THRESHOLD = 450.0
 
 
-def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
+def _format_hour(hour: float) -> str:
+    total_minutes = int(round(hour * 60))
+    return f"{total_minutes // 60:02d}:{total_minutes % 60:02d}"
+
+
+def _hour_options() -> list[str]:
+    return [f"{m // 60:02d}:{m % 60:02d}" for m in range(6 * 60, 21 * 60 + 1, 5)]
+
+
+def _parse_hour_label(label: str) -> float:
+    hh, mm = label.split(":")
+    return int(hh) + int(mm) / 60.0
+
+
+def _get_hour_record(df_modelo: pd.DataFrame, hour: float) -> pd.Series:
     """Return the row with the highest IEC for the given hour of day.
     Falls back to nearest available hour if no data for requested hour."""
     rows = df_modelo[df_modelo["hour_of_day"] == hour].dropna(subset=["IEC", "track_mean"])
@@ -28,7 +51,7 @@ def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
 
 
 def _angle_justification(
-    hour: int,
+    hour: float,
     track_angle: float,
     rec_angle: float,
     regime: str,
@@ -39,12 +62,13 @@ def _angle_justification(
     """Return (icon, title, body) for the natural-language explanation box."""
     direction = "oeste" if track_angle > 0 else "este"
     angle_abs = abs(track_angle)
+    hour_label = _format_hour(hour)
 
     if regime == "TRACKING_PM":
         icon  = "☀️"
         title = "Tracking de tarde — máximo rendimiento agrovoltaico"
         body  = (
-            f"A las {hour:02d}:00h el sol está en su punto más alto (elevación {solar_elev:.0f}°). "
+            f"A las {hour_label}h el sol está en su punto más alto (elevación {solar_elev:.0f}°). "
             f"Los paneles se inclinan <b>{angle_abs:.0f}° hacia el {direction}</b> siguiendo la regla de "
             f"Tracking PM, el régimen con mayor IEC registrado históricamente. "
             f"El ángulo {'coincide con' if in_range else 'se desvía del'} óptimo recomendado ({rec_angle:.0f}°). "
@@ -54,7 +78,7 @@ def _angle_justification(
         icon  = "🌅"
         title = "Tracking de mañana — seguimiento del sol naciente"
         body  = (
-            f"A las {hour:02d}:00h el sol sale por el este (elevación {solar_elev:.0f}°). "
+            f"A las {hour_label}h el sol sale por el este (elevación {solar_elev:.0f}°). "
             f"Los paneles apuntan <b>{angle_abs:.0f}° hacia el {direction}</b> para aprovechar "
             f"la irradiancia matinal. La regla de Tracking AM maximiza la producción en las primeras "
             f"horas del día, aunque el IEC ({iec_safe:.2f}) es menor que en la tarde."
@@ -70,7 +94,7 @@ def _angle_justification(
         icon  = "🌙"
         title = "Posición horizontal — régimen de reposo"
         body  = (
-            f"A las {hour:02d}:00h {reason}. "
+            f"A las {hour_label}h {reason}. "
             f"Ángulo ≈ {track_angle:.1f}° (prácticamente plano). "
             f"En este régimen el IEC es bajo ({iec_safe:.2f}) al no haber seguimiento activo del sol."
         )
@@ -118,30 +142,63 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     # ── Slider ────────────────────────────────────────────────────────────────
     st.markdown(
         '<div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:8px;">'
-        '⏱ Hora del día — mueve para explorar el estado del sistema</div>',
+        'Simulador operativo: hora, prioridad e IEC ponderado</div>',
         unsafe_allow_html=True,
     )
-    hour = st.slider(
-        "hora",
-        min_value=6, max_value=21, value=13, step=1,
-        format="%d:00", label_visibility="collapsed",
+    priority_mode = st.radio(
+        "Prioridad operativa",
+        options=list(WEIGHT_PRESETS.keys()),
+        horizontal=True,
+        help="Cambia los pesos del indice: energia vs cultivo. El IEC original del Sprint 2 es el modo equilibrado.",
     )
+    energy_weight, crop_weight = get_weight_preset(priority_mode)
+    iec_min, iec_max = get_iec_bounds(df_modelo, energy_weight, crop_weight)
+    base_row = _get_hour_record(df_modelo, 13)
+    base_df = pd.DataFrame([base_row])
+    default_iec = float(weighted_iec(base_df, energy_weight, crop_weight).iloc[0])
+    default_iec = max(iec_min, min(iec_max, default_iec))
+
+    col_hour_ctrl, col_iec_ctrl = st.columns([1, 1])
+    with col_hour_ctrl:
+        hour_label = st.select_slider(
+            "Hora del dia",
+            options=_hour_options(),
+            value="13:00",
+        )
+        hour = _parse_hour_label(hour_label)
+    with col_iec_ctrl:
+        target_iec = st.slider(
+            "Escenario IEC",
+            min_value=round(iec_min, 2),
+            max_value=round(iec_max, 2),
+            value=round(default_iec, 2),
+            step=0.01,
+            help="Simula condiciones energia-cultivo. No es una variable directamente controlable: busca registros historicos con IEC similar.",
+        )
 
     # ── Compute all values for selected hour ──────────────────────────────────
-    row          = _get_hour_record(df_modelo, hour)
+    row          = get_iec_angle_scenario(hour, target_iec, df_modelo, energy_weight, crop_weight)
+    hour_row     = _get_hour_record(df_modelo, hour)
     track_angle  = float(row.get("track_mean", 0.0))
-    iec_val      = float(row.get("IEC", float("nan")))
+    row_df       = pd.DataFrame([row])
+    iec_val      = float(weighted_iec(row_df, energy_weight, crop_weight).iloc[0])
+    iec_original = float(row.get("IEC", float("nan")))
+    energy_score = float(row.get("energy_score", float("nan")))
+    crop_score   = float(row.get("crop_score", float("nan")))
     regime       = str(row.get("tracking_regime", "—"))
-    epar_s1      = float(row.get("ePAR_S1_mean", float("nan")))
-    epar_s2      = float(row.get("ePAR_S2_mean", float("nan")))
-    vwc_s1       = float(row.get("VWC_S1_mean", float("nan")))
-    vwc_s2       = float(row.get("VWC_S2_mean", float("nan")))
-    solar_elev   = float(row.get("solar_elevation_deg", estimate_solar_elevation(float(hour))))
-    rec_angle    = get_recommended_angle(hour, df_modelo)
+    epar_s1      = float(hour_row.get("ePAR_S1_mean", float("nan")))
+    epar_s2      = float(hour_row.get("ePAR_S2_mean", float("nan")))
+    vwc_s1       = float(hour_row.get("VWC_S1_mean", float("nan")))
+    vwc_s2       = float(hour_row.get("VWC_S2_mean", float("nan")))
+    solar_elev   = float(hour_row.get("solar_elevation_deg", estimate_solar_elevation(float(hour))))
+    rec_angle    = get_recommended_angle(hour, df_modelo, energy_weight, crop_weight)
     regime_label = format_regime_label(regime)
     iec_safe     = iec_val if not math.isnan(iec_val) else 0.0
-    active_idx   = get_active_rule_index(df_rules, iec_safe)
+    active_idx   = get_active_rule_index(df_rules, float(target_iec))
     in_range     = abs(track_angle - rec_angle) <= 5
+    confidence_label, confidence_n = get_scenario_confidence(
+        df_modelo, hour, float(target_iec), energy_weight, crop_weight
+    )
 
     # ── Natural language justification ────────────────────────────────────────
     icon, just_title, just_body = _angle_justification(
@@ -156,6 +213,11 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
         f'<div style="font-size:15px;font-weight:700;color:{box_clr};margin-bottom:6px;">'
         f'{icon} {just_title}</div>'
         f'<div style="font-size:13px;color:#374151;line-height:1.7;">{just_body}</div>'
+        f'<div style="font-size:12px;color:#6b7280;margin-top:8px;">'
+        f'Modo: <b>{priority_mode}</b> '
+        f'(energia {energy_weight:.0%} / cultivo {crop_weight:.0%}) · '
+        f'confianza historica: <b>{confidence_label}</b> ({confidence_n} observaciones similares). '
+        f'Recomendacion orientativa basada en historico, no control automatico validado.</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -170,11 +232,13 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
             rec_angle=rec_angle,
             solar_elevation=solar_elev,
             irradiance=400.0,
+            target_iec=float(target_iec),
+            matched_iec=iec_safe,
         )
         # st.markdown strips SVG defs/gradients/filters — use components.html (iframe, no sanitizer)
         components.html(
             f"<html><body style='margin:0;padding:0;background:transparent;'>{svg_html}</body></html>",
-            height=252,
+            height=392,
             scrolling=False,
         )
         status_txt = "✓ En rango óptimo" if in_range else "⚠ Fuera del rango recomendado"
@@ -189,6 +253,13 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
         st.markdown(iec_gauge_html(iec_safe), unsafe_allow_html=True)
         st.markdown("<div style='margin:10px 0;'></div>", unsafe_allow_html=True)
         for lbl, val, clr in [
+            ("Modo",                priority_mode,            COLOR["purple"]),
+            ("IEC escenario",       f"{target_iec:.2f}",      COLOR["green"]),
+            ("IEC ponderado usado", f"{iec_safe:.2f}",        COLOR["amber"]),
+            ("IEC original",        f"{iec_original:.2f}",    COLOR["muted"]),
+            ("Energy score",        f"{energy_score:.2f}",    COLOR["blue"]),
+            ("Crop score",          f"{crop_score:.2f}",      COLOR["green"]),
+            ("Confianza",           f"{confidence_label} ({confidence_n})", COLOR["orange"]),
             ("Ángulo actual",      f"{track_angle:.1f}°", COLOR["blue"]),
             ("Ángulo recomendado", f"{rec_angle:.1f}°",   COLOR["green"]),
             ("Régimen activo",     regime_label,           COLOR["purple"]),
@@ -228,41 +299,46 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
 
     # ── Rules table ───────────────────────────────────────────────────────────
-    st.markdown(
-        '<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:10px;">🔄 Reglas de rotación candidatas</div>',
-        unsafe_allow_html=True,
-    )
-    if df_rules.empty:
-        st.info("No se encontraron reglas.")
-    else:
-        for i, rule_row in df_rules.iterrows():
-            is_active = (i == active_idx)
-            bg    = "#f0fdf4" if is_active else "#ffffff"
-            lbdr  = "4px solid #22c55e" if is_active else "1px solid #e5e7eb"
-            bdr   = "#bbf7d0" if is_active else "#e5e7eb"
-            tipo_bg  = "#dcfce7" if "alta" in str(rule_row.get("tipo", "")) else "#eff6ff"
-            tipo_clr = "#15803d" if "alta" in str(rule_row.get("tipo", "")) else "#1d4ed8"
-            active_badge = (
-                '<span style="font-size:11px;font-weight:700;color:#16a34a;">● ACTIVA</span>'
-                if is_active else ""
-            )
-            st.markdown(
-                f'<div style="background:{bg};border:1px solid {bdr};border-radius:10px;'
-                f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'margin-bottom:6px;">'
-                f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:11px;font-weight:700;'
-                f'padding:3px 10px;border-radius:8px;">{rule_row.get("tipo","—")}</span>'
-                f'<span style="font-size:12px;color:#6b7280;">IEC mediana: '
-                f'<b style="color:#16a34a;">{float(rule_row.get("iec_mediana",0)):.2f}</b>'
-                f' · n={int(rule_row.get("soporte_obs",0))}</span>'
-                f'{active_badge}'
-                f'</div>'
-                f'<div style="font-size:12px;color:#374151;line-height:1.6;">{rule_row.get("regla","—")}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+    with st.expander("Ver explicacion del modelo y reglas candidatas", expanded=False):
+        st.markdown(
+            '<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
+            'letter-spacing:0.06em;margin-bottom:10px;">🔄 Reglas de rotación candidatas</div>',
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "Estas reglas salen del Sprint 2 y son candidatas interpretables. "
+            "La recomendacion visual usa el modo de prioridad seleccionado arriba."
+        )
+        if df_rules.empty:
+            st.info("No se encontraron reglas.")
+        else:
+            for i, rule_row in df_rules.iterrows():
+                is_active = (i == active_idx)
+                bg    = "#f0fdf4" if is_active else "#ffffff"
+                lbdr  = "4px solid #22c55e" if is_active else "1px solid #e5e7eb"
+                bdr   = "#bbf7d0" if is_active else "#e5e7eb"
+                tipo_bg  = "#dcfce7" if "alta" in str(rule_row.get("tipo", "")) else "#eff6ff"
+                tipo_clr = "#15803d" if "alta" in str(rule_row.get("tipo", "")) else "#1d4ed8"
+                active_badge = (
+                    '<span style="font-size:11px;font-weight:700;color:#16a34a;">● ACTIVA</span>'
+                    if is_active else ""
+                )
+                st.markdown(
+                    f'<div style="background:{bg};border:1px solid {bdr};border-radius:10px;'
+                    f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;">'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                    f'margin-bottom:6px;">'
+                    f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:11px;font-weight:700;'
+                    f'padding:3px 10px;border-radius:8px;">{rule_row.get("tipo","—")}</span>'
+                    f'<span style="font-size:12px;color:#6b7280;">IEC mediana: '
+                    f'<b style="color:#16a34a;">{float(rule_row.get("iec_mediana",0)):.2f}</b>'
+                    f' · n={int(rule_row.get("soporte_obs",0))}</span>'
+                    f'{active_badge}'
+                    f'</div>'
+                    f'<div style="font-size:12px;color:#374151;line-height:1.6;">{rule_row.get("regla","—")}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
     st.caption(
         "Azul sólido = ángulo actual del registro · verde discontinuo = ángulo óptimo histórico"
