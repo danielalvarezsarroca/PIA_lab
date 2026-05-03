@@ -88,17 +88,17 @@ def get_iec_angle_scenario(
         raise ValueError("No valid records with IEC and track_mean in dataset")
     valid["IEC_weighted"] = weighted_iec(valid, energy_weight, crop_weight)
 
-    iec_min = float(valid["IEC_weighted"].min())
-    iec_max = float(valid["IEC_weighted"].max())
+    available = valid["hour_of_day"].unique()
+    nearest = available[(available - hour).__abs__().argmin()]
+    hour_valid = valid[valid["hour_of_day"] == nearest].copy()
+
+    iec_min = float(hour_valid["IEC_weighted"].min())
+    iec_max = float(hour_valid["IEC_weighted"].max())
     iec_range = max(iec_max - iec_min, 1e-9)
-    hour_range = 24.0
     clipped_iec = max(iec_min, min(iec_max, float(target_iec)))
 
-    score = (
-        ((valid["IEC_weighted"] - clipped_iec).abs() / iec_range)
-        + 0.18 * ((valid["hour_of_day"] - hour).abs() / hour_range)
-    )
-    return valid.loc[score.idxmin()]
+    score = (hour_valid["IEC_weighted"] - clipped_iec).abs() / iec_range
+    return hour_valid.loc[score.idxmin()]
 
 
 def get_iec_bounds(

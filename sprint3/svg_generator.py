@@ -14,6 +14,44 @@ def _format_hour(hour: float) -> str:
     return f"{total_minutes // 60:02d}:{total_minutes % 60:02d}"
 
 
+def _sky_palette(hour: float) -> dict[str, str | float]:
+    if hour < 7.25:
+        return {
+            "top": "#1e3a8a",
+            "mid": "#fb923c",
+            "bottom": "#fef3c7",
+            "ground_top": "#86efac",
+            "ground_bottom": "#3f6212",
+            "star_opacity": 0.35,
+        }
+    if hour < 17.5:
+        return {
+            "top": "#dbeafe",
+            "mid": "#ecfeff",
+            "bottom": "#f8fafc",
+            "ground_top": "#bbf7d0",
+            "ground_bottom": "#65a30d",
+            "star_opacity": 0.0,
+        }
+    if hour < 19.5:
+        return {
+            "top": "#312e81",
+            "mid": "#f97316",
+            "bottom": "#fde68a",
+            "ground_top": "#84cc16",
+            "ground_bottom": "#365314",
+            "star_opacity": 0.18,
+        }
+    return {
+        "top": "#020617",
+        "mid": "#1e1b4b",
+        "bottom": "#334155",
+        "ground_top": "#365314",
+        "ground_bottom": "#1a2e05",
+        "star_opacity": 0.72,
+    }
+
+
 def _sun_rays(cx: float, cy: float, r: float) -> str:
     import math
 
@@ -105,6 +143,7 @@ def generate_solar_svg(
     target_label = "--" if target_iec is None else f"{target_iec:.2f}"
     matched_label = "--" if matched_iec is None else f"{matched_iec:.2f}"
     hour_label = _format_hour(hour)
+    sky = _sky_palette(hour)
 
     poles = "\n".join(
         f'<line x1="{px}" y1="292" x2="{px}" y2="{py + 2}" stroke="#64748b" '
@@ -119,13 +158,13 @@ def generate_solar_svg(
   style="width:100%;height:auto;border-radius:12px;display:block;">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#dbeafe"/>
-      <stop offset="58%" stop-color="#ecfeff"/>
-      <stop offset="100%" stop-color="#f8fafc"/>
+      <stop offset="0%" stop-color="{sky['top']}"/>
+      <stop offset="58%" stop-color="{sky['mid']}"/>
+      <stop offset="100%" stop-color="{sky['bottom']}"/>
     </linearGradient>
     <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#bbf7d0"/>
-      <stop offset="100%" stop-color="#65a30d"/>
+      <stop offset="0%" stop-color="{sky['ground_top']}"/>
+      <stop offset="100%" stop-color="{sky['ground_bottom']}"/>
     </linearGradient>
     <linearGradient id="panelFill" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#60a5fa"/>
@@ -156,6 +195,13 @@ def generate_solar_svg(
   </defs>
 
   <rect x="0" y="0" width="{_W}" height="306" fill="url(#sky)" rx="12"/>
+  <g opacity="{sky['star_opacity']}">
+    <circle cx="86" cy="44" r="1.8" fill="#f8fafc"/>
+    <circle cx="166" cy="88" r="1.4" fill="#f8fafc"/>
+    <circle cx="618" cy="58" r="1.6" fill="#f8fafc"/>
+    <circle cx="682" cy="116" r="1.2" fill="#f8fafc"/>
+    <circle cx="474" cy="38" r="1.3" fill="#f8fafc"/>
+  </g>
   <path d="M 50 232 Q 380 28 710 232" stroke="#fdba74" stroke-width="2"
     fill="none" stroke-dasharray="8,8" opacity="0.72"/>
 
