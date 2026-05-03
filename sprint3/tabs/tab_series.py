@@ -3,10 +3,10 @@ import plotly.express as px
 import streamlit as st
 
 _THRESHOLDS = {
-    "ePAR_S1d19":  ("ePAR crítico S1", 200,  "#dc2626"),
-    "ePAR_S2d36":  ("ePAR crítico S2", 200,  "#dc2626"),
-    "VWC_S1d13":   ("VWC crítico S1",  0.20, "#f59e0b"),
-    "VWC_S2d32":   ("VWC crítico S2",  0.20, "#f59e0b"),
+    "ePAR_S1d19":  ("ePAR crítico S1", 200,  "#c83737"),
+    "ePAR_S2d36":  ("ePAR crítico S2", 200,  "#c83737"),
+    "VWC_S1d13":   ("VWC crítico S1",  0.20, "#d88a16"),
+    "VWC_S2d32":   ("VWC crítico S2",  0.20, "#d88a16"),
 }
 
 _VARIABLE_OPTIONS = {
@@ -26,10 +26,10 @@ _VARIABLE_OPTIONS = {
 }
 
 _COLOR_MAP = {
-    "ePAR":  "#16a34a",
-    "VWC":   "#d97706",
-    "GPOA":  "#1d4ed8",
-    "track": "#0891b2",
+    "ePAR":  "#12805c",
+    "VWC":   "#b66a00",
+    "GPOA":  "#2563a8",
+    "track": "#0e7490",
 }
 
 
@@ -37,13 +37,13 @@ def _series_color(col: str) -> str:
     for key, color in _COLOR_MAP.items():
         if key in col:
             return color
-    return "#6b7280"
+    return "#64706d"
 
 
 def render_tab_series(df_integrado: pd.DataFrame) -> None:
     st.markdown(
-        '<div style="font-size:11px;font-weight:700;color:#111827;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:12px;">📈 Series temporales históricas</div>',
+        '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
+        'letter-spacing:0.06em;margin-bottom:12px;">Series temporales históricas</div>',
         unsafe_allow_html=True,
     )
 
@@ -90,16 +90,16 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
     fig.update_traces(line_width=1.8, opacity=0.9)
     fig.update_layout(
         font_family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial",
-        font_color="#374151",
+        font_color="#101820",
         paper_bgcolor="#ffffff",
-        plot_bgcolor="#f9fafb",
-        margin=dict(l=0, r=0, t=10, b=0),
+        plot_bgcolor="#f8faf8",
+        margin=dict(l=8, r=8, t=14, b=4),
         legend=dict(
             orientation="h", yanchor="bottom", y=1.02,
             xanchor="left", x=0, font_size=11, bgcolor="rgba(0,0,0,0)",
         ),
-        xaxis=dict(showgrid=True, gridcolor="#e5e7eb", title=""),
-        yaxis=dict(showgrid=True, gridcolor="#e5e7eb", title="Valor"),
+        xaxis=dict(showgrid=True, gridcolor="#dfe7e2", title="", zeroline=False),
+        yaxis=dict(showgrid=True, gridcolor="#dfe7e2", title="Valor", zeroline=False),
         height=380,
     )
 

@@ -8,8 +8,8 @@ from styles import COLOR
 
 def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) -> None:
     st.markdown(
-        '<div style="font-size:11px;font-weight:700;color:#111827;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:12px;">🔄 Política de rotación</div>',
+        '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
+        'letter-spacing:0.06em;margin-bottom:12px;">Política de rotación</div>',
         unsafe_allow_html=True,
     )
 
@@ -31,20 +31,20 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
             active_iec_med   = float(active_row["iec_mediana"])
 
         st.markdown(
-            f'<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;'
-            f'padding:16px;">'
-            f'<div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;'
+            f'<div style="background:rgba(255,255,255,0.78);border:1px solid rgba(60,60,67,0.12);border-radius:18px;'
+            f'padding:16px;box-shadow:0 12px 30px rgba(0,0,0,0.055);">'
+            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
             f'letter-spacing:0.06em;margin-bottom:6px;">Régimen activo</div>'
-            f'<div style="font-size:16px;font-weight:700;color:#15803d;margin-bottom:8px;">'
+            f'<div style="font-size:17px;font-weight:800;color:{COLOR["green"]};margin-bottom:10px;">'
             f'{regime_label}</div>'
-            f'<div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;'
+            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
             f'letter-spacing:0.06em;margin-bottom:4px;">IEC actual</div>'
-            f'<div style="font-size:22px;font-weight:700;color:#16a34a;margin-bottom:8px;">'
+            f'<div style="font-size:30px;font-weight:820;color:{COLOR["green"]};margin-bottom:10px;line-height:1;">'
             f'{current_iec:.2f}</div>'
-            f'<div style="font-size:9px;font-weight:600;color:#6b7280;text-transform:uppercase;'
+            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
             f'letter-spacing:0.06em;margin-bottom:4px;">Regla recomendada</div>'
-            f'<div style="font-size:10px;color:#374151;line-height:1.5;">{active_rule_text}</div>'
-            f'<div style="font-size:9px;color:#6b7280;margin-top:6px;">'
+            f'<div style="font-size:12px;color:#35413d;line-height:1.55;">{active_rule_text}</div>'
+            f'<div style="font-size:11px;color:#64706d;margin-top:8px;">'
             f'IEC mediana regla: {active_iec_med:.2f}</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -53,7 +53,7 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
     # ── Rules table ───────────────────────────────────────────────────────────
     with col_table:
         st.markdown(
-            '<div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:8px;">'
+            '<div style="font-size:12px;font-weight:760;color:#64706d;margin-bottom:8px;">'
             'Reglas candidatas del Sprint 2</div>',
             unsafe_allow_html=True,
         )
@@ -63,27 +63,27 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
 
         for i, row in df_rules.iterrows():
             is_active = (i == active_idx)
-            bg  = "#f0fdf4" if is_active else "#ffffff"
-            bdr = "#16a34a" if is_active else "#e5e7eb"
-            lbdr = "3px solid #22c55e" if is_active else "1px solid #e5e7eb"
-            tipo_bg  = "#dcfce7" if "alta" in str(row.get("tipo", "")) else "#eff6ff"
-            tipo_clr = "#15803d" if "alta" in str(row.get("tipo", "")) else "#1d4ed8"
-            active_badge = '<span style="font-size:9px;font-weight:700;color:#16a34a;">● ACTIVA</span>' if is_active else ""
+            bg  = "#e7f5ee" if is_active else "#ffffff"
+            bdr = "#b8dccb" if is_active else COLOR["border"]
+            lbdr = f"3px solid {COLOR['green']}" if is_active else f"1px solid {COLOR['border']}"
+            tipo_bg  = "#dff1e8" if "alta" in str(row.get("tipo", "")) else "#edf5fb"
+            tipo_clr = COLOR["green"] if "alta" in str(row.get("tipo", "")) else COLOR["blue"]
+            active_badge = f'<span style="font-size:10px;font-weight:800;color:{COLOR["green"]};">ACTIVA</span>' if is_active else ""
 
             st.markdown(
-                f'<div style="background:{bg};border:{bdr};border-radius:10px;'
+                f'<div style="background:{bg};border:1px solid {bdr};border-radius:16px;'
                 f'border-left:{lbdr};padding:12px 14px;margin-bottom:8px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
                 f'margin-bottom:6px;">'
                 f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:9px;'
-                f'font-weight:700;padding:2px 8px;border-radius:8px;">{row.get("tipo","—")}</span>'
-                f'<span style="font-size:10px;color:#6b7280;">IEC mediana: '
-                f'<b style="color:#16a34a;">{float(row.get("iec_mediana",0)):.2f}</b> · '
+                f'font-weight:700;padding:4px 10px;border-radius:999px;">{row.get("tipo","—")}</span>'
+                f'<span style="font-size:11px;color:#64706d;">IEC mediana: '
+                f'<b style="color:{COLOR["green"]};">{float(row.get("iec_mediana",0)):.2f}</b> · '
                 f'n={int(row.get("soporte_obs",0))}</span>'
                 f'{active_badge}'
                 f'</div>'
-                f'<div style="font-size:10px;color:#374151;line-height:1.5;">{row.get("regla","—")}</div>'
-                f'<div style="font-size:9px;color:#6b7280;margin-top:4px;">{row.get("comentario","")}</div>'
+                f'<div style="font-size:12px;color:#35413d;line-height:1.5;">{row.get("regla","—")}</div>'
+                f'<div style="font-size:11px;color:#64706d;margin-top:5px;">{row.get("comentario","")}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )

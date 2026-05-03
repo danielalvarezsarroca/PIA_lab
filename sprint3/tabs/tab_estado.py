@@ -1,4 +1,5 @@
 import math
+import time
 
 import pandas as pd
 import streamlit as st
@@ -12,6 +13,9 @@ from styles import COLOR, card_html, iec_gauge_html
 
 _ALL_TRACKERS = ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09", "M10"]
 _ANOMALY_THRESHOLD = 450.0
+_HOUR_MIN = 6
+_HOUR_MAX = 21
+_DEFAULT_HOUR = 13
 
 
 def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
@@ -25,6 +29,31 @@ def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
         return df_modelo.iloc[-1]
     idx = (valid["hour_of_day"] - hour).abs().idxmin()
     return valid.loc[idx]
+
+
+def _get_query_hour() -> int:
+    """Read hour from URL query params and clamp it to the dashboard range."""
+    raw_hour = st.query_params.get("hour", str(_DEFAULT_HOUR))
+    try:
+        hour = int(raw_hour)
+    except (TypeError, ValueError):
+        hour = _DEFAULT_HOUR
+    return max(_HOUR_MIN, min(_HOUR_MAX, hour))
+
+
+def _next_hour(hour: int) -> int:
+    """Return the next hour in the dashboard day cycle."""
+    return _HOUR_MIN if hour >= _HOUR_MAX else hour + 1
+
+
+def _advance_hour_after_delay() -> None:
+    """Block briefly, then advance the dashboard hour and rerun the app."""
+    if not st.session_state.get("hour_autoplay", False):
+        return
+    time.sleep(3)
+    current_hour = int(st.session_state.get("hour_slider", _DEFAULT_HOUR))
+    st.session_state["hour_slider"] = _next_hour(current_hour)
+    st.rerun()
 
 
 def _angle_justification(
@@ -41,7 +70,7 @@ def _angle_justification(
     angle_abs = abs(track_angle)
 
     if regime == "TRACKING_PM":
-        icon  = "☀️"
+        icon  = "☀"
         title = "Tracking de tarde — máximo rendimiento agrovoltaico"
         body  = (
             f"A las {hour:02d}:00h el sol está en su punto más alto (elevación {solar_elev:.0f}°). "
@@ -51,7 +80,7 @@ def _angle_justification(
             f"IEC actual: <b>{iec_safe:.2f}</b> — zona {'óptima' if iec_safe >= 0.6 else 'media' if iec_safe >= 0.35 else 'crítica'}."
         )
     elif regime == "TRACKING_AM":
-        icon  = "🌅"
+        icon  = "↗"
         title = "Tracking de mañana — seguimiento del sol naciente"
         body  = (
             f"A las {hour:02d}:00h el sol sale por el este (elevación {solar_elev:.0f}°). "
@@ -67,7 +96,7 @@ def _angle_justification(
             )
         else:
             reason = "el sistema mantiene posición horizontal según la política activa"
-        icon  = "🌙"
+        icon  = "−"
         title = "Posición horizontal — régimen de reposo"
         body  = (
             f"A las {hour:02d}:00h {reason}. "
@@ -75,7 +104,7 @@ def _angle_justification(
             f"En este régimen el IEC es bajo ({iec_safe:.2f}) al no haber seguimiento activo del sol."
         )
     else:
-        icon  = "🔧"
+        icon  = "◇"
         title = f"Régimen: {format_regime_label(regime)}"
         body  = f"Ángulo actual {track_angle:.1f}° · elevación solar {solar_elev:.0f}° · IEC {iec_safe:.2f}."
 
@@ -90,7 +119,7 @@ def _epar_label(v: float) -> tuple[str, str]:
         return "Alta irradiancia PAR — condiciones óptimas", COLOR["green"]
     if v >= 200:
         return "Irradiancia PAR normal — cultivo activo", COLOR["green"]
-    return "⚠ Bajo umbral crítico (200 µmol/m²/s)", COLOR["red"]
+    return "Bajo umbral crítico (200 µmol/m²/s)", COLOR["red"]
 
 
 def _vwc_label(v: float) -> tuple[str, str]:
@@ -101,7 +130,7 @@ def _vwc_label(v: float) -> tuple[str, str]:
         return "Suelo bien hidratado", COLOR["green"]
     if v >= 0.20:
         return "Humedad adecuada", COLOR["amber"]
-    return "⚠ Humedad crítica — riego necesario", COLOR["red"]
+    return "Humedad crítica — riego necesario", COLOR["red"]
 
 
 def _tracker_label(variance: float) -> tuple[str, str, str]:
@@ -109,22 +138,51 @@ def _tracker_label(variance: float) -> tuple[str, str, str]:
     if math.isnan(variance):
         return "Sin datos", "#f9fafb", "#e5e7eb"
     if variance > _ANOMALY_THRESHOLD:
-        return "⚠ Alta varianza", "#fef2f2", "#fca5a5"
-    return "✓ Normal", "#f0fdf4", "#bbf7d0"
+        return "Alta varianza", "#fff0ef", "#ffd1cf"
+    return "Normal", "#eaf6ef", "#c9ead8"
 
 
 @st.fragment
 def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame) -> None:
-    # ── Slider ────────────────────────────────────────────────────────────────
-    st.markdown(
-        '<div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:8px;">'
-        '⏱ Hora del día — mueve para explorar el estado del sistema</div>',
-        unsafe_allow_html=True,
-    )
+    # ── Hour controls ─────────────────────────────────────────────────────────
+    query_hour = _get_query_hour()
+    query_autoplay = st.query_params.get("autoplay", "1") != "0"
+
+    if "hour_slider" not in st.session_state:
+        st.session_state["hour_slider"] = query_hour
+    if "hour_autoplay" not in st.session_state:
+        st.session_state["hour_autoplay"] = query_autoplay
+    col_title, col_toggle = st.columns([0.72, 0.28])
+    with col_title:
+        st.markdown(
+            '<div style="font-size:15px;font-weight:800;color:#1d1d1f;margin-bottom:4px;">'
+            'Hora del día</div>'
+            '<div style="font-size:12px;color:#6e6e73;margin-bottom:8px;">'
+            'Avance automático cada 3 segundos, con selección manual disponible.</div>',
+            unsafe_allow_html=True,
+        )
+    with col_toggle:
+        autoplay = st.toggle(
+            "Reproducción automática",
+            key="hour_autoplay",
+        )
+
     hour = st.slider(
-        "hora",
-        min_value=6, max_value=21, value=13, step=1,
-        format="%d:00", label_visibility="collapsed",
+        "Seleccionar hora",
+        min_value=_HOUR_MIN,
+        max_value=_HOUR_MAX,
+        step=1,
+        format="%d:00",
+        key="hour_slider",
+        label_visibility="collapsed",
+    )
+
+    st.markdown(
+        f'<div style="display:flex;justify-content:space-between;align-items:center;'
+        f'margin:-4px 0 18px;color:#8e8e93;font-size:12px;">'
+        f'<span>{_HOUR_MIN}:00</span><span style="color:#007aff;font-weight:760;">{hour}:00</span>'
+        f'<span>{_HOUR_MAX}:00</span></div>',
+        unsafe_allow_html=True,
     )
 
     # ── Compute all values for selected hour ──────────────────────────────────
@@ -147,15 +205,17 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     icon, just_title, just_body = _angle_justification(
         hour, track_angle, rec_angle, regime, iec_safe, in_range, solar_elev
     )
-    box_bg  = "#f0fdf4" if regime == "TRACKING_PM" else "#eff6ff" if regime == "TRACKING_AM" else "#f9fafb"
-    box_bdr = "#bbf7d0" if regime == "TRACKING_PM" else "#bfdbfe" if regime == "TRACKING_AM" else "#e5e7eb"
-    box_clr = "#15803d" if regime == "TRACKING_PM" else "#1d4ed8" if regime == "TRACKING_AM" else "#6b7280"
+    box_bg  = "rgba(255,255,255,0.76)" if regime == "TRACKING_PM" else "rgba(247,251,255,0.78)" if regime == "TRACKING_AM" else "rgba(255,255,255,0.72)"
+    box_bdr = "rgba(60,60,67,0.13)"
+    box_clr = COLOR["green"] if regime == "TRACKING_PM" else COLOR["blue"] if regime == "TRACKING_AM" else COLOR["muted"]
+    icon_class = "green" if regime == "TRACKING_PM" else "" if regime == "TRACKING_AM" else "amber"
     st.markdown(
-        f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:12px;'
-        f'padding:14px 18px;margin-bottom:16px;">'
-        f'<div style="font-size:15px;font-weight:700;color:{box_clr};margin-bottom:6px;">'
-        f'{icon} {just_title}</div>'
-        f'<div style="font-size:13px;color:#374151;line-height:1.7;">{just_body}</div>'
+        f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:18px;'
+        f'padding:16px 18px;margin-bottom:16px;box-shadow:0 12px 30px rgba(0,0,0,0.055);'
+        f'backdrop-filter:blur(20px) saturate(1.35);-webkit-backdrop-filter:blur(20px) saturate(1.35);">'
+        f'<div style="font-size:15px;font-weight:760;color:{box_clr};margin-bottom:7px;">'
+        f'<span class="apple-icon {icon_class}">{icon}</span>{just_title}</div>'
+        f'<div style="font-size:13px;color:#424245;line-height:1.7;">{just_body}</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -174,14 +234,15 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
         # st.markdown strips SVG defs/gradients/filters — use components.html (iframe, no sanitizer)
         components.html(
             f"<html><body style='margin:0;padding:0;background:transparent;'>{svg_html}</body></html>",
-            height=252,
+            height=388,
             scrolling=False,
         )
-        status_txt = "✓ En rango óptimo" if in_range else "⚠ Fuera del rango recomendado"
+        status_txt = "En rango óptimo" if in_range else "Fuera del rango recomendado"
         status_clr = COLOR["green"] if in_range else COLOR["orange"]
         st.markdown(
-            f'<div style="text-align:center;font-size:14px;font-weight:700;'
-            f'color:{status_clr};margin-top:8px;">{status_txt}</div>',
+            f'<div style="text-align:center;margin-top:10px;">'
+            f'<span class="apple-status" style="font-size:14px;font-weight:760;color:{status_clr};">'
+            f'<span class="apple-status-dot" style="background:{status_clr};"></span>{status_txt}</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -195,11 +256,11 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
             ("Elevación solar",    f"{solar_elev:.1f}°",  COLOR["orange"]),
         ]:
             st.markdown(
-                f'<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;'
-                f'padding:12px 14px;margin-bottom:8px;">'
-                f'<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;'
+                f'<div style="background:rgba(255,255,255,0.78);border:1px solid rgba(60,60,67,0.12);border-radius:16px;'
+                f'padding:13px 15px;margin-bottom:9px;box-shadow:0 8px 22px rgba(0,0,0,0.045);">'
+                f'<div style="font-size:11px;font-weight:760;color:#64706d;text-transform:uppercase;'
                 f'letter-spacing:0.05em;">{lbl}</div>'
-                f'<div style="font-size:22px;font-weight:700;color:{clr};margin-top:3px;">{val}</div>'
+                f'<div style="font-size:22px;font-weight:780;color:{clr};margin-top:3px;">{val}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -229,8 +290,8 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
 
     # ── Rules table ───────────────────────────────────────────────────────────
     st.markdown(
-        '<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:10px;">🔄 Reglas de rotación candidatas</div>',
+        '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
+        'letter-spacing:0.06em;margin-bottom:10px;">Reglas de rotación candidatas</div>',
         unsafe_allow_html=True,
     )
     if df_rules.empty:
@@ -238,28 +299,28 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     else:
         for i, rule_row in df_rules.iterrows():
             is_active = (i == active_idx)
-            bg    = "#f0fdf4" if is_active else "#ffffff"
-            lbdr  = "4px solid #22c55e" if is_active else "1px solid #e5e7eb"
-            bdr   = "#bbf7d0" if is_active else "#e5e7eb"
-            tipo_bg  = "#dcfce7" if "alta" in str(rule_row.get("tipo", "")) else "#eff6ff"
-            tipo_clr = "#15803d" if "alta" in str(rule_row.get("tipo", "")) else "#1d4ed8"
+            bg    = "#e7f5ee" if is_active else "#ffffff"
+            lbdr  = f"4px solid {COLOR['green']}" if is_active else f"1px solid {COLOR['border']}"
+            bdr   = "#b8dccb" if is_active else COLOR["border"]
+            tipo_bg  = "#dff1e8" if "alta" in str(rule_row.get("tipo", "")) else "#edf5fb"
+            tipo_clr = COLOR["green"] if "alta" in str(rule_row.get("tipo", "")) else COLOR["blue"]
             active_badge = (
-                '<span style="font-size:11px;font-weight:700;color:#16a34a;">● ACTIVA</span>'
+                f'<span style="font-size:11px;font-weight:800;color:{COLOR["green"]};">ACTIVA</span>'
                 if is_active else ""
             )
             st.markdown(
-                f'<div style="background:{bg};border:1px solid {bdr};border-radius:10px;'
+                f'<div style="background:{bg};border:1px solid {bdr};border-radius:16px;'
                 f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
                 f'margin-bottom:6px;">'
                 f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:11px;font-weight:700;'
-                f'padding:3px 10px;border-radius:8px;">{rule_row.get("tipo","—")}</span>'
-                f'<span style="font-size:12px;color:#6b7280;">IEC mediana: '
-                f'<b style="color:#16a34a;">{float(rule_row.get("iec_mediana",0)):.2f}</b>'
+                f'padding:4px 10px;border-radius:999px;">{rule_row.get("tipo","—")}</span>'
+                f'<span style="font-size:12px;color:#64706d;">IEC mediana: '
+                f'<b style="color:{COLOR["green"]};">{float(rule_row.get("iec_mediana",0)):.2f}</b>'
                 f' · n={int(rule_row.get("soporte_obs",0))}</span>'
                 f'{active_badge}'
                 f'</div>'
-                f'<div style="font-size:12px;color:#374151;line-height:1.6;">{rule_row.get("regla","—")}</div>'
+                f'<div style="font-size:12px;color:#35413d;line-height:1.6;">{rule_row.get("regla","—")}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -276,7 +337,7 @@ def render_tab_estado(
 ) -> None:
     _render_interactive_section(df_modelo, df_rules)
 
-    st.markdown("<hr style='border-color:#e5e7eb;margin:24px 0 16px;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border-color:#dfe7e2;margin:24px 0 16px;'>", unsafe_allow_html=True)
 
     # ── Static section: trackers + alerts (not in fragment) ───────────────────
     anomalous = get_anomalous_trackers(df_diagnostic, threshold=_ANOMALY_THRESHOLD)
@@ -286,12 +347,12 @@ def render_tab_estado(
 
     with col_trackers:
         st.markdown(
-            '<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
-            'letter-spacing:0.06em;margin-bottom:6px;">🔩 Estado de los 10 trackers</div>',
+            '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
+            'letter-spacing:0.06em;margin-bottom:6px;">Estado de los 10 trackers</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">'
+            '<div style="font-size:11px;color:#64706d;margin-bottom:10px;line-height:1.55;">'
             'La varianza angular mide la estabilidad del seguimiento. '
             'Una varianza alta (&gt;450 deg²) indica que el tracker no sigue con precisión '
             'las consignas — posible fallo mecánico o de comunicación.</div>',
@@ -306,11 +367,11 @@ def render_tab_estado(
             clr  = COLOR["red"] if is_anomaly else COLOR["green"]
             with cols[i % 5]:
                 st.markdown(
-                    f'<div style="background:{bg};border:1px solid {bdr};border-radius:8px;'
-                    f'padding:10px 8px;text-align:center;margin-bottom:6px;">'
+                    f'<div style="background:{bg};border:1px solid {bdr};border-radius:16px;'
+                    f'padding:11px 8px;text-align:center;margin-bottom:7px;box-shadow:0 8px 18px rgba(0,0,0,0.045);">'
                     f'<div style="font-size:13px;font-weight:700;color:{clr};">{tracker_id}</div>'
-                    f'<div style="font-size:10px;color:#6b7280;margin-top:2px;">{variance:.0f} deg²</div>'
-                    f'<div style="font-size:10px;font-weight:600;color:{clr};margin-top:3px;">'
+                    f'<div style="font-size:10px;color:#64706d;margin-top:2px;">{variance:.0f} deg²</div>'
+                    f'<div style="font-size:10px;font-weight:700;color:{clr};margin-top:3px;">'
                     f'{status_txt}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -319,17 +380,18 @@ def render_tab_estado(
     with col_alerts:
         if alerts:
             st.markdown(
-                f'<div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;'
-                f'letter-spacing:0.06em;margin-bottom:8px;">🚨 Alertas activas ({len(alerts)})</div>',
+                f'<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
+                f'letter-spacing:0.06em;margin-bottom:8px;">Alertas activas ({len(alerts)})</div>',
                 unsafe_allow_html=True,
             )
             for alert in alerts:
                 sev_color = COLOR["red"] if alert["severity"] == "CRÍTICO" else COLOR["orange"]
                 sev_bg    = "#fef2f2" if alert["severity"] == "CRÍTICO" else "#fff7ed"
                 st.markdown(
-                    f'<div style="background:{sev_bg};border-radius:8px;padding:12px;margin-bottom:8px;">'
-                    f'<div style="font-size:13px;font-weight:700;color:#111827;">{alert["title"]}</div>'
-                    f'<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.5;">'
+                    f'<div style="background:{sev_bg};border:1px solid rgba(60,60,67,0.12);border-radius:16px;'
+                    f'padding:12px;margin-bottom:8px;">'
+                    f'<div style="font-size:13px;font-weight:760;color:#101820;">{alert["title"]}</div>'
+                    f'<div style="font-size:11px;color:#64706d;margin-top:4px;line-height:1.5;">'
                     f'{alert["description"]}</div>'
                     f'<div style="display:inline-block;background:{sev_color};color:#fff;font-size:10px;'
                     f'font-weight:700;padding:2px 8px;border-radius:6px;margin-top:6px;">'
@@ -339,3 +401,5 @@ def render_tab_estado(
                 )
         else:
             st.success("Sin alertas activas.")
+
+    _advance_hour_after_delay()
