@@ -81,8 +81,8 @@ def render_tab_alertas(df_diagnostic: pd.DataFrame, df_modelo: pd.DataFrame) -> 
             fig = px.line(df_long, x="Time", y="VWC", color="Sección",
                           color_discrete_map={"VWC_S1_mean": "#d97706", "VWC_S2_mean": "#c2410c"},
                           template="simple_white", height=200)
-            fig.add_hline(y=0.20, line_dash="dash", line_color="#dc2626",
-                          annotation_text="umbral crítico 0.20", annotation_font_size=9)
+            fig.add_hline(y=20.0, line_dash="dash", line_color="#dc2626",
+                          annotation_text="umbral crítico 20.0", annotation_font_size=9)
             fig.update_layout(margin=dict(l=0, r=0, t=5, b=0),
                               font_family="-apple-system, 'Helvetica Neue', Arial",
                               paper_bgcolor="#ffffff", plot_bgcolor="#f9fafb")

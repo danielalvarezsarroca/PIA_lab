@@ -97,9 +97,9 @@ def _vwc_label(v: float) -> tuple[str, str]:
     """Return (label, color) for a VWC value."""
     if math.isnan(v):
         return "Sin datos", COLOR["muted"]
-    if v >= 0.30:
+    if v >= 30.0:
         return "Suelo bien hidratado", COLOR["green"]
-    if v >= 0.20:
+    if v >= 20.0:
         return "Humedad adecuada", COLOR["amber"]
     return "⚠ Humedad crítica — riego necesario", COLOR["red"]
 
@@ -140,7 +140,7 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     rec_angle    = get_recommended_angle(hour, df_modelo)
     regime_label = format_regime_label(regime)
     iec_safe     = iec_val if not math.isnan(iec_val) else 0.0
-    active_idx   = get_active_rule_index(df_rules, iec_safe)
+    active_idx   = get_active_rule_index(df_rules, row)
     in_range     = abs(track_angle - rec_angle) <= 5
 
     # ── Natural language justification ────────────────────────────────────────

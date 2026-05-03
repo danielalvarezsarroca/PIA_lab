@@ -4,7 +4,8 @@ import pandas as pd
 from data_loader import parse_tracker_name
 
 ANOMALY_THRESHOLD = 450.0   # deg² variance — trackers above this are flagged
-VWC_ALERT_THRESHOLD = -0.005  # m³/m³ per hour — declining trend triggers AVISO
+VWC_ALERT_THRESHOLD = -0.005  # percentage points per hour — declining trend triggers AVISO
+VWC_CRITICAL_THRESHOLD = 20.0
 
 
 def get_anomalous_trackers(df_diagnostic: pd.DataFrame, threshold: float = ANOMALY_THRESHOLD) -> list[str]:
@@ -15,7 +16,7 @@ def get_anomalous_trackers(df_diagnostic: pd.DataFrame, threshold: float = ANOMA
 
 def get_vwc_trend(df_modelo: pd.DataFrame) -> float:
     """
-    Return linear slope of VWC_S1_mean over time (m³/m³ per hour).
+    Return linear slope of VWC_S1_mean over time (percentage points per hour).
     Negative → declining soil moisture.
     """
     valid = df_modelo[["Time", "VWC_S1_mean"]].dropna()
@@ -47,7 +48,7 @@ def build_alert_list(df_diagnostic: pd.DataFrame, df_modelo: pd.DataFrame) -> li
         latest_vwc = df_modelo["VWC_S1_mean"].dropna().iloc[-1] if not df_modelo["VWC_S1_mean"].dropna().empty else float("nan")
         alerts.append({
             "title": "VWC descendente",
-            "description": f"Tendencia: {trend:.4f} m³/m³·h. Último valor: {latest_vwc:.2f} (umbral crítico: 0.20)",
+            "description": f"Tendencia: {trend:.4f} p.p./h. Último valor: {latest_vwc:.2f} (umbral crítico: {VWC_CRITICAL_THRESHOLD:.1f})",
             "severity": "AVISO",
         })
 
