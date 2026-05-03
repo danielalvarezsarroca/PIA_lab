@@ -5,8 +5,8 @@ import streamlit as st
 _THRESHOLDS = {
     "ePAR_S1d19":  ("ePAR crítico S1", 200,  "#dc2626"),
     "ePAR_S2d36":  ("ePAR crítico S2", 200,  "#dc2626"),
-    "VWC_S1d13":   ("VWC crítico S1",  0.20, "#f59e0b"),
-    "VWC_S2d32":   ("VWC crítico S2",  0.20, "#f59e0b"),
+    "VWC_S1d13":   ("VWC crítico S1",  20.0, "#f59e0b"),
+    "VWC_S2d32":   ("VWC crítico S2",  20.0, "#f59e0b"),
 }
 
 _VARIABLE_OPTIONS = {

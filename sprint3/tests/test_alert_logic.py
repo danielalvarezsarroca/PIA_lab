@@ -23,7 +23,7 @@ def test_get_anomalous_trackers_normal_excluded():
 def test_get_vwc_trend_declining():
     df = pd.DataFrame({
         "Time": pd.date_range("2025-06-01", periods=5, freq="6h"),
-        "VWC_S1_mean": [0.30, 0.28, 0.26, 0.24, 0.22],
+        "VWC_S1_mean": [30.0, 28.0, 26.0, 24.0, 22.0],
     })
     trend = get_vwc_trend(df)
     assert trend < 0
@@ -32,7 +32,7 @@ def test_get_vwc_trend_declining():
 def test_get_vwc_trend_stable_near_zero():
     df = pd.DataFrame({
         "Time": pd.date_range("2025-06-01", periods=4, freq="6h"),
-        "VWC_S1_mean": [0.28, 0.28, 0.29, 0.28],
+        "VWC_S1_mean": [28.0, 28.0, 28.1, 28.0],
     })
     trend = get_vwc_trend(df)
     assert abs(trend) < 0.005
@@ -41,7 +41,7 @@ def test_get_vwc_trend_stable_near_zero():
 def test_build_alert_list_includes_tracker_critical():
     df_modelo = pd.DataFrame({
         "Time": pd.date_range("2025-06-01", periods=4, freq="6h"),
-        "VWC_S1_mean": [0.30, 0.29, 0.28, 0.27],
+        "VWC_S1_mean": [30.0, 29.0, 28.0, 27.0],
     })
     alerts = build_alert_list(_DIAG_DF, df_modelo)
     severities = [a["severity"] for a in alerts]
@@ -55,7 +55,21 @@ def test_build_alert_list_empty_when_no_issues():
     )
     df_modelo = pd.DataFrame({
         "Time": pd.date_range("2025-06-01", periods=4, freq="6h"),
-        "VWC_S1_mean": [0.30, 0.31, 0.30, 0.31],
+        "VWC_S1_mean": [30.0, 31.0, 30.0, 31.0],
     })
     alerts = build_alert_list(diag_ok, df_modelo)
     assert alerts == []
+
+
+def test_build_alert_list_reports_vwc_threshold_in_percent_scale():
+    diag_ok = pd.DataFrame(
+        {"varianza_deg2": [366.0], "posible_stow_fijo": [False]},
+        index=["tracker_M01 (actual)"],
+    )
+    df_modelo = pd.DataFrame({
+        "Time": pd.date_range("2025-06-01", periods=4, freq="6h"),
+        "VWC_S1_mean": [24.0, 22.0, 20.0, 18.0],
+    })
+    alerts = build_alert_list(diag_ok, df_modelo)
+    assert alerts[0]["severity"] == "AVISO"
+    assert "umbral crítico: 20.0" in alerts[0]["description"]
