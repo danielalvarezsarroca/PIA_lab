@@ -1,9 +1,9 @@
 import math
 import time
+from base64 import b64encode
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 from alert_logic import build_alert_list, get_anomalous_trackers
 from rule_engine import format_regime_label, get_active_rule_index
@@ -46,14 +46,20 @@ def _next_hour(hour: int) -> int:
     return _HOUR_MIN if hour >= _HOUR_MAX else hour + 1
 
 
-def _advance_hour_after_delay() -> None:
-    """Block briefly, then advance the dashboard hour and rerun the app."""
-    if not st.session_state.get("hour_autoplay", False):
-        return
-    time.sleep(3)
-    current_hour = int(st.session_state.get("hour_slider", _DEFAULT_HOUR))
-    st.session_state["hour_slider"] = _next_hour(current_hour)
-    st.rerun()
+def _render_svg_image(svg_html: str) -> None:
+    """Render the SVG as a data image so Streamlit does not sanitize SVG tags."""
+    encoded = b64encode(svg_html.encode("utf-8")).decode("ascii")
+    st.html(
+        "<div style='background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,252,0.86));"
+        "border:1px solid rgba(255,255,255,0.72);border-radius:24px;padding:10px;"
+        "box-shadow:0 20px 58px rgba(16,24,40,0.11),inset 0 1px 0 rgba(255,255,255,0.96);"
+        "min-height:388px;"
+        "display:flex;align-items:stretch;'>"
+        f"<img src='data:image/svg+xml;base64,{encoded}' "
+        "style='width:100%;height:100%;min-height:368px;display:block;border-radius:22px;' "
+        "alt='Visualización solar de trackers agrovoltaicos'>"
+        "</div>"
+    )
 
 
 def _angle_justification(
@@ -142,7 +148,7 @@ def _tracker_label(variance: float) -> tuple[str, str, str]:
     return "Normal", "#eaf6ef", "#c9ead8"
 
 
-@st.fragment
+@st.fragment(run_every="3s")
 def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame) -> None:
     # ── Hour controls ─────────────────────────────────────────────────────────
     query_hour = _get_query_hour()
@@ -152,6 +158,17 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
         st.session_state["hour_slider"] = query_hour
     if "hour_autoplay" not in st.session_state:
         st.session_state["hour_autoplay"] = query_autoplay
+    if "_last_auto_tick" not in st.session_state:
+        st.session_state["_last_auto_tick"] = time.monotonic()
+
+    # Streamlit widget state must be changed before the slider is instantiated.
+    now = time.monotonic()
+    if st.session_state["hour_autoplay"] and now - st.session_state["_last_auto_tick"] >= 2.8:
+        st.session_state["hour_slider"] = _next_hour(int(st.session_state["hour_slider"]))
+        st.session_state["_last_auto_tick"] = now
+    elif not st.session_state["hour_autoplay"]:
+        st.session_state["_last_auto_tick"] = now
+
     col_title, col_toggle = st.columns([0.72, 0.28])
     with col_title:
         st.markdown(
@@ -201,17 +218,23 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     active_idx   = get_active_rule_index(df_rules, iec_safe)
     in_range     = abs(track_angle - rec_angle) <= 5
 
+    next_visual_hour = _next_hour(hour) if autoplay else hour
+    next_row         = _get_hour_record(df_modelo, next_visual_hour)
+    next_track_angle = float(next_row.get("track_mean", track_angle))
+    next_rec_angle   = get_recommended_angle(next_visual_hour, df_modelo)
+
     # ── Natural language justification ────────────────────────────────────────
     icon, just_title, just_body = _angle_justification(
         hour, track_angle, rec_angle, regime, iec_safe, in_range, solar_elev
     )
-    box_bg  = "rgba(255,255,255,0.76)" if regime == "TRACKING_PM" else "rgba(247,251,255,0.78)" if regime == "TRACKING_AM" else "rgba(255,255,255,0.72)"
-    box_bdr = "rgba(60,60,67,0.13)"
+    box_bg  = "linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86))"
+    box_bdr = "rgba(255,255,255,0.72)"
     box_clr = COLOR["green"] if regime == "TRACKING_PM" else COLOR["blue"] if regime == "TRACKING_AM" else COLOR["muted"]
     icon_class = "green" if regime == "TRACKING_PM" else "" if regime == "TRACKING_AM" else "amber"
     st.markdown(
-        f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:18px;'
-        f'padding:16px 18px;margin-bottom:16px;box-shadow:0 12px 30px rgba(0,0,0,0.055);'
+        f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:22px;'
+        f'padding:16px 18px;margin-bottom:16px;box-shadow:0 16px 42px rgba(16,24,40,0.08),'
+        f'inset 0 1px 0 rgba(255,255,255,0.96);'
         f'backdrop-filter:blur(20px) saturate(1.35);-webkit-backdrop-filter:blur(20px) saturate(1.35);">'
         f'<div style="font-size:15px;font-weight:760;color:{box_clr};margin-bottom:7px;">'
         f'<span class="apple-icon {icon_class}">{icon}</span>{just_title}</div>'
@@ -230,13 +253,11 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
             rec_angle=rec_angle,
             solar_elevation=solar_elev,
             irradiance=400.0,
+            next_hour=float(next_visual_hour),
+            next_track_angle=next_track_angle,
+            next_rec_angle=next_rec_angle,
         )
-        # st.markdown strips SVG defs/gradients/filters — use components.html (iframe, no sanitizer)
-        components.html(
-            f"<html><body style='margin:0;padding:0;background:transparent;'>{svg_html}</body></html>",
-            height=388,
-            scrolling=False,
-        )
+        _render_svg_image(svg_html)
         status_txt = "En rango óptimo" if in_range else "Fuera del rango recomendado"
         status_clr = COLOR["green"] if in_range else COLOR["orange"]
         st.markdown(
@@ -256,8 +277,10 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
             ("Elevación solar",    f"{solar_elev:.1f}°",  COLOR["orange"]),
         ]:
             st.markdown(
-                f'<div style="background:rgba(255,255,255,0.78);border:1px solid rgba(60,60,67,0.12);border-radius:16px;'
-                f'padding:13px 15px;margin-bottom:9px;box-shadow:0 8px 22px rgba(0,0,0,0.045);">'
+                f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86));'
+                f'border:1px solid rgba(255,255,255,0.72);border-radius:20px;'
+                f'padding:13px 15px;margin-bottom:9px;box-shadow:0 14px 34px rgba(16,24,40,0.07),'
+                f'inset 0 1px 0 rgba(255,255,255,0.96);">'
                 f'<div style="font-size:11px;font-weight:760;color:#64706d;text-transform:uppercase;'
                 f'letter-spacing:0.05em;">{lbl}</div>'
                 f'<div style="font-size:22px;font-weight:780;color:{clr};margin-top:3px;">{val}</div>'
@@ -299,7 +322,7 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
     else:
         for i, rule_row in df_rules.iterrows():
             is_active = (i == active_idx)
-            bg    = "#e7f5ee" if is_active else "#ffffff"
+            bg    = "linear-gradient(180deg,#f3fbf7,#e7f5ee)" if is_active else "linear-gradient(180deg,#ffffff,#f5f7fb)"
             lbdr  = f"4px solid {COLOR['green']}" if is_active else f"1px solid {COLOR['border']}"
             bdr   = "#b8dccb" if is_active else COLOR["border"]
             tipo_bg  = "#dff1e8" if "alta" in str(rule_row.get("tipo", "")) else "#edf5fb"
@@ -309,8 +332,9 @@ def _render_interactive_section(df_modelo: pd.DataFrame, df_rules: pd.DataFrame)
                 if is_active else ""
             )
             st.markdown(
-                f'<div style="background:{bg};border:1px solid {bdr};border-radius:16px;'
-                f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;">'
+                f'<div style="background:{bg};border:1px solid {bdr};border-radius:20px;'
+                f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;'
+                f'box-shadow:0 12px 30px rgba(16,24,40,0.06),inset 0 1px 0 rgba(255,255,255,0.92);">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
                 f'margin-bottom:6px;">'
                 f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:11px;font-weight:700;'
@@ -367,8 +391,9 @@ def render_tab_estado(
             clr  = COLOR["red"] if is_anomaly else COLOR["green"]
             with cols[i % 5]:
                 st.markdown(
-                    f'<div style="background:{bg};border:1px solid {bdr};border-radius:16px;'
-                    f'padding:11px 8px;text-align:center;margin-bottom:7px;box-shadow:0 8px 18px rgba(0,0,0,0.045);">'
+                    f'<div style="background:linear-gradient(180deg,{bg},#ffffff);border:1px solid {bdr};border-radius:18px;'
+                    f'padding:11px 8px;text-align:center;margin-bottom:7px;'
+                    f'box-shadow:0 10px 22px rgba(16,24,40,0.07),inset 0 1px 0 rgba(255,255,255,0.92);">'
                     f'<div style="font-size:13px;font-weight:700;color:{clr};">{tracker_id}</div>'
                     f'<div style="font-size:10px;color:#64706d;margin-top:2px;">{variance:.0f} deg²</div>'
                     f'<div style="font-size:10px;font-weight:700;color:{clr};margin-top:3px;">'
@@ -388,8 +413,9 @@ def render_tab_estado(
                 sev_color = COLOR["red"] if alert["severity"] == "CRÍTICO" else COLOR["orange"]
                 sev_bg    = "#fef2f2" if alert["severity"] == "CRÍTICO" else "#fff7ed"
                 st.markdown(
-                    f'<div style="background:{sev_bg};border:1px solid rgba(60,60,67,0.12);border-radius:16px;'
-                    f'padding:12px;margin-bottom:8px;">'
+                    f'<div style="background:linear-gradient(180deg,#ffffff,{sev_bg});border:1px solid rgba(255,255,255,0.72);'
+                    f'border-radius:20px;padding:12px;margin-bottom:8px;'
+                    f'box-shadow:0 12px 30px rgba(16,24,40,0.07),inset 0 1px 0 rgba(255,255,255,0.92);">'
                     f'<div style="font-size:13px;font-weight:760;color:#101820;">{alert["title"]}</div>'
                     f'<div style="font-size:11px;color:#64706d;margin-top:4px;line-height:1.5;">'
                     f'{alert["description"]}</div>'
@@ -401,5 +427,3 @@ def render_tab_estado(
                 )
         else:
             st.success("Sin alertas activas.")
-
-    _advance_hour_after_delay()
