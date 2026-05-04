@@ -57,11 +57,12 @@ def _prepare_historical(df: pd.DataFrame) -> pd.DataFrame:
     if "Time" not in df.columns:
         raise ValueError("historical dataset must include Time")
 
-    prepared = df.copy().assign(Time=pd.to_datetime(df["Time"]))
+    prepared = df.copy()
+    prepared.loc[:, "Time"] = pd.to_datetime(prepared["Time"])
     if "hour_of_day" not in prepared.columns:
-        prepared["hour_of_day"] = prepared["Time"].dt.hour
+        prepared.loc[:, "hour_of_day"] = prepared["Time"].dt.hour
     if "day_of_year" not in prepared.columns:
-        prepared["day_of_year"] = prepared["Time"].dt.dayofyear
+        prepared.loc[:, "day_of_year"] = prepared["Time"].dt.dayofyear
     return prepared.sort_values("Time").reset_index(drop=True)
 
 

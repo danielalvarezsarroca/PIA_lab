@@ -49,6 +49,31 @@ Esto crea:
 - `outputs_daily/candidate_rotation_rules_updated.csv`
 - `outputs_daily/daily_update_metadata.json`
 
+## Integracion Sprint 2 -> Sprint 3
+
+El dashboard de Sprint 3 detecta automaticamente los artefactos actualizados si
+existen en `sprint3/outputs_daily/`:
+
+- usa `dataset_modelizacion_6h_updated.csv` en lugar del dataset historico base;
+- usa `candidate_rotation_rules_updated.csv` en lugar de las reglas base de Sprint 2;
+- si esos archivos no existen, vuelve sin error a `sprint2/outputs_sprint2/`.
+
+Para simular el flujo completo de actualizacion y reentrenamiento:
+
+```bash
+cd sprint3
+source .venv/bin/activate
+python update_daily_dataset.py --target-date 2026-05-03
+python ../sprint2/retrain_from_updated_dataset.py \
+  --input outputs_daily/dataset_modelizacion_6h_updated.csv \
+  --output-dir outputs_daily
+streamlit run app.py
+```
+
+En una integracion real, el script `sprint2/retrain_from_updated_dataset.py`
+seria el punto donde sustituir la generacion demo por el entrenamiento real del
+modelo y la extraccion automatica de reglas con los datos diarios de sensores.
+
 ## Ejecucion con sensores reales
 
 Cuando exista un CSV diario de sensores:
