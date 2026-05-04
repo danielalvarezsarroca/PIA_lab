@@ -48,7 +48,7 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
     latest          = get_latest_record(df_modelo)
     current_iec     = float(latest.get("IEC", float("nan")))
     current_regime  = str(latest.get("tracking_regime", "—"))
-    active_idx      = get_active_rule_index(df_rules, current_iec)
+    active_idx      = get_active_rule_index(df_rules, latest)
 
     if df_rules.empty:
         st.info("No se encontraron reglas.")

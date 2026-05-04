@@ -49,7 +49,7 @@ def test_get_recommended_angle_returns_float():
     assert angle == pytest.approx(35.0)
 
 
-def test_get_recommended_angle_missing_hour_returns_nearest_available_angle():
+def test_get_recommended_angle_missing_hour_snaps_to_nearest_available_hour():
     df = pd.DataFrame({
         "hour_of_day": [8],
         "IEC": [0.5],
