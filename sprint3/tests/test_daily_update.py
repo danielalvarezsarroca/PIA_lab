@@ -72,6 +72,31 @@ def test_build_daily_update_uses_sensor_values_and_marks_partial_imputation():
     assert metadata["mode"] == "sensor_with_demo_fill"
 
 
+def test_build_daily_update_adds_optional_weather_by_hour():
+    weather = pd.DataFrame({
+        "Time": pd.to_datetime(["2026-05-03 06:00", "2026-05-03 12:00"]),
+        "weather_temperature_2m": [16.5, 24.0],
+        "weather_shortwave_radiation": [120.0, 780.0],
+        "weather_source": ["open-meteo", "open-meteo"],
+    })
+
+    rows, metadata = build_daily_update(
+        _historical_model(),
+        target_date="2026-05-03",
+        weather_rows=weather,
+        weather_metadata={"source": "open-meteo", "coordinates_status": "user_provided"},
+    )
+
+    six = rows.loc[rows["hour_of_day"] == 6].iloc[0]
+    noon = rows.loc[rows["hour_of_day"] == 12].iloc[0]
+    midnight = rows.loc[rows["hour_of_day"] == 0].iloc[0]
+    assert six["weather_temperature_2m"] == pytest.approx(16.5)
+    assert noon["weather_shortwave_radiation"] == pytest.approx(780.0)
+    assert pd.isna(midnight["weather_temperature_2m"])
+    assert metadata["weather"]["source"] == "open-meteo"
+    assert metadata["weather"]["coordinates_status"] == "user_provided"
+
+
 def test_regenerate_candidate_rules_returns_demo_metadata():
     updated = pd.concat([
         _historical_model(),

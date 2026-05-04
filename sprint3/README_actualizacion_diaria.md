@@ -49,6 +49,34 @@ Esto crea:
 - `outputs_daily/candidate_rotation_rules_updated.csv`
 - `outputs_daily/daily_update_metadata.json`
 
+Si todavia no se conocen las coordenadas reales de la planta, la meteorologia
+externa queda marcada como pendiente en la metadata y el flujo sigue funcionando
+solo con la imputacion demo.
+
+Cuando se disponga de coordenadas exactas, se puede enriquecer la actualizacion
+con Open-Meteo:
+
+```bash
+python update_daily_dataset.py \
+  --target-date 2026-05-03 \
+  --latitude 41.0000 \
+  --longitude 1.0000 \
+  --weather-source open-meteo
+```
+
+Esto anade columnas complementarias al dataset actualizado:
+
+- `weather_temperature_2m`
+- `weather_relative_humidity_2m`
+- `weather_precipitation`
+- `weather_cloud_cover`
+- `weather_shortwave_radiation`
+- `weather_wind_speed_10m`
+- `weather_source`
+
+Estos datos meteorologicos externos ayudan a contextualizar la operacion, pero
+no sustituyen sensores internos como `VWC`, `ePAR`, `track_mean` o `IEC`.
+
 ## Integracion Sprint 2 -> Sprint 3
 
 El dashboard de Sprint 3 detecta automaticamente los artefactos actualizados si
@@ -102,8 +130,8 @@ de demo, pero seguiran marcadas como pendientes de integracion completa.
 
 ## Datos externos por coordenadas
 
-Para enriquecer el pipeline, se podria incorporar una fuente externa como
-Open-Meteo, NASA POWER o PVGIS para variables meteorologicas y solares por
-coordenadas. Esto serviria para temperatura, radiacion, viento o humedad
-meteorologica, pero no sustituye sensores internos de planta como VWC real,
-ePAR local o angulo real de trackers.
+El pipeline ya esta preparado para Open-Meteo mediante `--weather-source
+open-meteo`, `--latitude` y `--longitude`. Las coordenadas no se fijan por
+defecto para evitar asociar la planta a una ubicacion inventada. Hasta que el
+cliente confirme la ubicacion real, el estado quedara como `coordinates_status:
+missing` en `daily_update_metadata.json`.

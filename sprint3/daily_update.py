@@ -7,6 +7,8 @@ from typing import Any
 
 import pandas as pd
 
+from weather_data import WEATHER_COLUMNS, build_weather_pending_metadata
+
 MODEL_COLUMNS = [
     "Time",
     "hour_of_day",
@@ -99,6 +101,17 @@ def _sensor_rows_by_hour(sensor_rows: pd.DataFrame | None, target: date) -> dict
     return {int(row["hour_of_day"]): row for _, row in sensors.iterrows()}
 
 
+def _weather_rows_by_hour(weather_rows: pd.DataFrame | None, target: date) -> dict[int, pd.Series]:
+    if weather_rows is None or weather_rows.empty:
+        return {}
+    weather = weather_rows.copy().assign(Time=pd.to_datetime(weather_rows["Time"]))
+    weather = weather[weather["Time"].dt.date == target]
+    if weather.empty:
+        return {}
+    weather = weather.assign(hour_of_day=weather["Time"].dt.hour)
+    return {int(row["hour_of_day"]): row for _, row in weather.iterrows()}
+
+
 def _score_from_row(row: pd.Series) -> tuple[float, float, float]:
     epar = max(float(row.get("ePAR_S1_mean", 0.0) or 0.0), 0.0)
     vwc = float(row.get("VWC_S1_mean", 0.0) or 0.0)
@@ -116,6 +129,8 @@ def build_daily_update(
     historical_df: pd.DataFrame,
     target_date: str | date | None = None,
     sensor_rows: pd.DataFrame | None = None,
+    weather_rows: pd.DataFrame | None = None,
+    weather_metadata: dict[str, Any] | None = None,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """
     Build one 6h-resolution daily update.
@@ -127,6 +142,7 @@ def build_daily_update(
     target = _coerce_target_date(target_date)
     historical = _prepare_historical(historical_df)
     sensors_by_hour = _sensor_rows_by_hour(sensor_rows, target)
+    weather_by_hour = _weather_rows_by_hour(weather_rows, target)
 
     rows: list[dict[str, Any]] = []
     used_sensor_hours: list[int] = []
@@ -147,6 +163,15 @@ def build_daily_update(
         else:
             row["data_source"] = "demo_imputed"
 
+        weather = weather_by_hour.get(hour)
+        for col in WEATHER_COLUMNS:
+            row[col] = weather[col] if weather is not None and col in weather.index else pd.NA
+        row["weather_source"] = (
+            weather["weather_source"]
+            if weather is not None and "weather_source" in weather.index
+            else weather_metadata.get("source", "none") if weather_metadata else "none"
+        )
+
         row["sensor_status"] = SENSOR_STATUS
         row["update_note"] = DEMO_NOTICE
         row_series = pd.Series(row)
@@ -165,6 +190,7 @@ def build_daily_update(
         "rows_generated": len(rows),
         "sensor_status": SENSOR_STATUS,
         "notice": DEMO_NOTICE,
+        "weather": weather_metadata or build_weather_pending_metadata(),
     }
     return pd.DataFrame(rows), metadata
 
