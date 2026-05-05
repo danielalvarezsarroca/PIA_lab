@@ -1,0 +1,618 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{titlesec}
+
+\geometry{margin=2.2cm, top=2.8cm, headheight=15pt}
+\setlist[itemize]{label=\textbullet, leftmargin=1.2cm}
+\renewcommand{\arraystretch}{1.3}
+\sloppy
+
+% ─── Encabezado y pie de página ───────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Gestión del Proyecto \textperiodcentered{} Sprint 3 \textperiodcentered{} SAMO}
+\fancyhead[R]{\small Sostenibilidad y Ciencia}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ─── Hipervínculos ────────────────────────────────────────────────────────────
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+
+% ─── Ajuste de secciones ──────────────────────────────────────────────────────
+\titlespacing*{\section}{0pt}{1.4ex plus 0.5ex}{0.8ex}
+\titlespacing*{\subsection}{0pt}{1.0ex plus 0.4ex}{0.5ex}
+
+% =============================================================================
+\begin{document}
+\thispagestyle{empty}
+
+% ─── PORTADA ──────────────────────────────────────────────────────────────────
+\vspace*{2cm}
+\begin{center}
+  {\LARGE \textbf{Análisis y Optimización Operativa de Sistemas}}\\[0.3em]
+  {\LARGE \textbf{Agrovoltaicos Dinámicos}}\\[2em]
+  {\large \textbf{Documento de Gestión del Proyecto}}\\[0.5em]
+  {\large \textbf{Sprint 3 — Dashboard Operativo v1}}\\[3em]
+
+  \begin{longtable}{p{0.3\textwidth} p{0.5\textwidth}}
+    Organización & Sostenibilidad y Ciencia \\
+    Equipo       & Chacorocalfarobar \\
+    Sprint       & 3 de 4 \\
+    Período      & Semana del 28 de abril al 2 de mayo de 2026 \\
+    Fecha        & 4 de mayo de 2026 \\
+  \end{longtable}
+\end{center}
+
+\newpage
+
+% ─── ÍNDICE ───────────────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Equipo y roles del proyecto}
+
+\begin{longtable}{p{0.25\textwidth} p{0.25\textwidth} p{0.42\textwidth}}
+\textbf{Miembro} & \textbf{Rol} & \textbf{Responsabilidades principales} \\
+\hline
+Daniel Álvarez & Project Manager (PM) & Coordinación del sprint, planning, revisión de documentación, gestión de riesgos y presupuesto, actas de reunión \\
+Pablo Chacón   & Data Engineer / Data Scientist & Construcción y mantenimiento del pipeline de datos, integración de datasets en el dashboard, implementación de la capa de carga y tests unitarios \\
+Albert Roca    & Tech Lead / ML Engineer & Diseño de la arquitectura del dashboard, motor de reglas (rule\_engine.py), lógica solar, corrección de bugs técnicos, análisis de sensibilidad IEC \\
+Pau Escobar    & Data Analyst / Visualización & Diseño y construcción de los cuatro tabs, gauge IEC, series temporales, cards de métricas y estilos CSS \\
+Joel Alfaro    & Analista de Dominio / QA & Validación de umbrales agronómicos, revisión de alertas y consistencia del diagnóstico de trackers, revisión de calidad de entregables \\
+\end{longtable}
+
+% =============================================================================
+\section{Planificación y seguimiento de tareas del Sprint 3}
+
+La tabla siguiente recoge el Sprint Backlog completo del Sprint 3, con la asignación de
+responsabilidades, la estimación en story points (SP) y el estado al cierre del sprint.
+
+\subsection{Sprint Backlog}
+
+\begin{longtable}{p{0.08\textwidth} p{0.38\textwidth} p{0.22\textwidth} p{0.05\textwidth} p{0.13\textwidth}}
+\textbf{ID} & \textbf{Tarea} & \textbf{Responsable} & \textbf{SP} & \textbf{Estado} \\
+\hline
+\multicolumn{5}{l}{\textit{Día 1 — Sprint Planning y diseño del dashboard}} \\
+S3-01 & Sprint Planning: definición del backlog y reparto de tareas & Daniel Álvarez (PM) & 1 & Completado \\
+S3-02 & Revisión de outputs del Sprint 2 y definición de la arquitectura del dashboard & Albert Roca & 2 & Completado \\
+S3-03 & Diseño de la estructura de módulos y tabs del dashboard & Albert Roca / Pau Escobar & 2 & Completado \\
+S3-04 & Configuración del entorno Streamlit y estructura de directorios \texttt{sprint3/} & Pablo Chacón & 1 & Completado \\
+S3-05 & Implementación de \texttt{data\_loader.py} con \texttt{st.cache\_data} & Pablo Chacón & 2 & Completado \\
+\multicolumn{5}{l}{\textit{Día 2 — Implementación del Tab 1: Dashboard principal}} \\
+S3-06 & Implementación del slider horario con \texttt{st.fragment} y fallback a hora disponible más cercana & Pau Escobar & 2 & Completado \\
+S3-07 & Generación del SVG solar (\texttt{solar\_logic.py} + \texttt{svg\_generator.py}) & Albert Roca & 3 & Completado \\
+S3-08 & Implementación del gauge IEC con zonas crítica, media y óptima (Plotly) & Pau Escobar & 2 & Completado \\
+S3-09 & Cards de ePAR y VWC con etiquetas contextuales y umbrales visuales & Pau Escobar & 1 & Completado \\
+S3-10 & Grid de 10 trackers con diagnóstico de varianza angular y estado Normal/Alta varianza & Pablo Chacón & 2 & Completado \\
+\multicolumn{5}{l}{\textit{Día 3 — Implementación de Tabs 2, 3 y 4}} \\
+S3-11 & Tab 2 — Series temporales históricas con Plotly, filtros de variable y rango de fechas & Pau Escobar & 3 & Completado \\
+S3-12 & Tab 3 — \texttt{rule\_engine.py}: motor de evaluación de reglas candidatas con condiciones reales & Albert Roca & 2 & Completado \\
+S3-13 & Tab 4 — \texttt{alert\_logic.py}: detección de anomalías de trackers y tendencia VWC & Pablo Chacón & 2 & Completado \\
+S3-14 & Implementación de estilos CSS globales (\texttt{styles.py}) y paleta visual del dashboard & Pau Escobar & 1 & Completado \\
+S3-15 & Suite de tests unitarios: \texttt{test\_alert\_logic}, \texttt{test\_data\_loader}, \texttt{test\_rule\_engine}, \texttt{test\_solar\_logic}, \texttt{test\_svg\_generator}, \texttt{test\_vwc\_thresholds} & Pablo Chacón & 3 & Completado \\
+\multicolumn{5}{l}{\textit{Día 4 — Detección y corrección de errores técnicos}} \\
+S3-16 & Detección y corrección del bug de escala VWC: umbral 20.0/30.0 (porcentaje) en lugar de 0.20/0.30 (decimal) & Albert Roca & 2 & Completado \\
+S3-17 & Corrección de la activación de reglas: evaluación de condiciones reales del registro actual en lugar de proximidad por IEC & Albert Roca & 3 & Completado \\
+S3-18 & PR \#2 (\texttt{fix-sprint3-vwc-rules}): revisión, aprobación y fusión en \texttt{main} & Daniel Álvarez (PM) & 1 & Completado \\
+S3-19 & Análisis de sensibilidad IEC por prioridades (rama \texttt{iec-sensitivity-dashboard}): escenarios equilibrado, energía y cultivo & Albert Roca & 3 & Completado \\
+S3-20 & Validación de umbrales y consistencia de alertas desde el dominio agrovoltaico & Joel Alfaro & 2 & Completado \\
+\multicolumn{5}{l}{\textit{Día 5 — Cierre, revisión y entrega}} \\
+S3-21 & Redacción del informe E05 (\texttt{informe.tex}) & Daniel Álvarez (PM) & 2 & Completado \\
+S3-22 & Actualización del registro de riesgos & Daniel Álvarez (PM) & 1 & Completado \\
+S3-23 & Sprint Review con el cliente & Todo el equipo & 1 & Pendiente \\
+S3-24 & Sprint Retrospective & Todo el equipo & 1 & Pendiente \\
+S3-25 & Versionado del código en repositorio Git & Pablo Chacón & 1 & Completado \\
+S3-26 & Cierre del paquete documental del sprint & Daniel Álvarez (PM) & 1 & En curso \\
+\hline
+\multicolumn{3}{l}{\textbf{Total story points planificados}} & \textbf{47} & \\
+\multicolumn{3}{l}{Story points completados} & 44 & \\
+\multicolumn{3}{l}{Velocidad real del sprint} & 94\% & \\
+\end{longtable}
+
+\subsection{Distribución de carga por miembro}
+
+\begin{longtable}{p{0.35\textwidth} p{0.2\textwidth} p{0.2\textwidth} p{0.15\textwidth}}
+\textbf{Miembro} & \textbf{SP planificados} & \textbf{SP completados} & \textbf{\% completado} \\
+\hline
+Daniel Álvarez (PM) & 6 & 5 & 83,3\% \\
+Pablo Chacón        & 11 & 11 & 100\% \\
+Albert Roca         & 16 & 16 & 100\% \\
+Pau Escobar         & 10 & 10 & 100\% \\
+Joel Alfaro         & 2  & 2  & 100\% \\
+\end{longtable}
+
+Los 3 SP pendientes de Daniel Álvarez corresponden a las tareas S3-23 (Sprint Review) y
+S3-24 (Sprint Retrospective), cuyo cierre está condicionado a la celebración de la Review con
+el cliente/profesor, y a S3-26 (cierre del paquete documental).
+
+% =============================================================================
+\section{Sprint Review del Sprint 2}
+
+La Sprint Review del Sprint 2 se celebró al cierre de la semana del 21 al 25 de abril de
+2026. En ella se presentaron al cliente los resultados del proceso de modelización y se
+validaron los entregables técnicos antes del inicio del Sprint 3.
+
+\subsection{Resumen de la revisión}
+
+\begin{longtable}{p{0.35\textwidth} p{0.55\textwidth}}
+\textbf{Campo} & \textbf{Valor} \\
+\hline
+Fecha de celebración & 28 de abril de 2026 \\
+Modalidad & Presencial — Universitat Politècnica de Catalunya \\
+Asistentes del equipo & Daniel Álvarez (PM), Albert Roca, Pau Escobar, Joel Alfaro, Pablo Chacón \\
+Representación cliente & Responsable de Sostenibilidad y Ciencia \\
+Sprint revisado & Sprint 2 — Modelización y Política de Rotación \\
+Velocidad del sprint & 91\% (43 SP completados de 47 planificados) \\
+\end{longtable}
+
+\subsection{Entregables demostrados}
+
+\begin{longtable}{p{0.07\textwidth} p{0.27\textwidth} p{0.45\textwidth} p{0.12\textwidth}}
+\textbf{ID} & \textbf{Entregable} & \textbf{Contenido demostrado} & \textbf{Aceptado} \\
+\hline
+E03 & \texttt{E03\_Informe\_Modelizacion\_Sprint2} & Definición del IEC, proceso de feature engineering, comparativa de modelos (ElasticNet vs.\ árbol de decisión), extracción de las 6 reglas candidatas de rotación y análisis observacional por régimen & Completado \\
+E04 & \texttt{sprint2\_modelizacion\_agrovoltaica.ipynb} & Notebook reproducible con pipeline extensible, partición temporal 80/20, métricas MAE/RMSE/R², importancia de variables y corrección documentada de la circularidad GPOA & Completado \\
+— & \texttt{SPRINT2.pptx.pdf} & Síntesis visual de la metodología de modelización, el IEC como KPI y las reglas candidatas de rotación ordenadas por IEC esperado & Completado \\
+\end{longtable}
+
+\subsection{Hallazgos clave presentados al cliente}
+
+Los siguientes resultados de la modelización se presentaron como condicionantes directos del
+Sprint 3:
+
+\begin{enumerate}
+  \item \textbf{IEC como indicador operativo cuantificable}: el índice combinado Energía–Cultivo
+    (media 0.397, máximo 0.925) permite comparar regímenes de operación desde una
+    perspectiva equilibrada, sin priorizar la energía en detrimento del cultivo.
+  \item \textbf{TRACKING\_PM como régimen más favorable}: IEC mediana de 0.741 frente a 0.429 de
+    TRACKING\_AM y 0.184 de HORIZONTAL. Esta diferencia (+0.538 puntos respecto a
+    HORIZONTAL) se propuso como umbral de alerta para el dashboard.
+  \item \textbf{6 reglas candidatas de rotación} con soporte estadístico documentado, listas para
+    implementarse como lógica condicional en el dashboard del Sprint 3.
+  \item \textbf{Circularidad GPOA detectada y corregida}: la inclusión inicial de GPOA en el vector
+    de features inflaba el R² a 0.95 artificialmente. Tras la corrección con proxies de albedo,
+    el R² del ElasticNet quedó en 0.873, valor más realista y generalizable.
+\end{enumerate}
+
+\subsection{Feedback del cliente y decisiones adoptadas}
+
+\begin{longtable}{p{0.38\textwidth} p{0.32\textwidth} p{0.2\textwidth}}
+\textbf{Observación del cliente} & \textbf{Decisión acordada} & \textbf{Responsable} \\
+\hline
+Solicitud de visualizar el IEC en tiempo real o simulado en el dashboard & Se implementará el IEC como KPI principal del Tab 1, con actualización dinámica según la hora seleccionada en el slider & Pau Escobar \\
+Interés en ver el impacto de diferentes prioridades energía/cultivo & Se explorará en una rama experimental del Sprint 3 el análisis de sensibilidad del IEC por escenarios ponderados & Albert Roca \\
+Confirmación de la necesidad de alertas operativas configurables & El Tab 4 implementará alertas de trackers y tendencia VWC con umbrales auditables & Pablo Chacón / Joel Alfaro \\
+Solicitud de indicador visual del estado global del sistema & El header del dashboard mostrará el número de alertas activas y el estado general del sistema en tiempo real & Pau Escobar \\
+\end{longtable}
+
+\subsection{Items no completados al cierre del Sprint 2}
+
+\begin{itemize}
+  \item \textbf{S2-25 Sprint Review con el cliente (1 SP)}: celebrada el 28 de abril de 2026 y
+    documentada en este apartado. Cierre formal: Completado.
+  \item \textbf{S2-26 Sprint Retrospective (1 SP)}: documentada en la sección siguiente. Cierre
+    formal: Completado.
+  \item \textbf{S2-28 Cierre del paquete documental (1 SP)}: completado junto con el cierre del
+    Sprint 3. Archivos versionados en Git.
+\end{itemize}
+
+% =============================================================================
+\section{Retrospectiva del Sprint 2}
+
+La retrospectiva del Sprint 2 se celebró al cierre de la semana del 21 al 25 de abril de 2026,
+como sesión interna del equipo. Su objetivo fue identificar qué funcionó bien, qué debe
+mejorar y qué acciones concretas se incorporan al Sprint 3.
+
+\subsection{¿Qué fue bien?}
+
+\begin{itemize}
+  \item \textbf{IEC bien definido y documentado}: la formulación del Índice Energía–Cultivo con
+    pesos 0.5/0.5, aunque provisional, proporcionó un target cuantificable y reproducible que
+    estructuró todo el análisis del Sprint 2.
+  \item \textbf{Circularidad GPOA detectada de forma proactiva}: la acción de mejora A06 del Sprint
+    1 se materializó en una verificación explícita de features antes del entrenamiento, que
+    detectó el problema antes de cerrar el sprint.
+  \item \textbf{Outputs versionados por sprint}: la convención \texttt{outputs\_sprint2/} adoptada
+    desde la acción A05 facilitó la localización de artefactos y evitó sobrescrituras.
+  \item \textbf{Velocidad sostenida (91\%)}: 43 de 47 SP completados; los únicos items pendientes
+    eran de cierre administrativo, no trabajo técnico bloqueante.
+  \item \textbf{Reglas candidatas accionables}: las 6 reglas de rotación están directamente
+    implementables como lógica condicional, con soporte estadístico documentado por cada una.
+\end{itemize}
+
+\subsection{¿Qué debe mejorar?}
+
+\begin{itemize}
+  \item \textbf{Validación agronómica del IEC pendiente}: los pesos 0.5/0.5 y los valores de
+    referencia internos se definieron sin input del especialista agrícola. Las reglas del
+    dashboard deben etiquetarse como provisionales.
+  \item \textbf{Tests unitarios ausentes}: el Sprint 2 no incluyó una suite de tests formal. El
+    notebook ejecuta de principio a fin, pero no hay tests de las funciones auxiliares que
+    aseguren la estabilidad en el dashboard del Sprint 3.
+  \item \textbf{Latitud no confirmada}: se usa 41.39°N como proxy. La variable
+    \texttt{solar\_elevation\_deg} es la tercera más influyente en el árbol de decisión, por lo que
+    el error sistemático puede ser relevante.
+  \item \textbf{Desvíos presupuestarios infraestimados}: la corrección de la circularidad GPOA
+    requirió 4 horas no planificadas. Las revisiones de calidad técnica del modelo deben
+    planificarse explícitamente como trabajo real.
+\end{itemize}
+
+\subsection{Acciones de mejora acordadas para el Sprint 3}
+
+\begin{longtable}{p{0.07\textwidth} p{0.5\textwidth} p{0.22\textwidth} p{0.11\textwidth}}
+\textbf{ID} & \textbf{Acción} & \textbf{Responsable} & \textbf{Estado} \\
+\hline
+A07 & Incluir en el Sprint 3 Backlog una tarea explícita de tests unitarios para los módulos del dashboard & Pablo Chacón & Completado \\
+A08 & Etiquetar todas las reglas del dashboard como «pendientes de validación agronómica» de forma visible & Pau Escobar & Completado \\
+A09 & Reservar al menos 2 SP para la detección y corrección de errores técnicos del dashboard antes del cierre & Albert Roca & Completado \\
+A10 & Planificar el cierre documental como trabajo real en el backlog del Sprint 3, no como overhead & Daniel Álvarez (PM) & Completado \\
+\end{longtable}
+
+\subsection{Valoración global del Sprint 2}
+
+El Sprint 2 cumplió su objetivo principal: transformar los hallazgos del EDA en un primer
+modelo de decisión operativo con reglas accionables. La circularidad GPOA fue el hallazgo
+técnico más relevante del sprint; su detección y corrección proactiva antes del cierre
+constituye una muestra clara de la madurez del proceso de calidad del equipo. Las cuatro
+acciones de mejora (A07–A10) se han incorporado íntegramente al Sprint 3, con resultado
+positivo verificable: los tests unitarios (A07) detectaron los bugs de escala VWC y
+activación de reglas antes de la entrega del sprint.
+
+% =============================================================================
+\section{Introducción al Sprint 3}
+
+Este documento recoge la gestión técnica y operativa del Sprint 3 del proyecto \textit{Análisis y
+Optimización Operativa de Sistemas Agrovoltaicos Dinámicos}, incluyendo el resumen del
+trabajo de implementación del dashboard, los entregables generados, las limitaciones
+identificadas, la actualización del registro de riesgos y el seguimiento del presupuesto.
+
+El objetivo principal del sprint ha sido diseñar e implementar el Dashboard v1 (entregable
+E05) como primera interfaz funcional de monitorización, recomendación y alerta operativa,
+con los siguientes fines específicos:
+
+\begin{itemize}
+  \item Transformar los outputs del Sprint 2 en una interfaz visual interactiva para el operador
+    de la instalación agrovoltaica.
+  \item Mostrar el estado actual o simulado del IEC, ePAR, VWC, ángulo de tracking y régimen
+    activo mediante un slider de hora.
+  \item Integrar la lógica de recomendación de las 6 reglas candidatas del Sprint 2 con
+    evaluación de condiciones reales.
+  \item Implementar alertas operativas para anomalías de trackers y tendencias críticas de VWC.
+  \item Garantizar la estabilidad del código con una suite de tests unitarios antes del cierre.
+\end{itemize}
+
+Todo el sprint se ha desarrollado bajo el principio rector del proyecto: el dashboard no
+prioriza la energía de forma aislada, sino que refleja simultáneamente el equilibrio entre
+producción fotovoltaica y condiciones microclimáticas del cultivo.
+
+% =============================================================================
+\section{Descripción del trabajo técnico}
+
+El Sprint 3 se apoyó íntegramente en los datasets y en el modelo definidos en el Sprint 2.
+La base de trabajo fue el directorio \texttt{sprint2/outputs\_sprint2/}, del que se consumieron
+cuatro artefactos principales.
+
+\begin{longtable}{p{0.38\textwidth} p{0.18\textwidth} p{0.36\textwidth}}
+\textbf{Archivo} & \textbf{Registros} & \textbf{Uso en Sprint 3} \\
+\hline
+\texttt{dataset\_modelizacion\_6h.csv} & 337 & IEC, régimen, tracking, ePAR/VWC medios, elevación solar \\
+\texttt{dataset\_integrado\_6h.csv}    & 1.462 & Series temporales históricas del Tab 2 \\
+\texttt{candidate\_rotation\_rules.csv} & 6 & Reglas candidatas de política de rotación \\
+\texttt{tracker\_variance\_diagnostic.csv} & 10 & Diagnóstico de varianza angular por tracker \\
+\end{longtable}
+
+La solución está implementada en Streamlit y separa la capa de presentación de la lógica de
+negocio. \texttt{app.py} configura la página, carga los datasets y delega la visualización a
+módulos de tabs. Las reglas, alertas, lógica solar y SVG se mantienen en módulos
+independientes para facilitar las pruebas unitarias.
+
+\begin{longtable}{p{0.32\textwidth} p{0.58\textwidth}}
+\textbf{Componente} & \textbf{Responsabilidad} \\
+\hline
+\texttt{app.py} & Entrada del dashboard, configuración, carga de datos y estructura de tabs \\
+\texttt{data\_loader.py} & Carga de CSVs del Sprint 2 con \texttt{st.cache\_data} \\
+\texttt{tab\_estado.py} & Pantalla principal: slider, SVG, IEC, métricas, trackers y reglas \\
+\texttt{tab\_series.py} & Series temporales históricas con Plotly y umbrales visuales \\
+\texttt{tab\_recomendacion.py} & Política de rotación y reglas candidatas con condición activa \\
+\texttt{tab\_alertas.py} & Alertas activas, diagnóstico de trackers y evolución VWC \\
+\texttt{rule\_engine.py} & Evaluación de condiciones reales de las reglas del Sprint 2 \\
+\texttt{alert\_logic.py} & Detección de anomalías angulares y tendencia VWC \\
+\texttt{solar\_logic.py / svg\_generator.py} & Cálculo solar aproximado y visualización SVG del panel \\
+\texttt{styles.py} & Inyección de CSS global con paleta visual del dashboard \\
+\end{longtable}
+
+% =============================================================================
+\section{Análisis realizado y resultados clave}
+
+\subsection{Datos y cobertura}
+
+El dataset de modelización a 6 horas contiene 337 observaciones cubiertas entre junio y
+octubre de 2025. El IEC se mueve entre 0.063 y 0.925, con media de 0.397 y mediana de
+0.360, valores consistentes con los calculados en el Sprint 2.
+
+\begin{longtable}{p{0.28\textwidth} p{0.14\textwidth} p{0.14\textwidth} p{0.14\textwidth} p{0.22\textwidth}}
+\textbf{Variable} & \textbf{Mínimo} & \textbf{Media} & \textbf{Máximo} & \textbf{Interpretación} \\
+\hline
+IEC                & 0.063 & 0.397 & 0.925 & Equilibrio energía-cultivo en escala 0–1 \\
+VWC\_S1\_mean      & 10.405 & 22.786 & 39.700 & Humedad del suelo (escala porcentual) \\
+ePAR\_S1\_mean     & $-0.016$ & 444.754 & 2319.500 & Radiación fotosintéticamente activa \\
+track\_mean        & $-32.300$ & 0.034 & 33.100 & Ángulo medio de rotación (grados) \\
+\end{longtable}
+
+\subsection{Análisis por régimen de operación}
+
+\begin{longtable}{p{0.35\textwidth} p{0.25\textwidth} p{0.25\textwidth}}
+\textbf{Régimen} & \textbf{Observaciones} & \textbf{IEC mediana} \\
+\hline
+TRACKING\_PM  & 84  & 0.741 \\
+TRACKING\_AM  & 84  & 0.429 \\
+HORIZONTAL    & 169 & 0.184 \\
+\end{longtable}
+
+HORIZONTAL es el régimen con mayor número de observaciones y el IEC más bajo (0.184).
+TRACKING\_PM mantiene la ventaja operativa observada en el Sprint 2 (+0.557 puntos sobre
+HORIZONTAL). El dashboard alerta al operador cuando el sistema opera en HORIZONTAL
+durante franjas productivas.
+
+\subsection{Diagnóstico de trackers}
+
+\begin{longtable}{p{0.3\textwidth} p{0.3\textwidth} p{0.3\textwidth}}
+\textbf{Tracker} & \textbf{Varianza (deg\textsuperscript{2})} & \textbf{Estado} \\
+\hline
+M01 & 445.2 & Normal \\
+M02 & 508.5 & Alta varianza \\
+M03 & 441.7 & Normal \\
+M04 & 438.1 & Normal \\
+M05 & 534.9 & Alta varianza \\
+M06 & 513.0 & Alta varianza \\
+M07 & 535.0 & Alta varianza \\
+M08 & 443.5 & Normal \\
+M09 & 446.8 & Normal \\
+M10 & 509.0 & Alta varianza \\
+\end{longtable}
+
+El umbral operativo de anomalía se fija en 450 deg\textsuperscript{2}. Cinco trackers
+(M02, M05, M06, M07, M10) superan este umbral y se señalizan como de Alta varianza en
+el dashboard. M02, M06 y M10 ya fueron identificados como posibles trackers con posición
+fija en el Sprint 1; el diagnóstico confirma su comportamiento diferencial.
+
+\subsection{Análisis de sensibilidad del IEC por prioridades}
+
+Además del estado consolidado en \texttt{main}, la rama \texttt{iec-sensitivity-dashboard}
+permite comparar tres escenarios de ponderación del IEC, tratándolo como índice configurable
+en lugar de verdad fija.
+
+\begin{longtable}{p{0.25\textwidth} p{0.18\textwidth} p{0.18\textwidth} p{0.31\textwidth}}
+\textbf{Escenario} & \textbf{Peso energía} & \textbf{Peso cultivo} & \textbf{Objetivo operativo} \\
+\hline
+Equilibrado         & 0.5 & 0.5 & Compromiso simétrico energía-cultivo \\
+Priorizar energía   & 0.7 & 0.3 & Favorecer generación fotovoltaica \\
+Priorizar cultivo   & 0.3 & 0.7 & Favorecer protección microclimática \\
+\end{longtable}
+
+El resultado principal es que TRACKING\_PM a las 12:00 mantiene el IEC más alto en todos
+los escenarios (0.925 equilibrado, 0.955 energía, 0.895 cultivo). HORIZONTAL mejora
+relativamente al priorizar cultivo, pero no supera a los modos activos en horas productivas.
+
+% =============================================================================
+\section{Entregables y outputs generados}
+
+\begin{longtable}{p{0.07\textwidth} p{0.35\textwidth} p{0.28\textwidth} p{0.18\textwidth}}
+\textbf{ID} & \textbf{Entregable} & \textbf{Responsable} & \textbf{Estado} \\
+\hline
+E05 & Dashboard v1 (\texttt{sprint3/app.py} + módulos) & Pau Escobar / Pablo Chacón & Completado \\
+— & \texttt{informe.tex} — Informe técnico E05 & Daniel Álvarez (PM) & Completado \\
+— & Suite de 37 tests unitarios (\texttt{sprint3/tests/}) & Pablo Chacón & Completado \\
+— & \texttt{rule\_engine.py} — Motor de evaluación de reglas & Albert Roca & Completado \\
+— & \texttt{alert\_logic.py} — Lógica de alertas operativas & Pablo Chacón & Completado \\
+— & \texttt{solar\_logic.py} + \texttt{svg\_generator.py} & Albert Roca & Completado \\
+— & Análisis de sensibilidad IEC (rama \texttt{iec-sensitivity-dashboard}) & Albert Roca & Completado \\
+\end{longtable}
+
+Los módulos del directorio \texttt{sprint3/} implementan un dashboard reproducible que
+puede ejecutarse con \texttt{streamlit run app.py} desde el directorio del sprint, usando los
+datos del directorio \texttt{sprint2/outputs\_sprint2/} como fuente. Los 37 tests unitarios
+pasan sin error (\texttt{py -3.11 -m pytest tests -q -p no:cacheprovider}).
+
+% =============================================================================
+\section{Limitaciones identificadas}
+
+\begin{longtable}{p{0.32\textwidth} p{0.15\textwidth} p{0.45\textwidth}}
+\textbf{Limitación} & \textbf{Impacto} & \textbf{Implicación para el Sprint 4} \\
+\hline
+El dashboard es un sistema de soporte a la decisión, no un sistema de control automático validado & Alto & Documentar explícitamente el alcance en la presentación final \\
+Resolución de 6 horas: las horas intermedias usan el registro más cercano disponible & Medio & Evaluar la viabilidad de una resolución mayor para el Sprint 4 \\
+Las reglas candidatas del Sprint 2 no han sido validadas agronómicamente & Alto & Etiquetar como provisionales hasta recibir confirmación del especialista \\
+Los umbrales de VWC (20.0), ePAR e IEC son operativos y no han sido contrastados con el especialista agrícola & Medio & Incluir en la agenda de la Sprint Review del Sprint 3 \\
+La rama de sensibilidad IEC no está fusionada en \texttt{main} & Bajo-Medio & Decidir en Sprint 4 si integrarla para la demo final \\
+El dashboard trabaja con datos históricos; no existe feed en tiempo real & Alto & Definir estrategia de ingesta en tiempo real para la versión final \\
+Acumulación de artefactos \texttt{\_\_pycache\_\_} versionados en el repositorio & Bajo & Limpiar en Sprint 4 antes de la entrega final \\
+\end{longtable}
+
+% =============================================================================
+\section{Actualización del registro de riesgos}
+
+El desarrollo del Sprint 3 ha permitido mitigar los riesgos relacionados con la construcción
+del dashboard y ha revelado nuevos riesgos asociados a la validación operativa y al despliegue.
+
+\subsection{Riesgos preexistentes: estado tras el Sprint 3}
+
+\begin{longtable}{p{0.05\textwidth} p{0.32\textwidth} p{0.13\textwidth} p{0.13\textwidth} p{0.28\textwidth}}
+\textbf{ID} & \textbf{Riesgo} & \textbf{Estado S2} & \textbf{Estado S3} & \textbf{Observación} \\
+\hline
+R1 & Calidad y continuidad de los datos & Mitigado & Mitigado & Dashboard carga y valida los datos correctamente. \\
+R2 & Desalineación temporal entre sensores & Mitigado & Mitigado & Resampleo a 6h estable; fallback horario implementado. \\
+R3 & No linealidad y efectos retardados & Gestionado & Gestionado & Lag features presentes en el dataset del dashboard. \\
+R4 & Sesgo hacia optimización energética & Controlado & Controlado & IEC pondera energía y cultivo al 50\%. \\
+R5 & Sobreajuste al histórico disponible & Vigente & Vigente & Dashboard presenta el IEC como indicativo; pendiente validación. \\
+R6 & Fallo en pipeline o ingesta & Mitigado & Mitigado & 37 tests unitarios cubren los módulos críticos. \\
+R7 & Datos limitados al período estival & Confirmado & Vigente & La ventana jun–oct 2025 se mantiene invariable. \\
+R8 & Sensores anómalos (M02, M05, M06, M07, M10) & Parcialmente mitigado & Parcialmente mitigado & Dashboard señaliza los 5 trackers con Alta varianza; sin confirmación de planta. \\
+R9 & Pérdida de resolución por resampleo a 6h & Aceptado & Aceptado & Fallback horario implementado para horas intermedias. \\
+R10 & Ausencia de contexto agronómico específico & Vigente & Vigente & Umbrales del IEC siguen siendo genéricos. \\
+R11 & Diferencia de VWC S1 vs.\ S2 sin causa conocida & Vigente & Vigente & Diferencia visible en series del Tab 2; causa sin confirmar. \\
+R12 & IEC con pesos y umbrales no validados agronómicamente & Vigente & Vigente & Reglas etiquetadas como provisionales en el dashboard. \\
+R13 & Latitud 41.39°N como proxy no confirmado & Vigente & Vigente & Afecta a \texttt{solar\_elevation\_deg} y al SVG solar. \\
+R14 & Conjunto de test demasiado pequeño (n=68) & Vigente & Vigente & Métricas del Sprint 2 tratadas como indicativas. \\
+\end{longtable}
+
+\subsection{Nuevos riesgos identificados en el Sprint 3}
+
+\begin{longtable}{p{0.06\textwidth} p{0.33\textwidth} p{0.1\textwidth} p{0.1\textwidth} p{0.3\textwidth}}
+\textbf{ID} & \textbf{Riesgo} & \textbf{Prob.} & \textbf{Impacto} & \textbf{Plan de mitigación} \\
+\hline
+R15 & Dashboard sin validación operativa por usuarios finales & Alta & Medio & Incluir en Sprint 4 una sesión piloto con el cliente/operador antes de la entrega final \\
+R16 & Ausencia de feed en tiempo real: el dashboard opera exclusivamente sobre datos históricos & Alta & Alto & Definir en Sprint 4 si se implementa un módulo de ingesta en tiempo real o si el alcance queda restringido al análisis histórico \\
+R17 & Artefactos \texttt{\_\_pycache\_\_} versionados en el repositorio & Baja & Bajo & Añadir \texttt{\_\_pycache\_\_} al \texttt{.gitignore} y limpiar el historial en Sprint 4 de forma controlada \\
+\end{longtable}
+
+\subsection{Valoración global del registro de riesgos tras el Sprint 3}
+
+El Sprint 3 ha consolidado la mitigación de los riesgos de pipeline e ingesta (R1, R2, R6) e
+incorporado una cobertura de tests que reduce el riesgo de regresiones en el código. Los
+riesgos más críticos para el Sprint 4 son R10 y R12 (validación agronómica pendiente del
+IEC y sus umbrales), R15 (validación operativa por el usuario final) y R16 (ausencia de
+feed en tiempo real). El bug de escala VWC y la corrección de la activación de reglas
+(resueltos mediante PR \#2) ilustran el valor de los tests unitarios como mecanismo de
+detección temprana: sin la suite implementada en el Día 3, ambos errores habrían alcanzado
+la entrega.
+
+% =============================================================================
+\section{Seguimiento del Presupuesto}
+
+Durante el Sprint 3 se identificó una desviación técnica derivada de los dos bugs detectados
+en el Día 4: la corrección del bug de escala VWC y de la activación de reglas (PR \#2)
+requirió aproximadamente 6 horas adicionales no planificadas de Albert Roca (Tech Lead /
+ML Engineer). Estas horas se absorben con cargo a la reserva de contingencia, sin impacto
+en el presupuesto total del proyecto.
+
+\begin{longtable}{p{0.25\textwidth} p{0.27\textwidth} p{0.07\textwidth} p{0.12\textwidth} p{0.18\textwidth}}
+\textbf{Rol} & \textbf{Responsabilidad principal} & \textbf{Horas} & \textbf{Tarifa/h} & \textbf{Coste total} \\
+\hline
+PM \& Data Governance    & Coordinación, planificación, gestión de riesgos y gobernanza del dato & 111 & 50{,}00 € & 5.550,00 € \\
+Lead Data Engineer       & Pipeline de datos, integración temporal, feature engineering y versionado & 195 & 50{,}00 € & 9.750,00 € \\
+Data Scientist           & Diseño del IEC, modelización, análisis de sensibilidad y correcciones técnicas del dashboard & 163 & 45{,}00 € & 7.335,00 € \\
+Data Analyst / ETL       & Visualizaciones, análisis por régimen, narrativa técnica e informe & 129 & 40{,}00 € & 5.160,00 € \\
+BI Developer             & Dashboard interactivo, reglas operativas, alertas y KPIs para el cliente & 125 & 35{,}00 € & 4.375,00 € \\
+\hline
+\multicolumn{4}{l}{\textbf{Subtotal base}} & \textbf{32.170,00 €} \\
+\multicolumn{4}{l}{Contingencia consumida Sprint 1} & $-$350,00 € \\
+\multicolumn{4}{l}{Contingencia consumida Sprint 2} & $-$175,00 € \\
+\multicolumn{4}{l}{Contingencia consumida Sprint 3} & $-$270,00 € \\
+\multicolumn{4}{l}{\textbf{Remanente de contingencia}} & \textbf{2.657,50 €} \\
+\multicolumn{4}{l}{\textbf{Presupuesto total del proyecto}} & \textbf{37.977,50 €} \\
+\end{longtable}
+
+Las 6 horas adicionales del Sprint 3 generan un consumo de contingencia de 270,00 € (6h ×
+45 €), dejando un remanente de 2.657,50 € para el Sprint 4. El presupuesto total del
+proyecto (37.977,50 €) se mantiene invariable para el cliente. La activación de la reserva de
+contingencia por bugs técnicos en tres sprints consecutivos es un indicador a gestionar: se
+recomienda incluir en el Sprint 4 Planning una revisión de la estimación de horas de calidad
+técnica para el cierre del proyecto.
+
+% =============================================================================
+\section{Verificación del Definition of Done}
+
+\begin{longtable}{p{0.62\textwidth} p{0.1\textwidth} p{0.18\textwidth}}
+\textbf{Criterio DoD} & \textbf{Aplica} & \textbf{Estado} \\
+\hline
+El dashboard ejecuta sin errores en Streamlit (\texttt{streamlit run app.py}) & Sí & Completado \\
+La suite de tests unitarios pasa en su totalidad (37 tests, \texttt{pytest tests}) & Sí & Completado \\
+El PR \#2 ha sido fusionado en \texttt{main} con working tree limpio & Sí & Completado \\
+El código está versionado en el repositorio con mensaje descriptivo & Sí & Completado \\
+El entregable incluye sección de limitaciones y próximos pasos & Sí & Completado \\
+El informe (E05) sigue la plantilla aprobada por el equipo & Sí & Completado \\
+Ha sido revisado por al menos un miembro diferente al autor principal & Sí & Completado \\
+El PM ha actualizado el Sprint Backlog con estado «Hecho» & Sí & Completado \\
+El Registro de Riesgos ha sido actualizado & Sí & Completado \\
+El bug de escala VWC ha sido detectado, corregido y documentado & Sí & Completado \\
+La activación de reglas evalúa condiciones reales del registro actual & Sí & Completado \\
+El cliente ha aceptado el entregable en la Review & Sí & Pendiente \\
+\end{longtable}
+
+Los criterios pendientes (validación del cliente en la Review) se cerrarán durante la Sprint
+Review prevista para el inicio del Sprint 4.
+
+% =============================================================================
+\section{Relación con el Sprint 4}
+
+Los resultados del Sprint 3 constituyen la base directa para el Sprint 4, centrado en la
+validación final del sistema, la presentación al cliente y el cierre del proyecto.
+
+\subsection{Entregables previstos en el Sprint 4}
+
+\begin{longtable}{p{0.07\textwidth} p{0.33\textwidth} p{0.3\textwidth} p{0.2\textwidth}}
+\textbf{ID} & \textbf{Entregable} & \textbf{Dependencia del Sprint 3} & \textbf{Responsable} \\
+\hline
+E06 & Presentación final / demo del dashboard & Dashboard v1 funcional + análisis de sensibilidad IEC & Todo el equipo \\
+E07 & Documentación técnica final consolidada & E01 + E03 + E05 + lecciones aprendidas & Daniel Álvarez (PM) \\
+\end{longtable}
+
+\subsection{Inputs técnicos del Sprint 3 para el Sprint 4}
+
+\begin{itemize}
+  \item \textbf{Dashboard v1 (\texttt{sprint3/app.py} + módulos)}: base funcional lista para la demo
+    final. Puede ejecutarse directamente sobre los outputs del Sprint 2.
+  \item \textbf{37 tests unitarios}: cobertura de los módulos críticos que garantiza la estabilidad
+    del código ante cambios de última hora en el Sprint 4.
+  \item \textbf{Análisis de sensibilidad IEC (rama \texttt{iec-sensitivity-dashboard})}: demostración
+    del impacto de diferentes prioridades energía/cultivo; candidato a integrar en \texttt{main}
+    si el cliente lo valora para la demo.
+  \item \textbf{Diagnóstico de trackers}: los 5 trackers con Alta varianza están documentados con
+    umbrales y tabla de varianzas. Requieren confirmación del equipo técnico de la planta
+    antes de la entrega final.
+  \item \textbf{6 reglas candidatas de rotación}: implementadas en \texttt{rule\_engine.py} y etiquetadas
+    como provisionales; deben validarse con el especialista agrícola antes de la demo final.
+\end{itemize}
+
+\subsection{Decisiones de diseño del Sprint 4 orientadas desde el dashboard}
+
+\begin{enumerate}
+  \item \textbf{Integración de la sensibilidad IEC}: evaluar si la rama \texttt{iec-sensitivity-dashboard}
+    aporta valor diferencial para la presentación final y, de ser así, fusionarla en
+    \texttt{main} con tests actualizados.
+  \item \textbf{Feed de datos}: definir si el Sprint 4 añade un módulo de carga en tiempo real o si
+    el alcance queda explícitamente restringido al análisis histórico.
+  \item \textbf{Evidencias visuales}: capturar pantallazos del dashboard funcional para incorporarlos
+    a la documentación final E07 y a la presentación de cierre.
+  \item \textbf{Validación agronómica}: presentar las 6 reglas y los umbrales IEC/VWC/ePAR al
+    especialista agrícola antes de la entrega; documentar el resultado como artefacto final.
+  \item \textbf{Limpieza del repositorio}: eliminar \texttt{\_\_pycache\_\_} versionados y verificar
+    que el \texttt{.gitignore} cubre los artefactos transitorios.
+\end{enumerate}
+
+% =============================================================================
+\section{Lecciones Aprendidas}
+
+\begin{longtable}{p{0.07\textwidth} p{0.06\textwidth} p{0.16\textwidth} p{0.33\textwidth} p{0.3\textwidth}}
+\textbf{ID} & \textbf{Sprint} & \textbf{Categoría} & \textbf{Descripción de la lección} & \textbf{Recomendación para futuros proyectos} \\
+\hline
+LL-12 & S3 & Calidad / Técnica & El bug de escala VWC (umbral 0.20 decimal en lugar de 20.0 porcentaje) pasó desapercibido durante el desarrollo del Tab 2 y del Tab 4. Sin la suite de tests unitarios, habría llegado a la entrega, generando alertas incorrectas y series temporales con umbrales erróneos. & Al implementar un dashboard que consume variables físicas de sensores, definir los umbrales en un único lugar (constante o configuración) y cubrirlos con un test parametrizado desde el primer día. Nunca duplicar un umbral en múltiples módulos. \\
+\hline
+LL-13 & S3 & Calidad / Técnica & La selección de la regla activa por proximidad al IEC actual (en lugar de evaluar las condiciones reales del registro) producía resultados inconsistentes: una regla podía activarse aunque sus condiciones no se cumpliesen. El error se detectó durante la revisión técnica del Día 4, no durante el desarrollo inicial del motor de reglas. & Diseñar los motores de reglas para que evalúen condiciones explícitas desde el inicio, no métricas de similitud. Incluir en el DoD de cualquier entregable de lógica condicional un test de ejemplo que compruebe la activación positiva y negativa de cada regla. \\
+\hline
+LL-14 & S3 & Técnica / UX & El uso de \texttt{st.fragment} para aislar el rerender del slider de hora respecto al resto del dashboard mejoró significativamente la fluidez de la interacción. Sin esta estrategia, cada movimiento del slider recalculaba toda la página, incluyendo la carga de datos y la generación de gráficos estáticos. & En aplicaciones Streamlit con interacciones de alta frecuencia (sliders, selects), identificar en el diseño inicial qué secciones deben rerenderizarse y cuáles son estáticas, y usar \texttt{st.fragment} o \texttt{st.cache\_data} de forma deliberada desde el primer prototipo. \\
+\hline
+LL-15 & S3 & Estimación / Planificación & La suite de tests unitarios (A07, 3 SP) fue la acción de mejora que mayor retorno generó en el sprint: detectó dos bugs críticos antes del cierre y redujo el tiempo de diagnóstico de horas a minutos. Sin embargo, no estaba incluida en el Sprint 2 ni en el backlog inicial del Sprint 3; fue añadida como consecuencia de la retrospectiva. & Incluir una tarea de tests unitarios en el backlog de cualquier sprint que genere código de lógica de negocio. No tratarla como overhead: un test bien escrito amortiza su coste en el primer bug que detecta. \\
+\hline
+LL-16 & S3 & Técnica & El análisis de sensibilidad IEC por prioridades (rama \texttt{iec-sensitivity-dashboard}) reveló que el comportamiento del sistema varía de forma significativa según el peso asignado a energía y cultivo. Este análisis no estaba en el alcance original del sprint; surgió como extensión natural una vez que el dashboard principal estaba estabilizado. & Diseñar los índices sintéticos (como el IEC) con configurabilidad desde el inicio, evitando harcodear los pesos. Si se prevé que el cliente querrá explorar escenarios alternativos, implementar los pesos como parámetro desde el primer sprint de modelización. \\
+\end{longtable}
+
+\vspace{2em}
+\begin{center}
+  \textit{Equipo Chacorocalfarobar}
+\end{center}
+
+\end{document}

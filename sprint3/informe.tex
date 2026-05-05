@@ -1,0 +1,729 @@
+% =============================================================================
+%  E05 — Informe de Dashboard v1  |  Sprint 3  |  SAMO
+%  Proyecto: Análisis y Optimización Operativa de Sistemas Agrovoltaicos Dinámicos
+%  Equipo: Chacorocalfarobar  |  Organización: Sostenibilidad y Ciencia
+% =============================================================================
+%
+%  INSTRUCCIONES PARA FIGURAS
+%  ──────────────────────────
+%  Crea la carpeta  sprint3/figures/  y guarda en ella estas capturas de pantalla
+%  ejecutando el dashboard con:  streamlit run app.py
+%
+%  fig01_dashboard_principal.png
+%    → Captura completa del Tab 1 ("Dashboard") con el slider a las 12:00,
+%      mostrando el SVG solar, el gauge IEC, las cuatro tarjetas de métricas
+%      (ePAR S1, ePAR S2, VWC S1, VWC S2) y la caja de justificación en verde.
+%
+%  fig02_svg_slider.png
+%    → Detalle de la columna izquierda del Tab 1: SVG solar con el sol en lo
+%      alto, el arco diario, los paneles inclinados y la leyenda de ángulos
+%      (azul = actual, verde discontinuo = recomendado).
+%
+%  fig03_gauge_metricas.png
+%    → Detalle de la columna derecha del Tab 1: gauge IEC con las zonas de
+%      color y las cuatro tarjetas de ángulo actual, ángulo recomendado,
+%      régimen activo y elevación solar.
+%
+%  fig04_trackers_alertas.png
+%    → Sección inferior del Tab 1: grid 2×5 de trackers con sus varianzas y
+%      estados (Normal en verde, Alta varianza en rojo), y el panel de alertas
+%      activas a la derecha.
+%
+%  fig05_series_temporales.png
+%    → Tab 2 ("Series temporales") con ePAR S1 y VWC S1 seleccionados, mostrando
+%      el gráfico de líneas principal con la línea de umbral crítico de VWC (20.0)
+%      y los dos gráficos inferiores (tendencia diaria y distribución boxplot).
+%
+%  fig06_recomendacion.png
+%    → Tab 3 ("Recomendación") con la regla activa resaltada en verde y el
+%      resto de reglas candidatas listadas por IEC mediana decreciente.
+%
+%  fig07_alertas.png
+%    → Tab 4 ("Alertas") mostrando las alertas activas ordenadas por severidad,
+%      la tabla de diagnóstico de trackers con varianzas y el gráfico de
+%      evolución reciente de VWC con la línea de umbral crítico.
+%
+% =============================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+\geometry{margin=2.2cm, top=2.8cm, headheight=15pt}
+\setlist[itemize]{label=\textbullet, leftmargin=1.2cm}
+\renewcommand{\arraystretch}{1.3}
+\sloppy
+
+% ─── Encabezado ───────────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Sostenibilidad y Ciencia \textperiodcentered{} SAMO}
+\fancyhead[R]{\small E05 — Informe de Dashboard v1}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ─── Hipervínculos ────────────────────────────────────────────────────────────
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+
+% ─── Captions ─────────────────────────────────────────────────────────────────
+\captionsetup{font=small, labelfont=bf, skip=4pt}
+
+% ─── Colores institucionales ──────────────────────────────────────────────────
+\definecolor{samogreen}{HTML}{16a34a}
+\definecolor{samoblue}{HTML}{2563eb}
+\definecolor{samored}{HTML}{dc2626}
+\definecolor{samogray}{HTML}{64706d}
+
+% =============================================================================
+\begin{document}
+\thispagestyle{empty}
+
+% ─── PORTADA ──────────────────────────────────────────────────────────────────
+\vspace*{1.2cm}
+\begin{center}
+  {\large Sostenibilidad y Ciencia}\\[0.6em]
+  {\LARGE \textbf{Análisis y Optimización Operativa}}\\
+  {\LARGE \textbf{de Sistemas Agrovoltaicos Dinámicos}}\\[2em]
+  {\Large \textbf{E05 — Informe de Dashboard v1}}\\[0.5em]
+  {\normalsize Sistema de monitorización, recomendación y alertas operativas}\\[2.5em]
+
+  \begin{tabular}{ll}
+    \textbf{Proyecto}       & SAMO — Sistemas Agrovoltaicos Dinámicos \\
+    \textbf{Equipo}         & Chacorocalfarobar \\
+    \textbf{Director PM}    & Daniel Álvarez Sarroca \\
+    \textbf{Sprint}         & 3 de 4 \\
+    \textbf{Entregable}     & E05 — Dashboard v1 \\
+    \textbf{Fecha}          & 4 de mayo de 2026 \\
+    \textbf{Versión}        & 1.0 \\
+    \textbf{Estado técnico} & Basado en \texttt{main} tras PR~\#2; commit \texttt{2172d58} \\
+  \end{tabular}\\[2em]
+
+  \small\textit{Documento técnico interno — prototipo funcional pendiente de validación operativa y agronómica final}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Resumen Ejecutivo}
+
+Este informe documenta el trabajo técnico realizado durante el Sprint 3 del proyecto
+\textit{Análisis y Optimización Operativa de Sistemas Agrovoltaicos Dinámicos} (SAMO), cuyo
+objetivo era construir la primera versión funcional del dashboard operativo. El resultado
+principal es un prototipo Streamlit que transforma los outputs del Sprint 2 en una interfaz
+de monitorización, recomendación y alerta orientada al operador de la instalación agrovoltaica.
+
+El dashboard opera sobre dos datasets principales: 337 observaciones de modelización a
+resolución de 6 horas (base del sistema de recomendación) y 1.462 registros integrados
+(base de las series temporales históricas). El IEC observado se mueve entre 0.063 y 0.925,
+con media de 0.397, y es el indicador central que el sistema presenta al operador para
+evaluar el equilibrio entre producción energética y condiciones microclimáticas del cultivo.
+
+Los resultados más relevantes del sprint son:
+
+\begin{itemize}
+  \item Se ha construido un dashboard con cuatro pestañas funcionales: \textbf{Dashboard},
+    \textbf{Series temporales}, \textbf{Recomendación} y \textbf{Alertas}.
+  \item La pantalla principal integra un slider horario con reproducción automática,
+    una visualización SVG del sistema solar-panel, un gauge IEC, tarjetas de
+    ePAR/VWC con etiquetas contextuales, un grid de estado de los 10 trackers y un
+    resumen de alertas activas.
+  \item La arquitectura separa la lógica de negocio (motores de reglas, alertas y cálculo
+    solar) de la capa de presentación, con carga cacheada (\texttt{st.cache\_data}) y
+    renderizado parcial (\texttt{st.fragment}) para mantener fluidez en la interacción.
+  \item Se han corregido dos errores técnicos de alto impacto antes del cierre: la escala
+    VWC (umbral 20.0 porcentaje, no 0.20 decimal) y la activación de reglas por condiciones
+    reales en lugar de proximidad de IEC.
+  \item Los 37 tests unitarios pasan sin errores sobre los módulos críticos del dashboard.
+  \item La rama \texttt{iec-sensitivity-dashboard} amplía el sistema con tres prioridades
+    de ponderación del IEC (equilibrada, energética y agrícola) y una política de rotación
+    por hora para cada escenario.
+\end{itemize}
+
+% =============================================================================
+\section{Introducción}
+
+\subsection{Contexto del proyecto}
+
+Los sistemas agrovoltaicos dinámicos combinan generación fotovoltaica y cultivo agrícola
+en el mismo espacio físico. A diferencia de los sistemas estáticos, los paneles disponen de
+un eje de rotación que permite seguir al sol a lo largo del día. Esta rotación afecta
+simultáneamente a la captación de irradiancia y al microclima bajo las placas: la sombra
+proyectada modula la temperatura del suelo, la humedad volumétrica (VWC) y la radiación
+fotosintéticamente activa (ePAR) disponible para el cultivo.
+
+El objetivo del proyecto no es maximizar la producción energética de forma aislada. El
+Índice Energía–Cultivo (IEC), definido en el Sprint 2 como combinación ponderada de un
+\textit{energy\_score} y un \textit{crop\_score}, cuantifica el equilibrio operativo entre ambas
+dimensiones. El dashboard del Sprint 3 hace visible ese equilibrio en tiempo real y
+proporciona recomendaciones operativas accionables al operador.
+
+\subsection{Objetivos del Sprint 3}
+
+\begin{itemize}
+  \item Diseñar e implementar el Dashboard v1 como entregable E05, sobre los outputs del Sprint 2.
+  \item Mostrar el estado actual o simulado de los sensores clave mediante un slider horario.
+  \item Visualizar series temporales filtrables por variable, tipo y rango de fechas.
+  \item Integrar la recomendación de la regla de rotación aplicable, con evaluación de
+    condiciones reales del registro activo.
+  \item Detectar y notificar alertas operativas: anomalías angulares de trackers y tendencias
+    críticas de humedad del suelo.
+  \item Garantizar la calidad del código con una suite de tests unitarios antes del cierre.
+  \item Documentar decisiones técnicas, limitaciones y próximos pasos para el Sprint 4.
+\end{itemize}
+
+\subsection{Alcance del informe}
+
+El informe cubre el entregable técnico E05 y la implementación actual del directorio
+\texttt{sprint3/}. No sustituye el documento de gestión del sprint (\texttt{Gestion\_Proyecto\_Sprint3.tex}),
+pero describe con detalle los componentes del dashboard, las decisiones de diseño, los
+resultados observados y los riesgos técnicos relevantes para la entrega.
+
+% =============================================================================
+\section{Arquitectura del Dashboard}
+
+\subsection{Diseño general}
+
+La solución está implementada en Python con Streamlit y separa estrictamente la lógica
+de negocio de la capa de presentación. \texttt{app.py} actúa como punto de entrada: configura
+la página, carga los cuatro datasets con caché y delega la visualización a los módulos de
+tab. Los motores de reglas, alertas, cálculo solar y generación SVG se mantienen en módulos
+independientes para facilitar las pruebas unitarias (Figura~\ref{fig:arquitectura}).
+
+\begin{longtable}{p{0.32\textwidth} p{0.6\textwidth}}
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad} \\
+\midrule
+\texttt{app.py} & Configuración de la página, carga cacheada de datos y estructura de las cuatro pestañas \\
+\texttt{data\_loader.py} & Carga de los cuatro CSVs del Sprint 2 con \texttt{st.cache\_data}; ordenación temporal \\
+\texttt{tabs/tab\_estado.py} & Tab 1: slider horario, SVG solar, gauge IEC, tarjetas de métricas, grid de trackers y alertas \\
+\texttt{tabs/tab\_series.py} & Tab 2: series temporales con Plotly, filtros, tendencia diaria y distribución boxplot \\
+\texttt{tabs/tab\_recomendacion.py} & Tab 3: política de rotación y regla activa con evaluación de condiciones reales \\
+\texttt{tabs/tab\_alertas.py} & Tab 4: alertas ordenadas por severidad, tabla de trackers y evolución VWC \\
+\texttt{rule\_engine.py} & Motor de evaluación de las 6 reglas candidatas del Sprint 2 \\
+\texttt{alert\_logic.py} & Detección de anomalías angulares de trackers y tendencia VWC \\
+\texttt{solar\_logic.py} & Estimación de elevación solar y ángulo óptimo recomendado por hora \\
+\texttt{svg\_generator.py} & Generación del SVG animado con sol, arco diario, paneles y ángulos \\
+\texttt{styles.py} & Inyección de CSS global, paleta de colores y componentes HTML reutilizables \\
+\bottomrule
+\end{longtable}
+
+\subsection{Flujo de datos}
+
+\begin{enumerate}
+  \item Los cuatro CSVs del Sprint 2 se leen desde \texttt{sprint2/outputs\_sprint2/} al arrancar
+    la aplicación. \texttt{st.cache\_data} evita relecturas en cada interacción posterior.
+  \item El usuario selecciona una hora mediante el slider (rango 06:00–21:00). El sistema
+    busca el registro con mayor IEC para esa hora; si no existe, aplica un fallback al
+    registro más próximo disponible.
+  \item El módulo \texttt{solar\_logic.py} calcula la elevación solar teórica y el ángulo óptimo
+    de referencia para la hora seleccionada.
+  \item \texttt{rule\_engine.py} evalúa las condiciones reales del registro activo (Albedo, hora,
+    régimen, VWC, GPOA) y determina qué regla candidata, si alguna, está activa.
+  \item \texttt{alert\_logic.py} genera la lista de alertas activas comparando la varianza angular
+    de cada tracker con el umbral de 450\,deg\textsuperscript{2} y la tendencia reciente de VWC
+    con el umbral crítico de 20.0\,pp.
+  \item La UI renderiza todos los componentes de la vista activa y el header del dashboard
+    muestra el número total de alertas en tiempo real.
+\end{enumerate}
+
+\subsection{Decisiones de rendimiento y UX}
+
+\begin{itemize}
+  \item \textbf{\texttt{st.cache\_data}}: evita relecturas de CSV en cada interacción de usuario.
+    Los datasets son estáticos; la caché se invalida únicamente al reiniciar el servidor.
+  \item \textbf{\texttt{st.fragment(run\_every=``3s'')}}: el slider horario y la sección interactiva
+    principal del Tab 1 se envuelven en un fragmento que se rerenderiza cada 3 segundos
+    cuando está activo el modo de reproducción automática. La sección de trackers y alertas
+    permanece fuera del fragmento para evitar parpadeos.
+  \item \textbf{SVG renderizado como imagen base64}: el SVG solar se codifica en base64 y se
+    embebe como etiqueta \texttt{<img>}. Streamlit sanitiza el HTML de \texttt{st.markdown} eliminando
+    defs, gradientes y filters; el método base64 conserva todos los estilos SVG.
+  \item \textbf{Paleta visual}: verde \texttt{\#16a34a} como color operativo principal, azul
+    \texttt{\#2563eb} para valores de referencia y rojo \texttt{\#dc2626} para alertas. La tipografía
+    es Apple/System para coherencia visual con el sistema operativo del cliente.
+  \item \textbf{Reproducción automática}: el slider avanza automáticamente un paso por hora
+    cada 3 segundos mediante un toggle de control. El modo puede desactivarse manualmente
+    o via parámetro URL (\texttt{?autoplay=0}).
+\end{itemize}
+
+% =============================================================================
+\section{Datos de Entrada}
+
+\begin{longtable}{p{0.40\textwidth} p{0.40\textwidth} p{0.12\textwidth}}
+\toprule
+\textbf{Archivo} & \textbf{Uso en Sprint 3} & \textbf{Registros} \\
+\midrule
+\texttt{dataset\_modelizacion\_6h.csv} & IEC, régimen, tracking, ePAR/VWC medios, elevación solar — base del Tab 1 y Tab 3 & 337 \\
+\texttt{dataset\_integrado\_6h.csv} & Series temporales históricas de todas las variables — base del Tab 2 & 1.462 \\
+\texttt{candidate\_rotation\_rules.csv} & Las 6 reglas candidatas de política de rotación — Tab 1 y Tab 3 & 6 \\
+\texttt{tracker\_variance\_diagnostic.csv} & Varianza angular por tracker — Tab 1 (grid) y Tab 4 (diagnóstico) & 10 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Estadísticos de las variables principales}
+
+\begin{longtable}{p{0.25\textwidth} p{0.13\textwidth} p{0.13\textwidth} p{0.13\textwidth} p{0.28\textwidth}}
+\toprule
+\textbf{Variable} & \textbf{Mínimo} & \textbf{Media} & \textbf{Máximo} & \textbf{Interpretación} \\
+\midrule
+IEC                 & 0.063  & 0.397   & 0.925    & Equilibrio energía-cultivo (0–1) \\
+VWC\_S1\_mean       & 10.405 & 22.786  & 39.700   & Humedad suelo S1 (\% volumétrico) \\
+ePAR\_S1\_mean      & $-0.016$ & 444.754 & 2.319.500 & Radiación PAR (\textmu mol/m\textsuperscript{2}/s) \\
+track\_mean         & $-32.3$ & 0.034  & 33.100   & Ángulo medio de seguimiento (°) \\
+solar\_elevation\_deg & $-18.2$ & 25.4  & 71.3    & Elevación solar teórica (°) \\
+\bottomrule
+\end{longtable}
+
+\subsection{Distribución por régimen de operación}
+
+\begin{longtable}{p{0.35\textwidth} p{0.2\textwidth} p{0.2\textwidth} p{0.18\textwidth}}
+\toprule
+\textbf{Régimen} & \textbf{Observaciones} & \textbf{IEC media} & \textbf{IEC mediana} \\
+\midrule
+TRACKING\_PM  & 84  & 0.742 & 0.741 \\
+TRACKING\_AM  & 84  & 0.440 & 0.429 \\
+HORIZONTAL    & 169 & 0.204 & 0.184 \\
+\bottomrule
+\end{longtable}
+
+HORIZONTAL representa el 50.1\% de las observaciones y tiene el IEC más bajo
+(mediana 0.184). La diferencia entre TRACKING\_PM y HORIZONTAL es de 0.557 puntos de
+IEC mediana, umbral que el dashboard usa para las alertas de régimen.
+
+% =============================================================================
+\section{Funcionalidades Implementadas}
+
+\subsection{Tab 1 — Dashboard principal}
+
+La pantalla principal concentra el estado operativo completo del sistema en una única vista
+(Figura~\ref{fig:dashboard_principal}). El slider horario (rango 06:00–21:00) permite al
+operador explorar cualquier franja del día y ver cómo cambian el régimen, el ángulo y el
+IEC. La reproducción automática avanza el slider cada 3 segundos, simulando una visión
+de evolución diaria del sistema.
+
+\begin{figure}[H]
+  \centering
+  % Guarda la captura en sprint3/figures/fig01_dashboard_principal.png
+  \includegraphics[width=\textwidth]{figures/fig01_dashboard_principal.png}
+  \caption{Tab 1 — Dashboard principal. Slider a las 12:00 (TRACKING\_PM). De arriba a abajo:
+    caja de justificación en lenguaje natural, SVG solar (izquierda) con gauge IEC y tarjetas
+    de métricas (derecha), y las 6 reglas candidatas con la regla activa resaltada en verde.}
+  \label{fig:dashboard_principal}
+\end{figure}
+
+Componentes del Tab 1:
+
+\begin{itemize}
+  \item \textbf{Caja de justificación en lenguaje natural}: para cada hora y régimen, el sistema
+    genera un texto contextual que explica por qué los paneles están en esa posición, la
+    elevación solar en ese instante y el nivel del IEC. El texto varía entre TRACKING\_PM
+    (fondo verde, explicación de máximo rendimiento), TRACKING\_AM (fondo azul) y
+    HORIZONTAL (fondo neutro, razón de reposo o protección de viento).
+  \item \textbf{SVG solar} (Figura~\ref{fig:svg_slider}): visualización vectorial con el sol
+    posicionado en el arco diario, los paneles inclinados al ángulo actual (línea azul sólida)
+    y la referencia del ángulo óptimo (línea verde discontinua). Incluye etiquetas de ángulo
+    y un indicador de estado «En rango óptimo» / «Fuera del rango recomendado».
+  \item \textbf{Gauge IEC y tarjetas de métricas} (Figura~\ref{fig:gauge_metricas}): el gauge
+    Plotly muestra el IEC con tres zonas coloreadas: roja (crítico $<$0.35), amarilla
+    (media 0.35–0.60) y verde (óptimo $>$0.60). Las cuatro tarjetas muestran ángulo actual,
+    ángulo recomendado, régimen activo y elevación solar.
+  \item \textbf{Tarjetas ePAR y VWC}: cuatro cards con etiquetas contextuales. ePAR evalúa si
+    la irradiancia PAR supera el umbral de compensación lumínica (200\,\textmu mol/m\textsuperscript{2}/s).
+    VWC evalúa si la humedad supera el umbral de riesgo hídrico (20.0\,pp) o está bien
+    hidratada ($\geq$30.0\,pp).
+  \item \textbf{Grid de 10 trackers} (Figura~\ref{fig:trackers_alertas}): cada tracker muestra
+    su varianza angular en deg\textsuperscript{2} y su estado (Normal en verde si $\leq$450\,deg\textsuperscript{2},
+    Alta varianza en rojo si $>$450\,deg\textsuperscript{2}).
+  \item \textbf{Panel de alertas activas}: a la derecha del grid, lista de alertas por tipo
+    (tracker anómalo, tendencia VWC crítica) con descripción y nivel de severidad.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.54\textwidth}
+    % Guarda en sprint3/figures/fig02_svg_slider.png
+    \includegraphics[width=\textwidth]{figures/fig02_svg_slider.png}
+    \caption{SVG solar con el ángulo actual (azul) y el óptimo recomendado (verde discontinuo).}
+    \label{fig:svg_slider}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.43\textwidth}
+    % Guarda en sprint3/figures/fig03_gauge_metricas.png
+    \includegraphics[width=\textwidth]{figures/fig03_gauge_metricas.png}
+    \caption{Gauge IEC y tarjetas de ángulo, régimen y elevación solar.}
+    \label{fig:gauge_metricas}
+  \end{subfigure}
+  \caption{Detalle de la columna visual del Tab 1 para la franja de las 12:00 (TRACKING\_PM, IEC~0.925).}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  % Guarda en sprint3/figures/fig04_trackers_alertas.png
+  \includegraphics[width=\textwidth]{figures/fig04_trackers_alertas.png}
+  \caption{Sección inferior del Tab 1: grid de estado de los 10 trackers (M02, M05, M06, M07, M10 en rojo)
+    y panel de alertas activas con severidad.}
+  \label{fig:trackers_alertas}
+\end{figure}
+
+\subsection{Tab 2 — Series temporales}
+
+El Tab 2 permite al operador explorar la evolución histórica de las variables del sistema
+(Figura~\ref{fig:series_temporales}). El selector de variables ofrece 13 columnas agrupadas
+en cuatro categorías: ePAR (S1/S2, dos sensores por sección), VWC (S1/S2, dos sensores por
+sección), irradiancia GPOA (S1/S2) y ángulo de tracking (M01, M03, M05).
+
+El tab genera tres visualizaciones complementarias:
+
+\begin{enumerate}
+  \item \textbf{Gráfico de líneas principal}: evolución temporal de las variables seleccionadas
+    sobre el rango de fechas filtrado. Las líneas de umbral crítico se superponen en rojo
+    discontinuo (ePAR: 200\,\textmu mol/m\textsuperscript{2}/s) y en naranja discontinuo (VWC: 20.0\,pp).
+  \item \textbf{Tendencia diaria suavizada}: gráfico de área con la media diaria de cada variable,
+    que permite identificar patrones de semanas o meses sin el ruido de la resolución de 6 horas.
+  \item \textbf{Distribución de valores} (boxplot): distribución estadística de cada variable
+    en el rango seleccionado, útil para comparar el comportamiento de S1 frente a S2 o
+    identificar asimetrías y outliers.
+\end{enumerate}
+
+Cuatro tarjetas resumen muestran la ventana temporal activa, el número de valores disponibles,
+el pico máximo de ePAR y el punto hídrico más bajo de VWC en el período filtrado.
+
+\begin{figure}[H]
+  \centering
+  % Guarda en sprint3/figures/fig05_series_temporales.png
+  \includegraphics[width=\textwidth]{figures/fig05_series_temporales.png}
+  \caption{Tab 2 — Series temporales con ePAR S1 y VWC S1 seleccionados. La línea naranja
+    discontinua marca el umbral crítico de VWC (20.0\,pp). Los dos gráficos inferiores muestran
+    la tendencia diaria (área) y la distribución estadística (boxplot).}
+  \label{fig:series_temporales}
+\end{figure}
+
+\subsection{Tab 3 — Recomendación}
+
+El Tab 3 presenta la política de rotación activa y la regla candidata aplicable al registro
+activo (Figura~\ref{fig:recomendacion}). A diferencia de la versión inicial del Sprint 3 (que
+seleccionaba la regla por proximidad de IEC), el motor actual evalúa las condiciones reales
+del registro más reciente: Albedo\_S1, Albedo\_S2, elevación solar, hora del día, régimen
+activo, VWC\_S1 y GPOA\_S2. Si ninguna condición se satisface, no se marca ninguna regla
+como activa, evitando recomendaciones espurias.
+
+Las 6 reglas candidatas se presentan ordenadas por IEC mediana esperado (de mayor a menor),
+con el tipo de regla en un badge de color, el soporte estadístico y el texto de la condición.
+La regla activa se resalta con un borde verde y una etiqueta «ACTIVA».
+
+\begin{figure}[H]
+  \centering
+  % Guarda en sprint3/figures/fig06_recomendacion.png
+  \includegraphics[width=\textwidth]{figures/fig06_recomendacion.png}
+  \caption{Tab 3 — Recomendación. La regla de prioridad alta (Albedo\_S1 $>$ 55.7 y elevación
+    $>$ 68°, IEC mediana 0.862) aparece marcada como ACTIVA con borde verde. Las cinco
+    reglas restantes se listan con su soporte estadístico.}
+  \label{fig:recomendacion}
+\end{figure}
+
+\subsection{Tab 4 — Alertas}
+
+El Tab 4 centraliza la información de anomalías del sistema (Figura~\ref{fig:alertas}). Incluye
+tres componentes:
+
+\begin{itemize}
+  \item \textbf{Lista de alertas activas}: ordenada por severidad (CRÍTICO en rojo, AVISO en
+    naranja). Cada alerta incluye título, descripción detallada y nivel.
+  \item \textbf{Tabla de diagnóstico de trackers}: todos los trackers con su varianza angular
+    en deg\textsuperscript{2}, ordenados de mayor a menor varianza. Los trackers que superan el
+    umbral de 450\,deg\textsuperscript{2} se destacan como de Alta varianza.
+  \item \textbf{Evolución reciente de VWC}: gráfico de evolución temporal de VWC en los
+    últimos registros disponibles, con la línea de umbral crítico (20.0\,pp) superpuesta.
+    Las alertas de VWC se expresan como tendencia en puntos porcentuales por hora.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  % Guarda en sprint3/figures/fig07_alertas.png
+  \includegraphics[width=\textwidth]{figures/fig07_alertas.png}
+  \caption{Tab 4 — Alertas. Panel superior con las alertas activas por severidad. Tabla inferior
+    izquierda con el diagnóstico de varianza de los 10 trackers. Gráfico inferior derecho con la
+    evolución reciente de VWC y la línea de umbral crítico.}
+  \label{fig:alertas}
+\end{figure}
+
+% =============================================================================
+\section{Reglas, Alertas y Control Operativo}
+
+\subsection{Reglas candidatas de rotación}
+
+Las 6 reglas candidatas proceden del análisis del Sprint 2 (árbol de decisión + análisis
+observacional por régimen) y están implementadas en \texttt{rule\_engine.py} con evaluación
+de condiciones explícitas.
+
+\begin{longtable}{p{0.16\textwidth} p{0.45\textwidth} p{0.14\textwidth} p{0.1\textwidth} p{0.07\textwidth}}
+\toprule
+\textbf{Tipo} & \textbf{Condición / recomendación} & \textbf{Condición evaluada} & \textbf{IEC mediana} & \textbf{n} \\
+\midrule
+prioridad\_alta & Si Albedo\_S1 $>$ 55.7 y la elevación solar supera 68°, priorizar tracking activo de tarde y evitar modos conservadores & Albedo\_S1, solar\_elev & 0.862 & 33 \\
+operativa & Si la franja es 12:00 y el sistema opera en TRACKING\_PM, mantener un ángulo cercano a 31.8° & hora, régimen & 0.769 & 75 \\
+operativa & Si la franja es 06:00 y el sistema opera en TRACKING\_AM, mantener un ángulo cercano a $-$32.2° & hora, régimen & 0.602 & 10 \\
+transicion & Si Albedo\_S1 $\leq$ 55.7 pero Albedo\_S2 $>$ 18.0 y VWC\_S1 $>$ 20.0, usar tracking suave antes que HORIZONTAL permanente & Albedo, VWC\_S1 & 0.435 & 51 \\
+evitacion & Evitar HORIZONTAL en franjas productivas cuando existan condiciones para tracking activo & (umbral régimen) & 0.184 & 169 \\
+cautela\_hidrica & Si Albedo\_S1 $\leq$ 55.7, Albedo\_S2 $\leq$ 18.0, VWC\_S1 $\leq$ 22.2 y GPOA\_S2 $\leq$ 35.5, evitar forzar producción: IEC esperado muy bajo & Albedo, VWC, GPOA & 0.093 & 43 \\
+\bottomrule
+\end{longtable}
+
+La corrección implementada en el PR~\#2 garantiza que la activación de reglas evalúa las
+columnas reales del registro activo. Si el registro no contiene alguna variable necesaria,
+la regla correspondiente no se activa. Esto elimina los falsos positivos que se producían
+en la versión inicial, donde la regla con IEC más próximo al IEC actual se marcaba como activa
+con independencia de sus condiciones.
+
+\subsection{Diagnóstico de trackers}
+
+El umbral de anomalía se fija en 450\,deg\textsuperscript{2}. Una varianza superior indica
+que el tracker no sigue con precisión las consignas angulares, lo que puede deberse a un
+fallo mecánico, una posición de stow permanente o un problema de comunicación.
+
+\begin{longtable}{p{0.2\textwidth} p{0.26\textwidth} p{0.2\textwidth} p{0.28\textwidth}}
+\toprule
+\textbf{Tracker} & \textbf{Varianza (deg\textsuperscript{2})} & \textbf{Estado} & \textbf{Nota} \\
+\midrule
+M01 & 445.2 & Normal  & Por debajo del umbral \\
+M02 & 508.5 & \textcolor{samored}{Alta varianza} & Identificado como anómalo en Sprint 1 \\
+M03 & 441.7 & Normal  & \\
+M04 & 438.1 & Normal  & \\
+M05 & 534.9 & \textcolor{samored}{Alta varianza} & Varianza más alta del conjunto \\
+M06 & 513.0 & \textcolor{samored}{Alta varianza} & Identificado como anómalo en Sprint 1 \\
+M07 & 535.0 & \textcolor{samored}{Alta varianza} & Varianza más alta del conjunto \\
+M08 & 443.5 & Normal  & \\
+M09 & 446.8 & Normal  & \\
+M10 & 509.0 & \textcolor{samored}{Alta varianza} & Identificado como anómalo en Sprint 1 \\
+\bottomrule
+\end{longtable}
+
+Cinco de los diez trackers superan el umbral: M02, M05, M06, M07 y M10. M02, M06 y M10
+fueron identificados con comportamiento anómalo ya en el Sprint 1 (posición prácticamente
+fija en torno a 50.6°). M05 y M07 son trackers activos que no estaban en la lista original
+del Sprint 1, por lo que sus varianzas altas merecen verificación técnica adicional.
+
+\subsection{Lógica de alertas}
+
+El módulo \texttt{alert\_logic.py} genera alertas de dos tipos:
+
+\begin{itemize}
+  \item \textbf{Alertas de tracker}: se genera una alerta por cada tracker con varianza angular
+    superior a 450\,deg\textsuperscript{2}. La severidad es CRÍTICO para varianzas $>$520\,deg\textsuperscript{2}
+    y AVISO para el rango 450–520\,deg\textsuperscript{2}.
+  \item \textbf{Alertas de VWC}: se evalúa la tendencia reciente de VWC en los últimos registros
+    del dataset de modelización. Una caída sostenida que sitúe la proyección por debajo de
+    20.0\,pp genera una alerta de riesgo hídrico con la tendencia expresada en puntos
+    porcentuales por hora.
+\end{itemize}
+
+% =============================================================================
+\section{Mejora Técnica: Sensibilidad del IEC por Prioridades}
+
+La rama \texttt{iec-sensitivity-dashboard} (no fusionada en \texttt{main} en esta versión) trata
+el IEC como índice configurable en lugar de verdad fija. Permite comparar tres escenarios
+de ponderación que responden a diferentes estrategias operativas del cliente.
+
+\begin{longtable}{p{0.22\textwidth} p{0.18\textwidth} p{0.18\textwidth} p{0.36\textwidth}}
+\toprule
+\textbf{Escenario} & \textbf{Peso energía} & \textbf{Peso cultivo} & \textbf{Objetivo operativo} \\
+\midrule
+Equilibrado       & 0.5 & 0.5 & Compromiso simétrico entre producción y cultivo \\
+Priorizar energía & 0.7 & 0.3 & Maximizar la generación fotovoltaica \\
+Priorizar cultivo & 0.3 & 0.7 & Favorecer la protección microclimática y hídrica \\
+\bottomrule
+\end{longtable}
+
+\subsection{Resultados por régimen y escenario}
+
+\begin{longtable}{p{0.18\textwidth} p{0.18\textwidth} p{0.08\textwidth} p{0.15\textwidth} p{0.15\textwidth} p{0.12\textwidth} p{0.12\textwidth}}
+\toprule
+\textbf{Escenario} & \textbf{Régimen} & \textbf{n} & \textbf{IEC orig.\ med.} & \textbf{IEC pond.\ med.} & \textbf{Energy med.} & \textbf{Crop med.} \\
+\midrule
+Equilibrado       & HORIZONTAL    & 169 & 0.184 & 0.184 & 0.000 & 0.264 \\
+Equilibrado       & TRACKING\_AM  & 84  & 0.429 & 0.429 & 0.442 & 0.485 \\
+Equilibrado       & TRACKING\_PM  & 84  & 0.741 & 0.741 & 0.908 & 0.626 \\
+\midrule
+Priorizar energía & HORIZONTAL    & 169 & 0.184 & 0.142 & 0.000 & 0.264 \\
+Priorizar energía & TRACKING\_AM  & 84  & 0.429 & 0.419 & 0.442 & 0.485 \\
+Priorizar energía & TRACKING\_PM  & 84  & 0.741 & 0.811 & 0.908 & 0.626 \\
+\midrule
+Priorizar cultivo & HORIZONTAL    & 169 & 0.184 & 0.208 & 0.000 & 0.264 \\
+Priorizar cultivo & TRACKING\_AM  & 84  & 0.429 & 0.444 & 0.442 & 0.485 \\
+Priorizar cultivo & TRACKING\_PM  & 84  & 0.741 & 0.695 & 0.908 & 0.626 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Política recomendada por hora}
+
+\begin{longtable}{p{0.20\textwidth} p{0.08\textwidth} p{0.22\textwidth} p{0.12\textwidth} p{0.18\textwidth} p{0.10\textwidth}}
+\toprule
+\textbf{Escenario} & \textbf{Hora} & \textbf{Régimen rec.} & \textbf{Ángulo (°)} & \textbf{IEC pond.\ med.} & \textbf{Soporte} \\
+\midrule
+Equilibrado       & 00 & HORIZONTAL   & $-2.7$  & 0.300 & 84 \\
+Equilibrado       & 06 & TRACKING\_AM & $-32.3$ & 0.613 & 84 \\
+Equilibrado       & 12 & TRACKING\_PM & $+32.6$ & 0.925 & 84 \\
+Equilibrado       & 18 & HORIZONTAL   & $+2.3$  & 0.430 & 85 \\
+\midrule
+Priorizar energía & 00 & HORIZONTAL   & $-2.7$  & 0.180 & 84 \\
+Priorizar energía & 06 & TRACKING\_AM & $-31.5$ & 0.716 & 84 \\
+Priorizar energía & 12 & TRACKING\_PM & $+32.6$ & 0.955 & 84 \\
+Priorizar energía & 18 & HORIZONTAL   & $+2.3$  & 0.362 & 85 \\
+\midrule
+Priorizar cultivo & 00 & HORIZONTAL   & $-2.7$  & 0.421 & 84 \\
+Priorizar cultivo & 06 & TRACKING\_AM & $-32.3$ & 0.667 & 84 \\
+Priorizar cultivo & 12 & TRACKING\_PM & $+32.6$ & 0.895 & 84 \\
+Priorizar cultivo & 18 & HORIZONTAL   & $+2.3$  & 0.498 & 85 \\
+\bottomrule
+\end{longtable}
+
+El análisis confirma que TRACKING\_PM es el régimen más sólido en todos los escenarios
+para la franja de las 12:00. Al priorizar energía, su IEC ponderado sube de 0.741 a 0.811
+(+9.4\%); al priorizar cultivo baja a 0.695 ($-$6.2\%), pero sigue siendo competitivo frente
+a las alternativas. HORIZONTAL mejora relativamente cuando se prioriza cultivo (de 0.184 a
+0.208 en mediana), pero no supera a los modos de seguimiento activo en ninguna franja productiva.
+La franja de las 18:00 es el caso donde la elección de ponderación tiene mayor impacto
+relativo sobre la recomendación: el IEC de HORIZONTAL varía entre 0.362 (energía) y 0.498
+(cultivo), un rango de 0.136 puntos que puede ser operativamente significativo.
+
+% =============================================================================
+\section{Validación Técnica}
+
+\subsection{Suite de tests unitarios}
+
+El Sprint 3 incorporó por primera vez una suite de tests unitarios con cobertura de todos
+los módulos de lógica de negocio. Los tests se organizan en seis archivos en el directorio
+\texttt{sprint3/tests/}:
+
+\begin{longtable}{p{0.38\textwidth} p{0.15\textwidth} p{0.4\textwidth}}
+\toprule
+\textbf{Archivo de test} & \textbf{Tests} & \textbf{Módulo cubierto} \\
+\midrule
+\texttt{test\_alert\_logic.py}    & 7  & \texttt{alert\_logic.py}: detección de trackers anómalos y tendencia VWC \\
+\texttt{test\_data\_loader.py}    & 5  & \texttt{data\_loader.py}: carga, ordenación y caché de CSVs \\
+\texttt{test\_rule\_engine.py}    & 9  & \texttt{rule\_engine.py}: activación y no activación de cada regla \\
+\texttt{test\_solar\_logic.py}    & 6  & \texttt{solar\_logic.py}: elevación solar y ángulo recomendado \\
+\texttt{test\_svg\_generator.py}  & 5  & \texttt{svg\_generator.py}: generación de SVG válido y parámetros \\
+\texttt{test\_vwc\_thresholds.py} & 5  & Umbrales VWC (20.0 / 30.0) en lógica de etiquetado \\
+\midrule
+\textbf{Total} & \textbf{37} & \\
+\bottomrule
+\end{longtable}
+
+Comando de ejecución: \texttt{py -3.11 -m pytest tests -q -p no:cacheprovider}
+
+Resultado: \textbf{37 passed} — sin errores ni warnings en el conjunto de test actual.
+
+Los tests de \texttt{test\_rule\_engine.py} y \texttt{test\_vwc\_thresholds.py} fueron los que
+detectaron los dos bugs corregidos en el PR~\#2:
+
+\begin{itemize}
+  \item \textbf{Bug de escala VWC}: el test \texttt{test\_vwc\_thresholds.py} verificó que el
+    umbral de alerta es 20.0 (porcentaje) y no 0.20 (decimal), lo que habría generado alertas
+    de VWC incorrectas en la práctica totalidad de los registros.
+  \item \textbf{Bug de activación de regla}: el test \texttt{test\_rule\_engine.py} comprobó que
+    ninguna regla se activa cuando sus condiciones no se cumplen, detectando que la versión
+    previa al PR marcaba como activa la regla con IEC más próximo al valor actual con
+    independencia de las condiciones declaradas.
+\end{itemize}
+
+\subsection{Integridad del repositorio}
+
+\begin{longtable}{p{0.48\textwidth} p{0.46\textwidth}}
+\toprule
+\textbf{Verificación} & \textbf{Resultado} \\
+\midrule
+37 tests unitarios & \textcolor{samogreen}{\textbf{37 passed}} \\
+PR \#2 fusionado en \texttt{main} & Commit \texttt{2172d58} \\
+Working tree limpio al cierre & Sin cambios no versionados \\
+Corrección escala VWC & Umbrales 20.0 / 30.0 en UI, series y alertas \\
+Corrección regla activa & Evaluación de condiciones reales del registro \\
+\bottomrule
+\end{longtable}
+
+% =============================================================================
+\section{Limitaciones y Próximos Pasos}
+
+\subsection{Limitaciones actuales}
+
+\begin{itemize}
+  \item \textbf{Sistema de soporte a la decisión, no de control}: el dashboard proporciona
+    recomendaciones operativas, no consignas automáticas. Cualquier acción sobre los trackers
+    requiere intervención humana validada.
+  \item \textbf{Resolución de 6 horas}: el dataset de modelización solo contiene franjas a las
+    0, 6, 12 y 18 horas. Las horas intermedias del slider usan el registro con el IEC más
+    alto de la hora disponible más cercana, lo que introduce una aproximación en la representación
+    del estado del sistema.
+  \item \textbf{Reglas candidatas sin validación agronómica}: las 6 reglas proceden del Sprint 2
+    y reflejan correlaciones estadísticas, no causalidad probada. Se etiquetan explícitamente
+    como provisionales en el dashboard hasta recibir validación del especialista agrícola.
+  \item \textbf{Umbrales IEC/VWC/ePAR operativos}: los valores de referencia del IEC (pesos
+    0.5/0.5) y los umbrales de VWC (20.0 y 30.0\,pp) son operativos. Deben contrastarse
+    con el especialista agrícola del proyecto antes de la entrega final.
+  \item \textbf{Rama de sensibilidad IEC no fusionada}: el análisis de ponderaciones es una
+    extensión técnica relevante, pero no forma parte de \texttt{main} en esta versión.
+  \item \textbf{Datos históricos únicamente}: el dashboard no tiene feed en tiempo real. Opera
+    sobre los datos del período junio–octubre 2025.
+\end{itemize}
+
+\subsection{Recomendaciones para el Sprint 4}
+
+\begin{itemize}
+  \item Decidir si la rama \texttt{iec-sensitivity-dashboard} se integra en \texttt{main} para la
+    demo final. Si el cliente valora la comparativa de escenarios, la integración añade valor
+    diferencial sin coste técnico adicional relevante.
+  \item Capturar evidencias visuales del dashboard funcional (pantallazos de los cuatro tabs)
+    para incorporarlas a la documentación técnica final E07 y a la presentación de cierre E06.
+  \item Limpiar los artefactos \texttt{\_\_pycache\_\_} versionados en el repositorio y actualizar
+    el \texttt{.gitignore} para evitar que vuelvan a versionarse.
+  \item Revisar con el especialista agrícola las 6 reglas y los umbrales del IEC antes de la
+    presentación final, y documentar el resultado como artefacto del proyecto.
+  \item Preparar una guía de ejecución breve (2–3 pasos) para que el cliente pueda lanzar el
+    dashboard de forma autónoma en su entorno.
+  \item Evaluar si el alcance del Sprint 4 puede incluir un módulo de ingesta en tiempo real
+    o si el alcance del proyecto queda explícitamente restringido al análisis histórico.
+\end{itemize}
+
+% =============================================================================
+\section{Conclusión}
+
+El Sprint 3 ha cumplido su objetivo principal: transformar los outputs del análisis y la
+modelización en una interfaz operativa funcional. El dashboard v1 integra en una sola
+aplicación la monitorización del IEC, la visualización histórica de sensores, la
+recomendación de régimen de rotación y la detección de alertas, siguiendo en todo momento
+el principio rector del proyecto: el equilibrio entre producción energética y condiciones
+favorables para el cultivo.
+
+Los dos bugs corregidos antes del cierre (escala VWC y activación de reglas) ilustran la
+importancia de la suite de tests unitarios como mecanismo de calidad. Sin esa cobertura,
+ambos errores habrían llegado a la entrega con impacto directo sobre la fiabilidad de las
+alertas y las recomendaciones.
+
+El sistema está listo para ser presentado al cliente en la Sprint Review del Sprint 4 como
+prototipo funcional, con las limitaciones explícitamente documentadas y una ruta clara
+hacia la versión de entrega final.
+
+\vspace{2em}
+\begin{center}
+  \textit{Equipo Chacorocalfarobar — Sostenibilidad y Ciencia}
+\end{center}
+
+\end{document}
