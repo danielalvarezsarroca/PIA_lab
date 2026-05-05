@@ -8,9 +8,58 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+DATASET_VARIABLES_USED = [
+    "VWC_S1_mean",
+    "Tsoil_S1_mean",
+    "Tair_WS",
+    "ePAR_S1_mean",
+    "ePAR_R1_mean",
+    "wind_speed_kmh",
+    "precip_intensity_mm10min",
+]
+
+REFERENCE_SOURCES = {
+    "FAO-56": {
+        "name": "FAO-56 crop evapotranspiration",
+        "url": "https://www.fao.org/3/X0490E/x0490e00.htm",
+        "use": "Marco tecnico para necesidades hidricas de cultivo mediante ETo, Kc y ETc.",
+    },
+    "RuralCat": {
+        "name": "RuralCat recomanacions de reg",
+        "url": "https://ruralcat.gencat.cat/web/guest/eines/recomanacions-de-reg",
+        "use": "Referencia local catalana para recomendaciones de riego basadas en estaciones agroclimaticas.",
+    },
+    "Illinois Extension lettuce": {
+        "name": "University of Illinois Extension - Lettuce",
+        "url": "https://extension.illinois.edu/gardening/lettuce",
+        "use": "Rangos termicos de cultivo fresco para lechuga y sensibilidad a calor.",
+    },
+    "Oregon State Extension broccoli": {
+        "name": "Oregon State University Extension - Broccoli",
+        "url": "https://extension.oregonstate.edu/imported-publication/broccoli",
+        "use": "Rangos termicos de cultivo fresco para brocoli y riesgo con temperaturas altas.",
+    },
+    "UMN irrigation sensors": {
+        "name": "University of Minnesota Extension - Irrigation strategies for vegetables",
+        "url": "https://extension.umn.edu/vegetables/irrigation-strategies-vegetables",
+        "use": "Uso de sensores de humedad del suelo para decisiones de riego en hortalizas.",
+    },
+}
+
 CROP_PROFILES: dict[str, dict[str, Any]] = {
     "lechuga": {
         "display_name": "Lechuga",
+        "method_note": (
+            "Perfil experto referenciado, no aprendida por RL: se aplica sobre variables proxy "
+            "del dataset hasta disponer de biomasa, salud visual o rendimiento de cosecha."
+        ),
+        "dataset_variables": DATASET_VARIABLES_USED,
+        "sources": [
+            REFERENCE_SOURCES["FAO-56"],
+            REFERENCE_SOURCES["RuralCat"],
+            REFERENCE_SOURCES["Illinois Extension lettuce"],
+            REFERENCE_SOURCES["UMN irrigation sensors"],
+        ],
         "air_temp_warn_high_c": 24.0,
         "air_temp_critical_high_c": 28.0,
         "soil_temp_warn_high_c": 22.0,
@@ -27,6 +76,17 @@ CROP_PROFILES: dict[str, dict[str, Any]] = {
     },
     "brocoli": {
         "display_name": "Brocoli",
+        "method_note": (
+            "Perfil experto referenciado, no aprendida por RL: se aplica sobre variables proxy "
+            "del dataset hasta disponer de biomasa, salud visual o rendimiento de cosecha."
+        ),
+        "dataset_variables": DATASET_VARIABLES_USED,
+        "sources": [
+            REFERENCE_SOURCES["FAO-56"],
+            REFERENCE_SOURCES["RuralCat"],
+            REFERENCE_SOURCES["Oregon State Extension broccoli"],
+            REFERENCE_SOURCES["UMN irrigation sensors"],
+        ],
         "air_temp_warn_high_c": 26.0,
         "air_temp_critical_high_c": 31.0,
         "soil_temp_warn_high_c": 24.0,
@@ -43,6 +103,16 @@ CROP_PROFILES: dict[str, dict[str, Any]] = {
     },
     "generico_horticola": {
         "display_name": "Horticola generico",
+        "method_note": (
+            "Perfil experto referenciado, no aprendida por RL: se aplica sobre variables proxy "
+            "del dataset hasta disponer de biomasa, salud visual o rendimiento de cosecha."
+        ),
+        "dataset_variables": DATASET_VARIABLES_USED,
+        "sources": [
+            REFERENCE_SOURCES["FAO-56"],
+            REFERENCE_SOURCES["RuralCat"],
+            REFERENCE_SOURCES["UMN irrigation sensors"],
+        ],
         "air_temp_warn_high_c": 27.0,
         "air_temp_critical_high_c": 32.0,
         "soil_temp_warn_high_c": 25.0,
@@ -233,37 +303,38 @@ def build_crop_risk_dataset(model_df: pd.DataFrame, crop_type: str = "lechuga") 
 
 
 def generate_agricultural_rules_10min(risk_df: pd.DataFrame, crop_type: str = "lechuga") -> pd.DataFrame:
-    _profile(crop_type)
+    profile = _profile(crop_type)
+    source_names = ", ".join(source["name"] for source in profile["sources"])
     df = risk_df[risk_df["recommended_action"] != "mantener"].copy()
     rules = []
     action_templates = {
         "regar": (
             "Si el VWC de {cultivo} cae por debajo del umbral de confort, activar riego localizado manteniendo la politica energetica si no hay estres termico.",
-            "Accion modelable con humedad del suelo normalizada; no requiere sensores extra.",
+            "Regla experta referenciada: usa humedad del suelo normalizada del dataset y criterios de riego FAO/RuralCat.",
         ),
         "riego_preventivo": (
             "Si {cultivo} combina deficit hidrico con calor, aplicar riego preventivo y aumentar sombra para evitar perdida de vigor.",
-            "Accion combinada por VWC bajo y temperatura alta.",
+            "Regla experta referenciada: combina VWC bajo y temperatura alta como proxy de estres hidrico-termico.",
         ),
         "pausar_riego": (
             "Si {cultivo} presenta VWC alto o lluvia reciente, pausar riego para reducir riesgo de encharcamiento.",
-            "Accion modelable con VWC y precipitacion a 10 minutos.",
+            "Regla experta referenciada: usa VWC y precipitacion a 10 minutos para evitar exceso hidrico.",
         ),
         "aumentar_sombreado": (
             "Si {cultivo} entra en estres termico o radiacion excesiva, aumentar sombreado mediante la posicion de placas compatible con buen IEC.",
-            "Convierte la rotacion en una accion agronomica de microclima.",
+            "Regla experta referenciada: convierte la rotacion en una accion de microclima cuando temperatura/PAR superan umbrales.",
         ),
         "reducir_sombreado": (
             "Si {cultivo} recibe poca PAR sin estres termico ni lluvia, reducir sombreado para recuperar actividad fotosintetica.",
-            "Accion modelable por fraccion PAR bajo panel frente a referencia.",
+            "Regla experta referenciada: usa fraccion PAR bajo panel frente a referencia como proxy de deficit luminico.",
         ),
         "posicion_segura": (
             "Si hay viento fuerte, usar posicion segura de placas y suspender cambios agresivos sobre {cultivo}.",
-            "Accion de proteccion por meteorologia.",
+            "Regla experta referenciada: accion de proteccion por meteorologia usando viento del dataset.",
         ),
         "alerta_frio": (
             "Si {cultivo} entra en umbral frio, generar alerta de proteccion termica y evitar riegos innecesarios.",
-            "Accion modelable con temperatura del suelo.",
+            "Regla experta referenciada: usa temperatura del suelo como proxy de frio para hortalizas.",
         ),
     }
 
@@ -280,6 +351,8 @@ def generate_agricultural_rules_10min(risk_df: pd.DataFrame, crop_type: str = "l
             "riesgo_mediano": round(float(subset["crop_risk_score"].median()), 3),
             "iec_mediana": round(float(subset["IEC"].median()), 3),
             "franja_dominante": str(subset["time_block_10min"].mode().iloc[0]) if not subset.empty else "",
+            "variables_dataset": ", ".join(DATASET_VARIABLES_USED),
+            "fuentes": source_names,
             "comentario": comment,
         })
 
@@ -294,6 +367,8 @@ def generate_agricultural_rules_10min(risk_df: pd.DataFrame, crop_type: str = "l
             "riesgo_mediano",
             "iec_mediana",
             "franja_dominante",
+            "variables_dataset",
+            "fuentes",
             "comentario",
         ],
     )
@@ -315,10 +390,17 @@ def write_agricultural_outputs(
     agricultural_rules.to_csv(agricultural_rules_path, index=False)
     payload = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "method": "reglas expertas referenciadas sobre variables proxy del dataset",
+        "scope": (
+            "Estas reglas no son una recompensa RL aprendida ni un modelo agronomico supervisado; "
+            "documentan umbrales aplicables a VWC, temperatura, PAR, lluvia y viento hasta disponer "
+            "de etiquetas reales de salud, biomasa o rendimiento."
+        ),
+        "reference_sources": REFERENCE_SOURCES,
         "profiles": crop_profiles or CROP_PROFILES,
         "note": (
-            "Perfiles demo con umbrales agronomicos aproximados. Validar con especialista "
-            "antes de automatizar riego, sombreado o manejo del cultivo."
+            "Perfiles demo con umbrales agronomicos referenciados. Validar con especialista "
+            "antes de automatizar riego, sombreado o manejo del cultivo; no son una recompensa RL aprendida."
         ),
     }
     crop_profiles_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -76,6 +76,19 @@ def test_generate_agricultural_rules_10min_summarizes_actions_with_support():
     assert {"tipo", "cultivo", "accion", "regla", "soporte_obs", "riesgo_mediano", "comentario"}.issubset(rules.columns)
     assert {"regar", "pausar_riego", "aumentar_sombreado", "posicion_segura"}.issubset(set(rules["accion"]))
     assert rules["regla"].str.contains("brocoli").any()
+    assert "fuentes" in rules.columns
+    assert rules["fuentes"].str.contains("FAO-56|RuralCat|Extension", regex=True).any()
+    assert rules["comentario"].str.contains("regla experta", case=False).all()
+
+
+def test_crop_profiles_document_sources_and_dataset_variables():
+    lechuga = CROP_PROFILES["lechuga"]
+
+    assert {"sources", "dataset_variables", "method_note"}.issubset(lechuga)
+    assert {"VWC_S1_mean", "Tsoil_S1_mean", "Tair_WS", "ePAR_S1_mean"}.issubset(lechuga["dataset_variables"])
+    assert any("FAO" in source["name"] for source in lechuga["sources"])
+    assert any(source["url"].startswith("https://") for source in lechuga["sources"])
+    assert "no aprendida por RL" in lechuga["method_note"]
 
 
 def test_write_agricultural_outputs_creates_crop_files(tmp_path: Path):
@@ -89,3 +102,6 @@ def test_write_agricultural_outputs_creates_crop_files(tmp_path: Path):
     assert paths["agricultural_rules"].exists()
     assert paths["crop_profiles"].exists()
     assert pd.read_csv(paths["agricultural_rules"])["accion"].str.len().gt(0).all()
+    profile_text = paths["crop_profiles"].read_text(encoding="utf-8")
+    assert "reglas expertas referenciadas" in profile_text
+    assert "no son una recompensa RL aprendida" in profile_text

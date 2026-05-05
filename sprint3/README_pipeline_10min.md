@@ -46,7 +46,7 @@ El comando genera:
 - `outputs_10min/backup_6h/dataset_modelizacion_6h.csv`
 - `outputs_10min/backup_6h/candidate_rotation_rules.csv`
 
-## Acciones agronomicas modelables
+## Capa agronomica referenciada
 
 Con las variables actuales se generan recomendaciones para:
 
@@ -58,10 +58,26 @@ Con las variables actuales se generan recomendaciones para:
 - `posicion_segura`: viento elevado.
 - `alerta_frio`: temperatura de suelo demasiado baja.
 
-Estas reglas son interpretables y utiles para la demo, pero sus umbrales son
-perfiles aproximados para `lechuga`, `brocoli` y `generico_horticola`. Antes de
-automatizar riego, sombreado o manejo de cultivo deben validarse con el cliente
-o un especialista agricola.
+Estas reglas no son una recompensa RL aprendida ni un modelo agronomico
+supervisado. Son una capa experta interpretable aplicada sobre variables proxy
+que si existen en el dataset: `VWC_S1_mean`, `Tsoil_S1_mean`, `Tair_WS`,
+`ePAR_S1_mean`, `ePAR_R1_mean`, `wind_speed_kmh` y
+`precip_intensity_mm10min`.
+
+Los perfiles de `lechuga`, `brocoli` y `generico_horticola` incluyen fuentes
+tecnicas en `crop_profiles.json`:
+
+- FAO-56 para marco de necesidades hidricas (`ETo`, `Kc`, `ETc`).
+- RuralCat como referencia local catalana de recomendaciones de riego.
+- Guias de extension agricola para rangos termicos de lechuga y brocoli.
+- Extension universitaria sobre uso de sensores de humedad del suelo en
+  hortalizas.
+
+La defensa tecnica es: el componente energetico se deriva del historico
+sensorizado, mientras que el componente agricola usa reglas expertas
+referenciadas hasta disponer de etiquetas reales de salud, biomasa o rendimiento
+del cultivo. Antes de automatizar riego, sombreado o manejo de cultivo deben
+validarse los umbrales con el cliente o un especialista agricola.
 
 ## Diferencia con el pipeline 6h
 
