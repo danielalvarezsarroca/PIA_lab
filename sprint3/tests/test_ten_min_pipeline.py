@@ -15,9 +15,9 @@ def _master_sample() -> pd.DataFrame:
             "2026-05-03 06:00",
             "2026-05-03 06:10",
             "2026-05-03 06:20",
-            "2026-05-03 06:30",
-            "2026-05-03 06:40",
-            "2026-05-03 06:50",
+            "2026-05-03 12:00",
+            "2026-05-03 12:10",
+            "2026-05-03 12:20",
         ]),
         "tracker_angle_deg": [-32.0, -30.0, -28.0, 31.0, 33.0, 34.0],
         "solar_elevation_deg": [15.0, 18.0, 21.0, 70.0, 72.0, 71.0],
@@ -36,7 +36,7 @@ def _master_sample() -> pd.DataFrame:
         "VWC_S1_mean": [25.0, 25.0, 25.0, 23.0, 23.0, 23.0],
         "VWC_S2_mean": [21.0, 21.0, 21.0, 20.0, 20.0, 20.0],
         "GPOA_mean": [90.0, 140.0, 190.0, 760.0, 790.0, 780.0],
-        "ALBEDO_mean": [18.0, 18.5, 19.0, 35.0, 36.0, 35.0],
+        "ALBEDO_mean": [18.0, 18.5, 19.0, 62.0, 66.0, 64.0],
         "Delta_PAR_S1": [-45.0, -80.0, -100.0, -380.0, -380.0, -360.0],
         "Delta_Tsoil_S1": [-0.5, -0.5, -0.5, -1.0, -1.0, -1.0],
         "Delta_VWC_S1": [2.0, 2.0, 2.0, 1.0, 1.0, 1.0],
@@ -46,7 +46,8 @@ def _master_sample() -> pd.DataFrame:
 def test_build_modeling_dataset_10min_preserves_resolution_and_maps_columns():
     model = build_modeling_dataset_10min(_master_sample())
 
-    assert model["Time"].diff().dropna().dt.total_seconds().eq(600).all()
+    six_am = model[model["Time"].dt.hour == 6]
+    assert six_am["Time"].diff().dropna().dt.total_seconds().eq(600).all()
     assert set(model["source_resolution"]) == {"10min"}
     assert model.loc[0, "track_mean"] == -32.0
     assert model.loc[0, "tracking_regime"] == "TRACKING_AM"
@@ -62,7 +63,19 @@ def test_regenerate_candidate_rules_10min_uses_finer_time_blocks():
 
     assert not rules.empty
     assert {"tipo", "regla", "soporte_obs", "iec_mediana", "comentario"}.issubset(rules.columns)
+    assert "10min_microbloque" in set(rules["tipo"])
     assert rules["comentario"].str.contains("10 min").any()
+
+
+def test_regenerate_candidate_rules_10min_includes_conditional_and_period_rules():
+    model = build_modeling_dataset_10min(_master_sample())
+
+    rules = regenerate_candidate_rules_10min(model)
+
+    assert "10min_condicional_albedo_elevacion" in set(rules["tipo"])
+    assert "10min_franja_manana" in set(rules["tipo"])
+    assert "10min_franja_mediodia" in set(rules["tipo"])
+    assert rules["regla"].str.contains("Albedo_S1").any()
 
 
 def test_write_10min_outputs_creates_dataset_rules_metadata_and_6h_backup(tmp_path: Path):

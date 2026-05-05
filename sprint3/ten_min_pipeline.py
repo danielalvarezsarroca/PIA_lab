@@ -133,6 +133,66 @@ def regenerate_candidate_rules_10min(model_df: pd.DataFrame) -> pd.DataFrame:
     if daylight.empty:
         daylight = df
 
+    rules = []
+
+    high_albedo_elevation = daylight[
+        (daylight["Albedo_S1"].fillna(-1) > 55.7)
+        & (daylight["solar_elevation_deg"].fillna(-1) > 68)
+    ]
+    if not high_albedo_elevation.empty:
+        best_regime = high_albedo_elevation["tracking_regime"].mode()
+        regime = best_regime.iloc[0] if not best_regime.empty else "TRACKING_PM"
+        rules.append({
+            "tipo": "10min_condicional_albedo_elevacion",
+            "regla": (
+                "Si Albedo_S1 > 55.7 y la elevacion solar supera 68 grados, "
+                f"priorizar {regime} con angulo cercano a "
+                f"{high_albedo_elevation['track_mean'].median():.1f} grados."
+            ),
+            "soporte_obs": int(len(high_albedo_elevation)),
+            "iec_mediana": round(float(high_albedo_elevation["IEC"].median()), 3),
+            "comentario": (
+                "Regla condicional generada desde master_dataset a resolucion 10 min; "
+                "replica la lectura fisica de alta radiacion de la version 6h."
+            ),
+        })
+
+    period_specs = [
+        ("manana", 6 * 60, 11 * 60 + 59),
+        ("mediodia", 12 * 60, 15 * 60 + 59),
+        ("tarde", 16 * 60, 21 * 60 + 59),
+        ("noche_stow", 0, 5 * 60 + 59),
+    ]
+    for label, start, end in period_specs:
+        period = df[(df["minute_of_day"] >= start) & (df["minute_of_day"] <= end)]
+        if label == "noche_stow":
+            period = df[df["solar_elevation_deg"].fillna(1) <= 0]
+        if period.empty:
+            continue
+        best = (
+            period.groupby("tracking_regime", as_index=False)
+            .agg(
+                soporte_obs=("IEC", "size"),
+                iec_mediana=("IEC", "median"),
+                angle_mediano=("track_mean", "median"),
+            )
+            .sort_values(["iec_mediana", "soporte_obs"], ascending=[False, False])
+            .iloc[0]
+        )
+        rules.append({
+            "tipo": f"10min_franja_{label}",
+            "regla": (
+                f"En franja {label.replace('_', ' ')}, usar {best['tracking_regime']} "
+                f"con angulo cercano a {best['angle_mediano']:.1f} grados."
+            ),
+            "soporte_obs": int(best["soporte_obs"]),
+            "iec_mediana": round(float(best["iec_mediana"]), 3),
+            "comentario": (
+                "Regla de cobertura por franja generada a 10 min para evitar que "
+                "el ranking global solo muestre una ventana horaria."
+            ),
+        })
+
     grouped = (
         daylight.groupby(["time_block_10min", "tracking_regime"], as_index=False)
         .agg(
@@ -145,10 +205,9 @@ def regenerate_candidate_rules_10min(model_df: pd.DataFrame) -> pd.DataFrame:
         .head(12)
     )
 
-    rules = []
     for _, row in grouped.iterrows():
         rules.append({
-            "tipo": "10min_operativa",
+            "tipo": "10min_microbloque",
             "regla": (
                 f"En bloque {row['time_block_10min']}, usar {row['tracking_regime']} "
                 f"con angulo cercano a {row['angle_mediano']:.1f} grados."
