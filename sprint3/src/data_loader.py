@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-_DATA_DIR = Path(__file__).parent.parent / "sprint2" / "outputs_sprint2"
+_DATA_DIR = Path(__file__).parent.parent.parent / "sprint2" / "outputs_sprint2"
 
 MODELO_PATH    = _DATA_DIR / "dataset_modelizacion_6h.csv"
 INTEGRADO_PATH = _DATA_DIR / "dataset_integrado_6h.csv"
