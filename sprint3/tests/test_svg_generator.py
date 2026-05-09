@@ -161,3 +161,26 @@ def test_svg_renders_s1_s2_crop_zone_panel():
     assert "S2" in svg
     assert "Tomate" in svg
     assert "Patata" in svg
+
+
+def test_svg_can_render_independent_zone_scene_without_zone_panel():
+    svg = generate_solar_svg(
+        hour=11,
+        track_angle=0,
+        rec_angle=10,
+        solar_elevation=45,
+        irradiance=500,
+        management_action="activar_riego",
+        panel_action="mantener_placas",
+        crop_type="fresa",
+        crop_type_s1="lechuga",
+        crop_type_s2="fresa",
+        zone_label="S2",
+        show_zone_panel=False,
+    )
+
+    assert 'id="crop-zone-panel"' not in svg
+    assert "ZONA S2" in svg
+    assert 'data-crop-type="fresa"' in svg
+    assert 'data-management-action="activar_riego"' in svg
+    assert "Fresa" in svg

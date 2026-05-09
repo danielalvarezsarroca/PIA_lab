@@ -7,7 +7,7 @@ import streamlit as st
 
 from agricultural_rules import CROP_PROFILES
 from alert_logic import build_alert_list, get_anomalous_trackers
-from data_loader import load_crop_risk_for_crop
+from data_loader import load_crop_risk_for_crop, load_rl_policy_for_crop
 from rule_engine import format_regime_label, get_active_rule_index
 from rl_policy import recommend_action_for_record
 from solar_logic import estimate_solar_elevation, get_recommended_angle
@@ -96,23 +96,69 @@ def _rl_recommendation(
         return pd.Series(dtype="object")
 
 
+def _zone_visual_state(
+    crop_zone: str,
+    row: pd.Series,
+    next_row: pd.Series,
+    fallback_rl_policy: pd.DataFrame | None,
+    fallback_crop_risk: pd.DataFrame | None,
+) -> dict[str, object]:
+    """Resolve crop-specific agronomic state for one physical cultivation zone."""
+    crop_type = _selected_crop_type(crop_zone)
+    crop_risk_df = load_crop_risk_for_crop(crop_type, crop_zone=crop_zone)
+    if crop_risk_df.empty and crop_zone == _selected_crop_zone() and fallback_crop_risk is not None:
+        crop_risk_df = fallback_crop_risk
+
+    crop_record = _matching_crop_record(crop_risk_df, row)
+    next_crop_record = _matching_crop_record(crop_risk_df, next_row)
+
+    rl_policy = load_rl_policy_for_crop(crop_type, crop_zone=crop_zone)
+    if rl_policy.empty and crop_zone == _selected_crop_zone() and fallback_rl_policy is not None:
+        rl_policy = fallback_rl_policy
+
+    rl_rec = _rl_recommendation(rl_policy, row, crop_record)
+    next_rl_rec = _rl_recommendation(rl_policy, next_row, next_crop_record)
+    management_action = str(
+        rl_rec.get(
+            "crop_management_action",
+            crop_record.get("crop_management_action", "sin_manejo_directo"),
+        )
+    )
+    crop_risk = crop_record.get("crop_risk_score", None) if not crop_record.empty else None
+
+    return {
+        "crop_type": crop_type,
+        "crop_record": crop_record,
+        "rl_rec": rl_rec,
+        "next_rl_rec": next_rl_rec,
+        "management_action": management_action,
+        "crop_risk": crop_risk,
+    }
+
+
 def _next_hour(hour: int) -> int:
     """Return the next hour in the dashboard day cycle."""
     return _HOUR_MIN if hour >= _HOUR_MAX else hour + 1
 
 
-def _render_svg_image(svg_html: str) -> None:
+def _render_svg_image(
+    svg_html: str,
+    *,
+    min_height: int = 498,
+    image_min_height: int = 478,
+    alt: str = "Visualización solar de trackers agrovoltaicos",
+) -> None:
     """Render the SVG as a data image so Streamlit does not sanitize SVG tags."""
     encoded = b64encode(svg_html.encode("utf-8")).decode("ascii")
     st.html(
         "<div style='background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,252,0.86));"
         "border:1px solid rgba(255,255,255,0.72);border-radius:24px;padding:10px;"
         "box-shadow:0 20px 58px rgba(16,24,40,0.11),inset 0 1px 0 rgba(255,255,255,0.96);"
-        "min-height:498px;"
+        f"min-height:{min_height}px;"
         "display:flex;align-items:stretch;'>"
         f"<img src='data:image/svg+xml;base64,{encoded}' "
-        "style='width:100%;height:100%;min-height:478px;display:block;border-radius:22px;' "
-        "alt='Visualización solar de trackers agrovoltaicos'>"
+        f"style='width:100%;height:100%;min-height:{image_min_height}px;display:block;border-radius:22px;' "
+        f"alt='{alt}'>"
         "</div>"
     )
 
@@ -277,9 +323,7 @@ def _render_interactive_section(
     rl_rec       = _rl_recommendation(df_rl_policy, row, crop_record)
     if not rl_rec.empty and pd.notna(rl_rec.get("rl_angle_deg")):
         rec_angle = float(rl_rec.get("rl_angle_deg"))
-    management_action = str(rl_rec.get("crop_management_action", crop_record.get("crop_management_action", "sin_manejo_directo")))
     panel_action = str(rl_rec.get("panel_action", crop_record.get("panel_action", "mantener_placas")))
-    crop_risk = crop_record.get("crop_risk_score", None) if not crop_record.empty else None
     regime_label = format_regime_label(regime)
     iec_safe     = iec_val if not math.isnan(iec_val) else 0.0
     active_idx   = get_active_rule_index(df_rules, row)
@@ -291,6 +335,10 @@ def _render_interactive_section(
     next_crop_record = _matching_crop_record(df_crop_risk, next_row)
     next_rl_rec      = _rl_recommendation(df_rl_policy, next_row, next_crop_record)
     next_rec_angle   = float(next_rl_rec.get("rl_angle_deg")) if not next_rl_rec.empty else get_recommended_angle(next_visual_hour, df_modelo)
+    zone_visual_states = {
+        zone: _zone_visual_state(zone, row, next_row, df_rl_policy, df_crop_risk)
+        for zone in _CROP_ZONES
+    }
 
     # ── Natural language justification ────────────────────────────────────────
     icon, just_title, just_body = _angle_justification(
@@ -316,23 +364,35 @@ def _render_interactive_section(
     col_svg, col_info = st.columns([3, 2])
 
     with col_svg:
-        svg_html = generate_solar_svg(
-            hour=float(hour),
-            track_angle=track_angle,
-            rec_angle=rec_angle,
-            solar_elevation=solar_elev,
-            irradiance=400.0,
-            next_hour=float(next_visual_hour),
-            next_track_angle=next_track_angle,
-            next_rec_angle=next_rec_angle,
-            management_action=management_action,
-            panel_action=panel_action,
-            crop_risk=float(crop_risk) if crop_risk is not None and pd.notna(crop_risk) else None,
-            crop_type=_selected_crop_type(_selected_crop_zone()),
-            crop_type_s1=_selected_crop_type("S1"),
-            crop_type_s2=_selected_crop_type("S2"),
-        )
-        _render_svg_image(svg_html)
+        for index, zone in enumerate(_CROP_ZONES):
+            state = zone_visual_states[zone]
+            crop_risk_value = state["crop_risk"]
+            svg_html = generate_solar_svg(
+                hour=float(hour),
+                track_angle=track_angle,
+                rec_angle=rec_angle,
+                solar_elevation=solar_elev,
+                irradiance=400.0,
+                next_hour=float(next_visual_hour),
+                next_track_angle=next_track_angle,
+                next_rec_angle=next_rec_angle,
+                management_action=str(state["management_action"]),
+                panel_action=panel_action,
+                crop_risk=float(crop_risk_value) if crop_risk_value is not None and pd.notna(crop_risk_value) else None,
+                crop_type=str(state["crop_type"]),
+                crop_type_s1=_selected_crop_type("S1"),
+                crop_type_s2=_selected_crop_type("S2"),
+                zone_label=zone,
+                show_zone_panel=False,
+            )
+            _render_svg_image(
+                svg_html,
+                min_height=382,
+                image_min_height=362,
+                alt=f"Visualización solar zona {zone}",
+            )
+            if index < len(_CROP_ZONES) - 1:
+                st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         status_txt = "En rango óptimo" if in_range else "Fuera del rango recomendado"
         status_clr = COLOR["green"] if in_range else COLOR["orange"]
         st.markdown(

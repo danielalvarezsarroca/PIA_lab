@@ -371,6 +371,8 @@ def generate_solar_svg(
     crop_type: str = "lechuga",
     crop_type_s1: str | None = None,
     crop_type_s2: str | None = None,
+    zone_label: str | None = None,
+    show_zone_panel: bool = True,
 ) -> str:
     """
     Return a high-resolution inline SVG that animates toward the next hour.
@@ -384,6 +386,7 @@ def generate_solar_svg(
     next_rec_angle = rec_angle if next_rec_angle is None else next_rec_angle
     crop_type_s1 = crop_type if crop_type_s1 is None else crop_type_s1
     crop_type_s2 = crop_type_s1 if crop_type_s2 is None else crop_type_s2
+    svg_height = _H if show_zone_panel else 320
 
     sun_x, sun_y = _scaled_sun_position(hour)
     next_sun_x, next_sun_y = _scaled_sun_position(next_hour)
@@ -446,10 +449,14 @@ def generate_solar_svg(
     crop_label = _short_label(_crop_display_name(crop_type), 16)
     zone_s1_label = _short_label(_crop_display_name(crop_type_s1), 18)
     zone_s2_label = _short_label(_crop_display_name(crop_type_s2), 18)
+    zone_heading = f"ZONA {zone_label}" if zone_label else "CULTIVO"
+    zone_crop_x = 68 if zone_label else 72
+    aria_zone = f" zona {zone_label}" if zone_label else ""
     management_overlay = _management_overlay(management_action)
+    crop_zone_panel = _crop_zone_panel(crop_type_s1, crop_type_s2) if show_zone_panel else ""
 
-    svg = f"""<svg viewBox="0 0 {_W} {_H}" xmlns="http://www.w3.org/2000/svg"
-   role="img" aria-label="Visualización solar de trackers agrovoltaicos para {crop_label}; S1 {zone_s1_label}; S2 {zone_s2_label}"
+    svg = f"""<svg viewBox="0 0 {_W} {svg_height}" xmlns="http://www.w3.org/2000/svg"
+   role="img" aria-label="Visualización solar de trackers agrovoltaicos{aria_zone} para {crop_label}; S1 {zone_s1_label}; S2 {zone_s2_label}"
    style="width:100%;height:100%;display:block;border-radius:22px;">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -478,8 +485,8 @@ def generate_solar_svg(
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="{_W}" height="{_H}" rx="22" fill="#ffffff"/>
-  <rect x="10" y="10" width="{_W - 20}" height="{_H - 20}" rx="20" fill="url(#sky)"/>
+  <rect x="0" y="0" width="{_W}" height="{svg_height}" rx="22" fill="#ffffff"/>
+  <rect x="10" y="10" width="{_W - 20}" height="{svg_height - 20}" rx="20" fill="url(#sky)"/>
 
   <path d="M 54 {_GROUND_Y} Q 320 34 586 {_GROUND_Y}"
         stroke="{palette["arc"]}" stroke-width="2" fill="none" stroke-dasharray="8,8" opacity="0.78">
@@ -540,8 +547,8 @@ def generate_solar_svg(
 
   <g transform="translate(350 26)">
     <rect x="0" y="0" width="252" height="96" rx="17" fill="rgba(255,255,255,0.82)" stroke="rgba(60,60,67,0.12)"/>
-    <text x="14" y="17" font-size="10" fill="#6e6e73" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">CULTIVO</text>
-    <text x="72" y="17" font-size="11" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">{crop_label}</text>
+    <text x="14" y="17" font-size="10" fill="#6e6e73" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">{zone_heading}</text>
+    <text x="{zone_crop_x}" y="17" font-size="11" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">{crop_label}</text>
     <g transform="translate(14 28)">
       <rect x="0" y="0" width="106" height="52" rx="14" fill="rgba(10,132,255,0.12)" stroke="rgba(10,132,255,0.22)"/>
       <text x="10" y="16" font-size="9" fill="#0a84ff" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">AGRONOMICA</text>
@@ -553,7 +560,7 @@ def generate_solar_svg(
       <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{energy_badge}</text>
     </g>
   </g>
-  {_crop_zone_panel(crop_type_s1, crop_type_s2)}
+  {crop_zone_panel}
 </svg>"""
 
     return svg
