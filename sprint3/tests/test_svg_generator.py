@@ -136,3 +136,28 @@ def test_svg_supports_allium_and_tuber_crop_icons():
     assert 'data-crop-type="patata"' in potato_svg
     assert 'data-crop-shape="tuber"' in potato_svg
     assert "Patata" in potato_svg
+
+
+def test_svg_renders_s1_s2_crop_zone_panel():
+    svg = generate_solar_svg(
+        hour=12,
+        track_angle=10,
+        rec_angle=15,
+        solar_elevation=50,
+        irradiance=500,
+        crop_type="tomate",
+        crop_type_s1="tomate",
+        crop_type_s2="patata",
+    )
+
+    assert 'id="crop-zone-panel"' in svg
+    assert 'data-crop-zone="S1"' in svg
+    assert 'data-crop-zone="S2"' in svg
+    assert 'data-crop-type="tomate"' in svg
+    assert 'data-crop-type="patata"' in svg
+    assert 'id="crop-row-s1"' in svg
+    assert 'id="crop-row-s2"' in svg
+    assert "S1" in svg
+    assert "S2" in svg
+    assert "Tomate" in svg
+    assert "Patata" in svg

@@ -42,17 +42,21 @@ if selected_crop_zone not in _CROP_ZONES:
     selected_crop_zone = _CROP_ZONES[0]
 st.session_state["selected_crop_zone"] = selected_crop_zone
 
-selected_crop_type = st.session_state.get(
-    f"selected_crop_type_{selected_crop_zone.lower()}",
-    st.session_state.get("selected_crop_type", crop_options[0]),
-)
-if isinstance(selected_crop_type, (list, tuple)):
-    selected_crop_type = selected_crop_type[0] if selected_crop_type else crop_options[0]
-selected_crop_type = str(selected_crop_type)
-if selected_crop_type not in crop_options:
-    selected_crop_type = crop_options[0]
+for crop_zone in _CROP_ZONES:
+    zone_key = f"selected_crop_type_{crop_zone.lower()}"
+    zone_crop_type = st.session_state.get(
+        zone_key,
+        st.session_state.get("selected_crop_type", crop_options[0]),
+    )
+    if isinstance(zone_crop_type, (list, tuple)):
+        zone_crop_type = zone_crop_type[0] if zone_crop_type else crop_options[0]
+    zone_crop_type = str(zone_crop_type)
+    if zone_crop_type not in crop_options:
+        zone_crop_type = crop_options[0]
+    st.session_state[zone_key] = zone_crop_type
+
+selected_crop_type = st.session_state[f"selected_crop_type_{selected_crop_zone.lower()}"]
 st.session_state["selected_crop_type"] = selected_crop_type
-st.session_state[f"selected_crop_type_{selected_crop_zone.lower()}"] = selected_crop_type
 df_crop_risk  = load_crop_risk_for_crop(selected_crop_type, crop_zone=selected_crop_zone)
 if df_crop_risk.empty:
     df_crop_risk = load_crop_risk(selected_crop_type, crop_zone=selected_crop_zone)

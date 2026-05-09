@@ -108,10 +108,10 @@ def _render_svg_image(svg_html: str) -> None:
         "<div style='background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,252,0.86));"
         "border:1px solid rgba(255,255,255,0.72);border-radius:24px;padding:10px;"
         "box-shadow:0 20px 58px rgba(16,24,40,0.11),inset 0 1px 0 rgba(255,255,255,0.96);"
-        "min-height:388px;"
+        "min-height:498px;"
         "display:flex;align-items:stretch;'>"
         f"<img src='data:image/svg+xml;base64,{encoded}' "
-        "style='width:100%;height:100%;min-height:368px;display:block;border-radius:22px;' "
+        "style='width:100%;height:100%;min-height:478px;display:block;border-radius:22px;' "
         "alt='Visualización solar de trackers agrovoltaicos'>"
         "</div>"
     )
@@ -328,7 +328,9 @@ def _render_interactive_section(
             management_action=management_action,
             panel_action=panel_action,
             crop_risk=float(crop_risk) if crop_risk is not None and pd.notna(crop_risk) else None,
-            crop_type=_selected_crop_type(),
+            crop_type=_selected_crop_type(_selected_crop_zone()),
+            crop_type_s1=_selected_crop_type("S1"),
+            crop_type_s2=_selected_crop_type("S2"),
         )
         _render_svg_image(svg_html)
         status_txt = "En rango óptimo" if in_range else "Fuera del rango recomendado"

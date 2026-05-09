@@ -3,7 +3,7 @@ import math
 from agricultural_rules import CROP_PROFILES
 from solar_logic import calculate_sun_position
 
-_W, _H = 640, 320
+_W, _H = 640, 430
 _GROUND_Y = 252
 _PIVOTS = [(190, 244), (320, 236), (450, 244)]
 _PANEL_W, _PANEL_H = 118, 14
@@ -214,13 +214,22 @@ def _plant_svg(x: float, base_y: float, i: int, traits: dict[str, str]) -> str:
     )
 
 
-def _crop_row(crop_type: str) -> str:
+def _crop_row(
+    crop_type: str,
+    *,
+    row_id: str = "selected-crop-row",
+    base_y: float | None = None,
+    start_x: float = 48,
+    spacing: float = 39,
+    count: int = 15,
+) -> str:
     traits = _crop_traits(crop_type)
+    row_base_y = _GROUND_Y + 45 if base_y is None else base_y
     plants = []
-    for i in range(15):
-        x = 48 + i * 39
-        plants.append(_plant_svg(x, _GROUND_Y + 45 + (i % 2) * 2, i, traits))
-    return f'<g id="selected-crop-row">{"".join(plants)}</g>'
+    for i in range(count):
+        x = start_x + i * spacing
+        plants.append(_plant_svg(x, row_base_y + (i % 2) * 2, i, traits))
+    return f'<g id="{row_id}">{"".join(plants)}</g>'
 
 
 def _shadow_geometry(angle: float, solar_elevation: float, panel_action: str) -> tuple[float, float, float]:
@@ -326,6 +335,27 @@ def _crop_display_name(crop_type: str) -> str:
     return str(profile.get("display_name", crop_type.replace("_", " ").title()))
 
 
+def _crop_zone_card(crop_zone: str, crop_type: str, x: int) -> str:
+    crop_name = _short_label(_crop_display_name(crop_type), 21)
+    return f"""
+    <g transform="translate({x} 18)" data-crop-zone="{crop_zone}" data-crop-type="{crop_type}">
+      <rect x="0" y="0" width="288" height="82" rx="14" fill="rgba(255,255,255,0.78)" stroke="rgba(60,60,67,0.12)"/>
+      <rect x="0" y="51" width="288" height="31" rx="12" fill="rgba(143,217,169,0.52)"/>
+      <text x="14" y="24" font-size="12" fill="#6e6e73" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{crop_zone}</text>
+      <text x="46" y="24" font-size="11" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">{crop_name}</text>
+      <g transform="translate(0 0)">{_crop_row(crop_type, row_id=f"crop-row-{crop_zone.lower()}", base_y=82, start_x=36, spacing=43, count=6)}</g>
+    </g>"""
+
+
+def _crop_zone_panel(crop_type_s1: str, crop_type_s2: str) -> str:
+    return f"""
+  <g id="crop-zone-panel" transform="translate(24 320)">
+    <text x="0" y="11" font-size="10" fill="#6e6e73" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850" letter-spacing="0.08em">ZONAS DE CULTIVO</text>
+    {_crop_zone_card("S1", crop_type_s1, 0)}
+    {_crop_zone_card("S2", crop_type_s2, 304)}
+  </g>"""
+
+
 def generate_solar_svg(
     hour: float,
     track_angle: float,
@@ -339,6 +369,8 @@ def generate_solar_svg(
     panel_action: str = "mantener_placas",
     crop_risk: float | None = None,
     crop_type: str = "lechuga",
+    crop_type_s1: str | None = None,
+    crop_type_s2: str | None = None,
 ) -> str:
     """
     Return a high-resolution inline SVG that animates toward the next hour.
@@ -350,6 +382,8 @@ def generate_solar_svg(
     next_hour = hour if next_hour is None else next_hour
     next_track_angle = track_angle if next_track_angle is None else next_track_angle
     next_rec_angle = rec_angle if next_rec_angle is None else next_rec_angle
+    crop_type_s1 = crop_type if crop_type_s1 is None else crop_type_s1
+    crop_type_s2 = crop_type_s1 if crop_type_s2 is None else crop_type_s2
 
     sun_x, sun_y = _scaled_sun_position(hour)
     next_sun_x, next_sun_y = _scaled_sun_position(next_hour)
@@ -410,11 +444,13 @@ def generate_solar_svg(
     agri_badge = _short_label(_label_for_action(management_action))
     energy_badge = _short_label(_label_for_action(panel_action))
     crop_label = _short_label(_crop_display_name(crop_type), 16)
+    zone_s1_label = _short_label(_crop_display_name(crop_type_s1), 18)
+    zone_s2_label = _short_label(_crop_display_name(crop_type_s2), 18)
     management_overlay = _management_overlay(management_action)
 
     svg = f"""<svg viewBox="0 0 {_W} {_H}" xmlns="http://www.w3.org/2000/svg"
-     role="img" aria-label="Visualización solar de trackers agrovoltaicos para {crop_label}"
-     style="width:100%;height:100%;display:block;border-radius:22px;">
+   role="img" aria-label="Visualización solar de trackers agrovoltaicos para {crop_label}; S1 {zone_s1_label}; S2 {zone_s2_label}"
+   style="width:100%;height:100%;display:block;border-radius:22px;">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="{palette["sky_top"]}">{_animate_color("stop-color", palette["sky_top"], next_palette["sky_top"])}</stop>
@@ -517,6 +553,7 @@ def generate_solar_svg(
       <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{energy_badge}</text>
     </g>
   </g>
+  {_crop_zone_panel(crop_type_s1, crop_type_s2)}
 </svg>"""
 
     return svg
