@@ -1,0 +1,18 @@
+.worktrees/
+
+# macOS / editor noise
+.DS_Store
+
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+sprint3/.venv/
+
+# Local Streamlit secrets
+sprint3/.streamlit/secrets.toml
+
+# Regenerable sprint3 pipeline outputs
+sprint3/outputs_10min/
+sprint3/outputs_daily/
