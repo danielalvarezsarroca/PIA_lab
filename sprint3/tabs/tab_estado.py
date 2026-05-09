@@ -379,27 +379,6 @@ def _render_interactive_section(
                 unsafe_allow_html=True,
             )
 
-    st.markdown("<div style='margin:14px 0;'></div>", unsafe_allow_html=True)
-
-    # ── ePAR + VWC KPI cards with contextual status ───────────────────────────
-    def _fmt(v: float, decimals: int) -> str:
-        return f"{v:.{decimals}f}" if not math.isnan(v) else "—"
-
-    k1, k2, k3, k4 = st.columns(4)
-    epar_s1_lbl, epar_s1_clr = _epar_label(epar_s1)
-    epar_s2_lbl, epar_s2_clr = _epar_label(epar_s2)
-    vwc_s1_lbl,  vwc_s1_clr  = _vwc_label(vwc_s1)
-    vwc_s2_lbl,  vwc_s2_clr  = _vwc_label(vwc_s2)
-
-    with k1:
-        st.markdown(card_html("ePAR S1", _fmt(epar_s1, 0), epar_s1_lbl, epar_s1_clr), unsafe_allow_html=True)
-    with k2:
-        st.markdown(card_html("ePAR S2", _fmt(epar_s2, 0), epar_s2_lbl, epar_s2_clr), unsafe_allow_html=True)
-    with k3:
-        st.markdown(card_html("VWC S1", _fmt(vwc_s1, 2), vwc_s1_lbl, vwc_s1_clr), unsafe_allow_html=True)
-    with k4:
-        st.markdown(card_html("VWC S2", _fmt(vwc_s2, 2), vwc_s2_lbl, vwc_s2_clr), unsafe_allow_html=True)
-
     st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
 
     # ── Rules table ───────────────────────────────────────────────────────────
