@@ -214,7 +214,7 @@ CROP_PROFILES: dict[str, dict[str, Any]] = {
             {"name": "Floracion y fruto", "start_day": 47, "end_day": 78},
             {"name": "Recoleccion escalonada", "start_day": 79, "end_day": 100},
         ],
-        "visual_traits": {"shape": "vine_fruit", "plant_color": "#2f8f68", "accent_color": "#ef4444"},
+        "visual_traits": {"shape": "pepper_bush", "plant_color": "#2f8f68", "accent_color": "#e11d48"},
         "method_note": (
             "Perfil experto referenciado, no aprendida por RL: se aplica sobre variables proxy "
             "del dataset hasta disponer de biomasa, salud visual o rendimiento de cosecha."

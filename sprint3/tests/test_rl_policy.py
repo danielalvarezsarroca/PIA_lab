@@ -165,6 +165,42 @@ def test_rl_policy_exposes_irrigation_actuator_as_independent_action():
     assert not joint_actions.empty
 
 
+def test_rl_policy_keeps_selected_crop_zone_identity():
+    model = build_modeling_dataset_10min(_stress_sample_with_night_rows())
+    s1_risk = build_crop_risk_dataset(model, crop_type="fresa", crop_zone="S1")
+    s2_risk = build_crop_risk_dataset(model, crop_type="pimiento", crop_zone="S2")
+
+    s1_policy = build_offline_rl_policy(model, s1_risk)
+    s2_policy = build_offline_rl_policy(model, s2_risk)
+
+    assert s1_policy["crop_type"].eq("fresa").all()
+    assert s1_policy["crop_zone"].eq("S1").all()
+    assert s2_policy["crop_type"].eq("pimiento").all()
+    assert s2_policy["crop_zone"].eq("S2").all()
+    assert {
+        "crop_management_action",
+        "irrigation_active",
+        "rl_reward",
+    }.issubset(s1_policy.columns)
+
+
+def test_recommend_action_for_record_scopes_combined_policy_by_crop_zone():
+    model = build_modeling_dataset_10min(_stress_sample_with_night_rows())
+    s1_risk = build_crop_risk_dataset(model, crop_type="fresa", crop_zone="S1")
+    s2_risk = build_crop_risk_dataset(model, crop_type="pimiento", crop_zone="S2")
+    s1_policy = build_offline_rl_policy(model, s1_risk)
+    s2_policy = build_offline_rl_policy(model, s2_risk)
+    combined_policy = pd.concat([s1_policy, s2_policy], ignore_index=True)
+    record = model.iloc[-1].copy()
+    record["crop_type"] = "pimiento"
+    record["crop_zone"] = "S2"
+
+    recommendation = recommend_action_for_record(combined_policy, record)
+
+    assert recommendation["crop_type"] == "pimiento"
+    assert recommendation["crop_zone"] == "S2"
+
+
 def test_rl_policy_metadata_includes_weighted_reward_and_damage_penalty(tmp_path):
     model = build_modeling_dataset_10min(_stress_sample())
     crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")

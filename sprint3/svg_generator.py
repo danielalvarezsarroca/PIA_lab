@@ -160,6 +160,25 @@ def _plant_svg(x: float, base_y: float, i: int, traits: dict[str, str]) -> str:
             f'<circle cx="{x + 18}" cy="{base_y - 29}" r="1.9" fill="#ffffff" opacity="0.64"/>'
             f'</g>'
         )
+    if shape == "pepper_bush":
+        return (
+            f'<g opacity="0.96" data-crop-shape="pepper_bush">'
+            f'<path d="M{x} {base_y} C{x + 4} {base_y - 16}, {x - 3} {base_y - 32}, {x + 6} {base_y - 48}" '
+            f'stroke="{plant_color}" stroke-width="3.1" fill="none" stroke-linecap="round"/>'
+            f'<path d="M{x + 5} {base_y - 25} C{x - 12} {base_y - 34},{x - 19} {base_y - 19},{x - 23} {base_y - 9}" '
+            f'stroke="{plant_color}" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
+            f'<path d="M{x + 7} {base_y - 34} C{x + 24} {base_y - 43},{x + 31} {base_y - 28},{x + 27} {base_y - 13}" '
+            f'stroke="{plant_color}" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
+            f'<ellipse cx="{x - 10}" cy="{base_y - 16}" rx="5.2" ry="10.2" fill="{accent_color}" '
+            f'transform="rotate(22 {x - 10} {base_y - 16})"/>'
+            f'<ellipse cx="{x + 18}" cy="{base_y - 24}" rx="5.2" ry="11.2" fill="{accent_color}" '
+            f'transform="rotate(-16 {x + 18} {base_y - 24})"/>'
+            f'<path d="M{x - 14} {base_y - 25} C{x - 7} {base_y - 30},{x - 3} {base_y - 25},{x - 8} {base_y - 21}" '
+            f'stroke="#fef3c7" stroke-width="1.5" fill="none" opacity="0.58" stroke-linecap="round"/>'
+            f'<path d="M{x + 15} {base_y - 35} C{x + 22} {base_y - 40},{x + 26} {base_y - 34},{x + 20} {base_y - 30}" '
+            f'stroke="#fef3c7" stroke-width="1.5" fill="none" opacity="0.58" stroke-linecap="round"/>'
+            f'</g>'
+        )
     if shape == "low_fruit":
         return (
             f'<g opacity="0.95" data-crop-shape="low_fruit">'

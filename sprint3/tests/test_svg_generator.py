@@ -112,6 +112,30 @@ def test_svg_uses_selected_crop_visual_traits():
     assert 'data-crop-icon="tomate"' not in svg
 
 
+def test_svg_renders_pepper_with_distinct_icon_from_tomato():
+    tomato_svg = generate_solar_svg(
+        hour=12,
+        track_angle=10,
+        rec_angle=15,
+        solar_elevation=50,
+        irradiance=500,
+        crop_type="tomate",
+    )
+    pepper_svg = generate_solar_svg(
+        hour=12,
+        track_angle=10,
+        rec_angle=15,
+        solar_elevation=50,
+        irradiance=500,
+        crop_type="pimiento",
+    )
+
+    assert 'data-crop-shape="vine_fruit"' in tomato_svg
+    assert 'data-crop-shape="pepper_bush"' in pepper_svg
+    assert "Pimiento" in pepper_svg
+    assert tomato_svg != pepper_svg
+
+
 def test_svg_supports_allium_and_tuber_crop_icons():
     onion_svg = generate_solar_svg(
         hour=12,

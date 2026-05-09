@@ -16,6 +16,8 @@ POLICY_COLUMNS = [
     "hour_of_day",
     "solar_band",
     "stress_type",
+    "crop_type",
+    "crop_zone",
     "rl_angle_deg",
     "rl_tracking_regime",
     "agronomic_action",
@@ -242,6 +244,8 @@ def build_offline_rl_policy(
                 "hour_of_day",
                 "solar_band",
                 "stress_type",
+                "crop_type",
+                "crop_zone",
                 "rl_angle_deg",
                 "tracking_regime",
                 "recommended_action",
@@ -262,9 +266,12 @@ def build_offline_rl_policy(
             reward_beta_energy=("reward_beta_energy", "first"),
             observations=("rl_reward", "size"),
         )
-        .sort_values(["state_key", "rl_reward", "observations"], ascending=[True, False, False])
+        .sort_values(
+            ["crop_zone", "crop_type", "state_key", "rl_reward", "observations"],
+            ascending=[True, True, True, False, False],
+        )
     )
-    best = action_values.groupby("state_key", as_index=False).head(1).copy()
+    best = action_values.groupby(["state_key", "crop_type", "crop_zone"], as_index=False).head(1).copy()
     best = best.rename(
         columns={
             "tracking_regime": "rl_tracking_regime",
@@ -333,9 +340,24 @@ def build_rl_trajectories(
     return df[available_columns].round(4).reset_index(drop=True)
 
 
+def _scope_policy_to_record(policy_df: pd.DataFrame, record: pd.Series) -> pd.DataFrame:
+    scoped = policy_df
+    for column in ["crop_type", "crop_zone"]:
+        if column not in scoped.columns:
+            continue
+        value = record.get(column)
+        if pd.isna(value):
+            continue
+        candidate = scoped[scoped[column].astype(str).eq(str(value))]
+        if not candidate.empty:
+            scoped = candidate
+    return scoped
+
+
 def recommend_action_for_record(policy_df: pd.DataFrame, record: pd.Series) -> pd.Series:
     if policy_df.empty:
         raise ValueError("RL policy is empty")
+    policy_df = _scope_policy_to_record(policy_df, record)
     hour = int(record.get("hour_of_day", 12))
     band = _solar_band(float(record.get("solar_elevation_deg", np.nan)))
     stress = str(record.get("stress_type", "estable"))
