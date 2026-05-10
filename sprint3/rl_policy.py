@@ -1,0 +1,425 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+DEFAULT_REWARD_ALPHA_AGRONOMIC = 0.45
+DEFAULT_REWARD_BETA_ENERGY = 0.55
+DEFAULT_DAMAGE_PENALTY = 0.35
+
+POLICY_COLUMNS = [
+    "state_key",
+    "hour_of_day",
+    "solar_band",
+    "stress_type",
+    "crop_type",
+    "crop_zone",
+    "rl_angle_deg",
+    "rl_tracking_regime",
+    "agronomic_action",
+    "crop_management_action",
+    "panel_action",
+    "irrigation_mode",
+    "irrigation_active",
+    "irrigation_mm_10min",
+    "irrigation_duration_min",
+    "rl_reward",
+    "energy_component",
+    "agronomic_component",
+    "reward_alpha_agronomic",
+    "reward_beta_energy",
+    "observations",
+    "source",
+]
+
+TRAJECTORY_COLUMNS = [
+    "Time",
+    "episode_id",
+    "step_in_episode",
+    "is_night",
+    "state_key",
+    "hour_of_day",
+    "solar_band",
+    "stress_type",
+    "crop_type",
+    "crop_zone",
+    "VWC_S1_mean",
+    "Tsoil_S1_mean",
+    "ePAR_S1_mean",
+    "VWC_crop_zone_fraction",
+    "Tsoil_crop_zone_mean",
+    "ePAR_crop_zone_mean",
+    "VWC_crop_zone_source",
+    "Tsoil_crop_zone_source",
+    "ePAR_crop_zone_source",
+    "energy_component",
+    "agronomic_component",
+    "rl_reward",
+    "rl_angle_deg",
+    "tracking_regime",
+    "panel_action",
+    "crop_management_action",
+    "irrigation_mode",
+    "irrigation_active",
+    "irrigation_mm_10min",
+    "irrigation_duration_min",
+    "prev_vwc_s1_mean",
+    "prev_tsoil_s1_mean",
+    "prev_vwc_crop_zone_fraction",
+    "prev_tsoil_crop_zone_mean",
+    "prev_irrigation_active",
+    "vwc_s1_context_mean",
+    "tsoil_s1_context_mean",
+    "vwc_crop_zone_context_mean",
+    "tsoil_crop_zone_context_mean",
+    "irrigation_context_mm",
+]
+
+CRITICAL_DAMAGE_COLUMNS = [
+    "water_deficit",
+    "water_excess",
+    "heat_stress",
+    "cold_stress",
+    "excess_radiation",
+]
+
+
+def _solar_band(elevation: float) -> str:
+    if pd.isna(elevation) or elevation <= 0:
+        return "night"
+    if elevation < 25:
+        return "low"
+    if elevation < 55:
+        return "medium"
+    return "high"
+
+
+def _angle_bucket(angle: float, step: int = 5) -> float:
+    if pd.isna(angle):
+        return 0.0
+    return float(round(float(angle) / step) * step)
+
+
+def _state_key(hour: int, solar_band: str, stress_type: str) -> str:
+    return f"h{int(hour):02d}|sun:{solar_band}|stress:{stress_type}"
+
+
+def _is_critical_damage(row: pd.Series) -> bool:
+    return bool(any(row.get(column, False) for column in CRITICAL_DAMAGE_COLUMNS))
+
+
+def _apply_damage_penalty(reward: pd.Series, damage: pd.Series) -> pd.Series:
+    return (reward - DEFAULT_DAMAGE_PENALTY * damage.astype(float)).clip(0, 1)
+
+
+def _merged_reward_frame(
+    model_df: pd.DataFrame,
+    crop_risk: pd.DataFrame,
+    *,
+    alpha_agronomic: float = DEFAULT_REWARD_ALPHA_AGRONOMIC,
+    beta_energy: float = DEFAULT_REWARD_BETA_ENERGY,
+) -> pd.DataFrame:
+    model = model_df.copy()
+    risk = crop_risk.copy()
+    model = model.assign(Time=pd.to_datetime(model["Time"]))
+    risk = risk.assign(Time=pd.to_datetime(risk["Time"]))
+    risk_columns = [
+        "Time",
+        "crop_type",
+        "crop_zone",
+        "crop_health_score",
+        "Tsoil_crop_zone_mean",
+        "VWC_crop_zone_fraction",
+        "ePAR_crop_zone_mean",
+        "Tsoil_crop_zone_source",
+        "VWC_crop_zone_source",
+        "ePAR_crop_zone_source",
+        "recommended_action",
+        "crop_management_action",
+        "panel_action",
+        "irrigation_mode",
+        "irrigation_active",
+        "irrigation_mm_10min",
+        "irrigation_duration_min",
+        "stress_type",
+        *CRITICAL_DAMAGE_COLUMNS,
+    ]
+    available_risk_columns = [column for column in risk_columns if column in risk.columns]
+    df = model.merge(
+        risk[available_risk_columns],
+        on="Time",
+        how="left",
+    )
+    df = df.assign(
+        crop_type=df.get("crop_type", pd.Series(index=df.index, dtype="object")).fillna("unknown"),
+        crop_zone=df.get("crop_zone", pd.Series(index=df.index, dtype="object")).fillna("S1"),
+        Tsoil_crop_zone_mean=pd.to_numeric(
+            df.get("Tsoil_crop_zone_mean", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(pd.to_numeric(df.get("Tsoil_S1_mean", pd.Series(index=df.index, dtype="float64")), errors="coerce")),
+        VWC_crop_zone_fraction=pd.to_numeric(
+            df.get("VWC_crop_zone_fraction", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(pd.to_numeric(df.get("VWC_S1_mean", pd.Series(index=df.index, dtype="float64")), errors="coerce")),
+        ePAR_crop_zone_mean=pd.to_numeric(
+            df.get("ePAR_crop_zone_mean", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(pd.to_numeric(df.get("ePAR_S1_mean", pd.Series(index=df.index, dtype="float64")), errors="coerce")),
+        Tsoil_crop_zone_source=df.get(
+            "Tsoil_crop_zone_source", pd.Series(index=df.index, dtype="object")
+        ).fillna("Tsoil_S1_mean_fallback"),
+        VWC_crop_zone_source=df.get(
+            "VWC_crop_zone_source", pd.Series(index=df.index, dtype="object")
+        ).fillna("VWC_S1_mean_fallback"),
+        ePAR_crop_zone_source=df.get(
+            "ePAR_crop_zone_source", pd.Series(index=df.index, dtype="object")
+        ).fillna("ePAR_S1_mean_fallback"),
+        crop_health_score=pd.to_numeric(df["crop_health_score"], errors="coerce").fillna(df["crop_score"]),
+        recommended_action=df["recommended_action"].fillna("mantener"),
+        crop_management_action=df["crop_management_action"].fillna("sin_manejo_directo"),
+        panel_action=df["panel_action"].fillna("mantener_placas"),
+        irrigation_mode=df.get("irrigation_mode", pd.Series(index=df.index, dtype="object")).fillna("off"),
+        irrigation_active=df.get("irrigation_active", pd.Series(index=df.index, dtype="bool")).fillna(False).astype(bool),
+        irrigation_mm_10min=pd.to_numeric(
+            df.get("irrigation_mm_10min", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(0),
+        irrigation_duration_min=pd.to_numeric(
+            df.get("irrigation_duration_min", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(0),
+        stress_type=df["stress_type"].fillna("estable"),
+    )
+    df = df.assign(
+        energy_component=pd.to_numeric(df["energy_score"], errors="coerce").fillna(0).clip(0, 1),
+        agronomic_component=pd.to_numeric(df["crop_health_score"], errors="coerce").fillna(0).clip(0, 1),
+        reward_alpha_agronomic=float(alpha_agronomic),
+        reward_beta_energy=float(beta_energy),
+    )
+    for column in CRITICAL_DAMAGE_COLUMNS:
+        if column not in df.columns:
+            df[column] = False
+        df.loc[:, column] = df[column].fillna(False).astype(bool)
+    # Offline tabular reward: explicit crop/energy trade-off plus agronomic damage guardrail.
+    reward_base = (
+        df["reward_alpha_agronomic"] * df["agronomic_component"]
+        + df["reward_beta_energy"] * df["energy_component"]
+    ).clip(0, 1)
+    damage_flag = df.apply(_is_critical_damage, axis=1)
+    reward = _apply_damage_penalty(reward_base, damage_flag)
+    solar_band = df["solar_elevation_deg"].map(_solar_band)
+    df = df.assign(
+        rl_reward=reward,
+        solar_band=solar_band,
+        rl_angle_deg=df["track_mean"].map(_angle_bucket),
+    )
+    state_keys = [
+        _state_key(hour, band, stress)
+        for hour, band, stress in zip(df["hour_of_day"], df["solar_band"], df["stress_type"], strict=False)
+    ]
+    df = df.assign(state_key=state_keys)
+    return df
+
+
+def build_offline_rl_policy(
+    model_df: pd.DataFrame,
+    crop_risk: pd.DataFrame,
+    *,
+    alpha_agronomic: float = DEFAULT_REWARD_ALPHA_AGRONOMIC,
+    beta_energy: float = DEFAULT_REWARD_BETA_ENERGY,
+) -> pd.DataFrame:
+    df = _merged_reward_frame(model_df, crop_risk, alpha_agronomic=alpha_agronomic, beta_energy=beta_energy)
+    df = df.dropna(subset=["state_key", "rl_angle_deg", "tracking_regime", "rl_reward"])
+    if df.empty:
+        raise ValueError("Cannot build RL policy without valid model and crop risk rows")
+
+    action_values = (
+        df.groupby(
+            [
+                "state_key",
+                "hour_of_day",
+                "solar_band",
+                "stress_type",
+                "crop_type",
+                "crop_zone",
+                "rl_angle_deg",
+                "tracking_regime",
+                "recommended_action",
+                "crop_management_action",
+                "panel_action",
+                "irrigation_mode",
+                "irrigation_active",
+                "irrigation_mm_10min",
+                "irrigation_duration_min",
+            ],
+            as_index=False,
+        )
+        .agg(
+            rl_reward=("rl_reward", "mean"),
+            energy_component=("energy_component", "mean"),
+            agronomic_component=("agronomic_component", "mean"),
+            reward_alpha_agronomic=("reward_alpha_agronomic", "first"),
+            reward_beta_energy=("reward_beta_energy", "first"),
+            observations=("rl_reward", "size"),
+        )
+        .sort_values(
+            ["crop_zone", "crop_type", "state_key", "rl_reward", "observations"],
+            ascending=[True, True, True, False, False],
+        )
+    )
+    best = action_values.groupby(["state_key", "crop_type", "crop_zone"], as_index=False).head(1).copy()
+    best = best.rename(
+        columns={
+            "tracking_regime": "rl_tracking_regime",
+            "recommended_action": "agronomic_action",
+        }
+    )
+    best["source"] = "offline_rl_tabular_masterdataset"
+    return best[POLICY_COLUMNS].round(4).reset_index(drop=True)
+
+
+def build_rl_trajectories(
+    model_df: pd.DataFrame,
+    crop_risk: pd.DataFrame,
+    *,
+    context_steps: int = 6,
+    alpha_agronomic: float = DEFAULT_REWARD_ALPHA_AGRONOMIC,
+    beta_energy: float = DEFAULT_REWARD_BETA_ENERGY,
+) -> pd.DataFrame:
+    if context_steps < 1:
+        raise ValueError("context_steps must be >= 1")
+
+    df = _merged_reward_frame(model_df, crop_risk, alpha_agronomic=alpha_agronomic, beta_energy=beta_energy)
+    df = df.sort_values("Time").reset_index(drop=True)
+    df = df.assign(
+        episode_id=df["Time"].dt.strftime("%Y-%m-%d"),
+        step_in_episode=df.groupby(df["Time"].dt.date).cumcount(),
+        is_night=df["solar_band"].eq("night"),
+    )
+    for column in [
+        "VWC_S1_mean",
+        "Tsoil_S1_mean",
+        "ePAR_S1_mean",
+        "VWC_crop_zone_fraction",
+        "Tsoil_crop_zone_mean",
+        "ePAR_crop_zone_mean",
+        "irrigation_mm_10min",
+    ]:
+        df.loc[:, column] = pd.to_numeric(df[column], errors="coerce")
+
+    grouped = df.groupby("episode_id", sort=False)
+    prev_irrigation_active = grouped["irrigation_active"].shift(1)
+    df = df.assign(
+        prev_vwc_s1_mean=grouped["VWC_S1_mean"].shift(1),
+        prev_tsoil_s1_mean=grouped["Tsoil_S1_mean"].shift(1),
+        prev_vwc_crop_zone_fraction=grouped["VWC_crop_zone_fraction"].shift(1),
+        prev_tsoil_crop_zone_mean=grouped["Tsoil_crop_zone_mean"].shift(1),
+        prev_irrigation_active=prev_irrigation_active.eq(True),
+    )
+    df["vwc_s1_context_mean"] = grouped["VWC_S1_mean"].transform(
+        lambda series: series.rolling(context_steps, min_periods=1).mean()
+    )
+    df["tsoil_s1_context_mean"] = grouped["Tsoil_S1_mean"].transform(
+        lambda series: series.rolling(context_steps, min_periods=1).mean()
+    )
+    df["vwc_crop_zone_context_mean"] = grouped["VWC_crop_zone_fraction"].transform(
+        lambda series: series.rolling(context_steps, min_periods=1).mean()
+    )
+    df["tsoil_crop_zone_context_mean"] = grouped["Tsoil_crop_zone_mean"].transform(
+        lambda series: series.rolling(context_steps, min_periods=1).mean()
+    )
+    df["irrigation_context_mm"] = grouped["irrigation_mm_10min"].transform(
+        lambda series: series.rolling(context_steps, min_periods=1).sum()
+    )
+
+    available_columns = [column for column in TRAJECTORY_COLUMNS if column in df.columns]
+    return df[available_columns].round(4).reset_index(drop=True)
+
+
+def _scope_policy_to_record(policy_df: pd.DataFrame, record: pd.Series) -> pd.DataFrame:
+    scoped = policy_df
+    for column in ["crop_type", "crop_zone"]:
+        if column not in scoped.columns:
+            continue
+        value = record.get(column)
+        if pd.isna(value):
+            continue
+        candidate = scoped[scoped[column].astype(str).eq(str(value))]
+        if not candidate.empty:
+            scoped = candidate
+    return scoped
+
+
+def recommend_action_for_record(policy_df: pd.DataFrame, record: pd.Series) -> pd.Series:
+    if policy_df.empty:
+        raise ValueError("RL policy is empty")
+    policy_df = _scope_policy_to_record(policy_df, record)
+    hour = int(record.get("hour_of_day", 12))
+    band = _solar_band(float(record.get("solar_elevation_deg", np.nan)))
+    stress = str(record.get("stress_type", "estable"))
+    exact_key = _state_key(hour, band, stress)
+    exact = policy_df[policy_df["state_key"] == exact_key]
+    if not exact.empty:
+        return exact.iloc[0]
+
+    same_hour = policy_df[policy_df["hour_of_day"] == hour]
+    if not same_hour.empty:
+        return same_hour.sort_values(["rl_reward", "observations"], ascending=[False, False]).iloc[0]
+
+    diffs = (policy_df["hour_of_day"] - hour).abs()
+    return policy_df.loc[diffs.idxmin()]
+
+
+def write_rl_policy_outputs(output_dir: str | Path, policy: pd.DataFrame) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    policy_path = output_path / "rl_policy_actions_10min.csv"
+    metadata_path = output_path / "rl_policy_metadata.json"
+    policy.to_csv(policy_path, index=False)
+    metadata = {
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "source": "offline_rl_tabular_masterdataset",
+        "reward_formula": "alpha * agronomic_component + beta * energy_component",
+        "alpha_agronomic": DEFAULT_REWARD_ALPHA_AGRONOMIC,
+        "beta_energy": DEFAULT_REWARD_BETA_ENERGY,
+        "penalty_damage": f"fixed_{DEFAULT_DAMAGE_PENALTY}_on_critical_agronomic_damage",
+        "action_factorization": {
+            "type": "factorized_joint_action",
+            "dimensions": ["panel_action", "irrigation_action"],
+            "description": "Decision conjunta factorizada entre accion de placas y accion de riego por intervalo.",
+            "rationale": "El movimiento de placas y el riego se optimizan en paralelo sin mezclar la interpretacion operativa.",
+            "reward_scope": "Un unico reward por timestep que evalua la combinacion de ambas dimensiones.",
+        },
+        "note": (
+            "Politica RL tabular offline para demo, derivada del masterdataset. "
+            "Reward = alpha * componente agricola + beta * componente electrico, "
+            "con penalizacion por dano agronomico critico."
+        ),
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"rl_policy": policy_path, "rl_policy_metadata": metadata_path}
+
+
+def write_rl_trajectory_outputs(output_dir: str | Path, trajectories: pd.DataFrame) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    trajectory_path = output_path / "rl_trajectories_10min.csv"
+    metadata_path = output_path / "rl_trajectories_metadata.json"
+    trajectories.to_csv(trajectory_path, index=False)
+    metadata = {
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "source": "rl_trajectories_10min",
+        "rows": int(len(trajectories)),
+        "night_rows": int(trajectories["is_night"].sum()) if "is_night" in trajectories else 0,
+        "reward_formula": "alpha * agronomic_component + beta * energy_component",
+        "note": (
+            "Trayectorias offline a 10 minutos para modelos con contexto temporal. "
+            "Conservan filas nocturnas y acciones independientes de riego y placas."
+        ),
+    }
+    metadata_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"rl_trajectories": trajectory_path, "rl_trajectories_metadata": metadata_path}
