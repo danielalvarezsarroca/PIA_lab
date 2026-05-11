@@ -8,9 +8,23 @@ _THRESHOLDS = {
     "ePAR_S2d36":  ("ePAR crítico S2", 200,  "#dc2626"),
     "VWC_S1d13":   ("VWC crítico S1",  20.0, "#f59e0b"),
     "VWC_S2d32":   ("VWC crítico S2",  20.0, "#f59e0b"),
+    "PAR_S1":       ("PAR crítico S1",  200,  "#dc2626"),
+    "PAR_S2":       ("PAR crítico S2",  200,  "#dc2626"),
+    "ePAR_S1_mean": ("ePAR crítico S1", 200,  "#dc2626"),
+    "ePAR_S2_mean": ("ePAR crítico S2", 200,  "#dc2626"),
+    "VWC_S1_mean":  ("VWC crítico S1",  0.20, "#f59e0b"),
+    "VWC_S2_mean":  ("VWC crítico S2",  0.20, "#f59e0b"),
 }
 
 _VARIABLE_OPTIONS = {
+    "PAR S1 (10 min)":       "PAR_S1",
+    "PAR S2 (10 min)":       "PAR_S2",
+    "ePAR S1 media":         "ePAR_S1_mean",
+    "ePAR S2 media":         "ePAR_S2_mean",
+    "VWC S1 media":          "VWC_S1_mean",
+    "VWC S2 media":          "VWC_S2_mean",
+    "GPOA media":            "GPOA_mean",
+    "Ángulo tracker":        "tracker_angle_deg",
     "ePAR S1 (d19)":         "ePAR_S1d19",
     "ePAR S1 (d20)":         "ePAR_S1d20",
     "ePAR S2 (d36)":         "ePAR_S2d36",
@@ -28,6 +42,7 @@ _VARIABLE_OPTIONS = {
 
 _COLOR_MAP = {
     "ePAR":  "#12805c",
+    "PAR":   "#12805c",
     "VWC":   "#b66a00",
     "GPOA":  "#2563a8",
     "track": "#0e7490",
@@ -39,6 +54,16 @@ def _series_color(col: str) -> str:
         if key in col:
             return color
     return "#64706d"
+
+
+def _available_variable_options(df: pd.DataFrame) -> dict[str, str]:
+    return {label: col for label, col in _VARIABLE_OPTIONS.items() if col in df.columns}
+
+
+def _default_variables(options: dict[str, str]) -> list[str]:
+    preferred = ["PAR S1 (10 min)", "VWC S1 media", "ePAR S1 media", "ePAR S1 (d19)", "VWC S1 (d13)"]
+    defaults = [label for label in preferred if label in options][:2]
+    return defaults or list(options.keys())[:2]
 
 
 def _apple_card(title: str, value: str, detail: str, color: str = "#007aff") -> str:
@@ -81,12 +106,17 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         unsafe_allow_html=True,
     )
 
+    variable_options = _available_variable_options(df_integrado)
+    if not variable_options:
+        st.info("No hay columnas de series temporales compatibles en el dataset cargado.")
+        return
+
     f1, f2, f3 = st.columns([2, 1, 1])
     with f1:
         selected_labels = st.multiselect(
             "Variables",
-            options=list(_VARIABLE_OPTIONS.keys()),
-            default=["ePAR S1 (d19)", "VWC S1 (d13)"],
+            options=list(variable_options.keys()),
+            default=_default_variables(variable_options),
         )
     with f2:
         date_min = df_integrado["Time"].min().date()
@@ -99,11 +129,15 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         st.info("Selecciona al menos una variable.")
         return
 
-    selected_cols = [_VARIABLE_OPTIONS[lbl] for lbl in selected_labels]
+    selected_cols = [variable_options[lbl] for lbl in selected_labels]
+    available_cols = [c for c in selected_cols if c in df_integrado.columns]
+    if not available_cols:
+        st.warning("Las variables seleccionadas no están disponibles en el dataset actual.")
+        return
 
     mask = (df_integrado["Time"].dt.date >= date_from) & (df_integrado["Time"].dt.date <= date_to)
     df_filtered = df_integrado.loc[
-        mask, ["Time"] + [c for c in selected_cols if c in df_integrado.columns]
+        mask, ["Time"] + available_cols
     ].copy()
 
     if df_filtered.empty:
@@ -111,18 +145,18 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         return
 
     df_long = df_filtered.melt(id_vars="Time", var_name="Variable", value_name="Valor")
-    colors = {col: _series_color(col) for col in selected_cols}
+    colors = {col: _series_color(col) for col in available_cols}
 
-    non_null_values = int(df_filtered[selected_cols].notna().sum().sum())
+    non_null_values = int(df_filtered[available_cols].notna().sum().sum())
     selected_days = max(1, (pd.to_datetime(date_to) - pd.to_datetime(date_from)).days + 1)
-    epar_cols = [c for c in selected_cols if "ePAR" in c and c in df_filtered]
-    vwc_cols = [c for c in selected_cols if "VWC" in c and c in df_filtered]
+    epar_cols = [c for c in available_cols if "ePAR" in c or "PAR" in c]
+    vwc_cols = [c for c in available_cols if "VWC" in c]
     peak_epar = df_filtered[epar_cols].max().max() if epar_cols else float("nan")
     min_vwc = df_filtered[vwc_cols].min().min() if vwc_cols else float("nan")
 
     k1, k2, k3, k4 = st.columns(4)
     with k1:
-        st.markdown(_apple_card("Ventana", f"{selected_days} d", f"{len(df_filtered)} registros 6h", "#1d1d1f"), unsafe_allow_html=True)
+        st.markdown(_apple_card("Ventana", f"{selected_days} d", f"{len(df_filtered)} registros 10 min", "#1d1d1f"), unsafe_allow_html=True)
     with k2:
         st.markdown(_apple_card("Cobertura", f"{non_null_values}", "valores disponibles en variables", "#007aff"), unsafe_allow_html=True)
     with k3:
@@ -145,7 +179,7 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
     fig.update_traces(line_width=1.8, opacity=0.9)
     fig = _style_fig(fig, height=390)
 
-    for col in selected_cols:
+    for col in available_cols:
         if col in _THRESHOLDS:
             lbl, val, clr = _THRESHOLDS[col]
             fig.add_hline(
@@ -167,7 +201,7 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
 
     daily = df_filtered.copy()
     daily["Fecha"] = daily["Time"].dt.date
-    daily_mean = daily.groupby("Fecha")[[c for c in selected_cols if c in daily.columns]].mean().reset_index()
+    daily_mean = daily.groupby("Fecha")[available_cols].mean().reset_index()
     daily_long = daily_mean.melt(id_vars="Fecha", var_name="Variable", value_name="Media diaria")
 
     col_left, col_right = st.columns([1.2, 1])
@@ -206,4 +240,4 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         fig_box.update_layout(showlegend=False, xaxis_title="")
         st.plotly_chart(_style_fig(fig_box, height=280), use_container_width=True)
 
-    st.caption(f"{len(df_filtered)} registros · resolución 6h · fuente: dataset_integrado_6h.csv")
+    st.caption(f"{len(df_filtered)} registros · resolución 10 min · fuente: master_dataset.csv")
