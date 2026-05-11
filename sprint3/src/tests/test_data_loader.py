@@ -106,3 +106,56 @@ def test_load_world_model_recent_window_returns_sorted_tail(tmp_path, monkeypatc
 
     assert len(recent) == 1
     assert recent.iloc[0]["episode_id"] == "e2"
+
+
+def test_load_world_model_lstm_stream_holdout_returns_time_sorted(tmp_path, monkeypatch):
+    path = tmp_path / "world_model_lstm_stream_holdout.csv"
+    path.write_text(
+        "Time,policy_id,VWC_R1_sim\n"
+        "2026-01-01 00:20:00,p,0.20\n"
+        "2026-01-01 00:00:00,p,0.18\n",
+        encoding="utf-8",
+    )
+    import data_loader
+
+    monkeypatch.setattr(data_loader, "WORLD_MODEL_LSTM_STREAM_HOLDOUT_PATH", path)
+
+    stream = data_loader.load_world_model_lstm_stream_holdout()
+
+    assert list(stream["VWC_R1_sim"]) == [0.18, 0.20]
+    assert pd.api.types.is_datetime64_any_dtype(stream["Time"])
+
+
+def test_load_world_model_lstm_stream_holdout_missing_returns_empty(tmp_path, monkeypatch):
+    import data_loader
+
+    monkeypatch.setattr(
+        data_loader,
+        "WORLD_MODEL_LSTM_STREAM_HOLDOUT_PATH",
+        tmp_path / "missing_stream.csv",
+    )
+
+    assert data_loader.load_world_model_lstm_stream_holdout().empty
+
+
+def test_load_world_model_lstm_metrics_exposes_split_and_retraining(tmp_path, monkeypatch):
+    path = tmp_path / "world_model_lstm_metrics.json"
+    path.write_text(
+        """
+        {
+          "split": {"train_until": "2026-01-01", "test_from": "2026-01-02"},
+          "weekly_retraining_runs": [
+            {"cutoff_time": "2026-01-08", "observed_rows": 100, "target_metrics": {"next_VWC_R1_sim": {"mae": 0.01}}}
+          ]
+        }
+        """,
+        encoding="utf-8",
+    )
+    import data_loader
+
+    monkeypatch.setattr(data_loader, "WORLD_MODEL_LSTM_METRICS_PATH", path)
+
+    metrics = data_loader.load_world_model_lstm_metrics()
+
+    assert metrics["split"]["test_from"] == "2026-01-02"
+    assert metrics["weekly_retraining_runs"][0]["observed_rows"] == 100

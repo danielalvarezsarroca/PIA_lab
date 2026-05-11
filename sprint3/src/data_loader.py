@@ -35,6 +35,8 @@ WORLD_MODEL_PATH = _SPRINT3_DIR / "outputs" / "master_dataset_world_model.csv"
 WORLD_MODEL_LSTM_PATH = _SPRINT3_DIR / "outputs" / "world_model_lstm.pt"
 WORLD_MODEL_LSTM_SCALERS_PATH = _SPRINT3_DIR / "outputs" / "world_model_lstm_scalers.joblib"
 WORLD_MODEL_LSTM_METRICS_PATH = _SPRINT3_DIR / "outputs" / "world_model_lstm_metrics.json"
+WORLD_MODEL_LSTM_STREAM_HOLDOUT_PATH = _SPRINT3_DIR / "outputs" / "world_model_lstm_stream_holdout.csv"
+WORLD_MODEL_LSTM_PREDICTIONS_SAMPLE_PATH = _SPRINT3_DIR / "outputs" / "world_model_lstm_predictions_sample.csv"
 
 
 def _read_time_csv(path: Path) -> pd.DataFrame:
@@ -100,11 +102,32 @@ def load_world_model_lstm_metrics() -> dict:
 
 
 @st.cache_data
-def load_world_model_lstm_prediction_sample() -> pd.DataFrame:
-    path = _SPRINT3_DIR / "outputs" / "world_model_lstm_predictions_sample.csv"
+def _load_world_model_lstm_stream_holdout(path_str: str) -> pd.DataFrame:
+    path = Path(path_str)
     if not path.exists():
         return pd.DataFrame()
-    return pd.read_csv(path)
+    return _read_time_csv(path)
+
+
+def load_world_model_lstm_stream_holdout() -> pd.DataFrame:
+    return _load_world_model_lstm_stream_holdout(str(WORLD_MODEL_LSTM_STREAM_HOLDOUT_PATH))
+
+
+@st.cache_data
+def load_world_model_lstm_prediction_sample() -> pd.DataFrame:
+    if not WORLD_MODEL_LSTM_PREDICTIONS_SAMPLE_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(WORLD_MODEL_LSTM_PREDICTIONS_SAMPLE_PATH)
+
+
+def get_world_model_lstm_artifact_availability() -> dict[str, bool]:
+    return {
+        "model": WORLD_MODEL_LSTM_PATH.exists(),
+        "scalers": WORLD_MODEL_LSTM_SCALERS_PATH.exists(),
+        "metrics": bool(load_world_model_lstm_metrics()),
+        "stream_holdout": WORLD_MODEL_LSTM_STREAM_HOLDOUT_PATH.exists(),
+        "prediction_sample": WORLD_MODEL_LSTM_PREDICTIONS_SAMPLE_PATH.exists(),
+    }
 
 
 @st.cache_data

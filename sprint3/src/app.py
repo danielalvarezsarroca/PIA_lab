@@ -31,6 +31,7 @@ from styles import inject_styles
 from tabs.tab_alertas import render_tab_alertas
 from tabs.tab_agronomia import render_tab_agronomia
 from tabs.tab_estado import render_tab_estado
+from tabs.tab_lstm_simulation import render_tab_lstm_simulation
 from tabs.tab_recomendacion import render_tab_recomendacion
 from tabs.tab_series import render_tab_series
 
@@ -103,11 +104,12 @@ st.markdown(
 # ── Tabs ─────────────────────────────────────────────────────────────────────
 alerts_label = f"Alertas ({n_alerts})" if n_alerts > 0 else "Alertas"
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Dashboard",
     "Series temporales",
     "Recomendación",
     "Agronomía",
+    "Simulación LSTM",
     alerts_label,
 ])
 
@@ -120,4 +122,6 @@ with tab3:
 with tab4:
     render_tab_agronomia(df_crop_risk, df_agri_rules, df_rl_policy, df_modelo)
 with tab5:
+    render_tab_lstm_simulation()
+with tab6:
     render_tab_alertas(df_diagnostic, df_modelo)
