@@ -146,6 +146,27 @@ def test_rl_reward_uses_explicit_agricultural_and_energy_weights_before_damage_p
     )
 
 
+def test_rl_reward_penalizes_projected_water_stress_before_current_deficit():
+    model = build_modeling_dataset_10min(_stress_sample())
+    crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")
+    baseline_risk = crop_risk.copy()
+    stressed_risk = crop_risk.copy()
+    for column in ["water_deficit", "water_excess", "heat_stress", "cold_stress", "excess_radiation"]:
+        baseline_risk[column] = False
+        stressed_risk[column] = False
+    baseline_risk["future_water_stress_score"] = 0.0
+    stressed_risk["future_water_stress_score"] = 0.8
+    baseline_risk["irrigation_need_score"] = 0.0
+    stressed_risk["irrigation_need_score"] = 0.8
+
+    baseline_frame = _merged_reward_frame(model, baseline_risk)
+    stressed_frame = _merged_reward_frame(model, stressed_risk)
+
+    assert "future_water_stress_score" in stressed_frame.columns
+    assert (stressed_frame["rl_reward"] < baseline_frame["rl_reward"]).any()
+    assert (stressed_frame["agronomic_component"] <= baseline_frame["agronomic_component"]).all()
+
+
 def test_rl_policy_exposes_irrigation_actuator_as_independent_action():
     model = build_modeling_dataset_10min(_stress_sample())
     crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")

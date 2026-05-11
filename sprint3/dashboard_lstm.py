@@ -4,8 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from world_model_lstm_inference import load_lstm_world_model, predict_next_state
-
 
 def _metric_value(metrics: dict, target: str, key: str = "mae") -> float | None:
     value = metrics.get("target_metrics", {}).get(target, {}).get(key)
@@ -68,6 +66,8 @@ def predict_dashboard_next_state(
     scalers_path: str | Path,
     device: str = "cpu",
 ) -> dict[str, float | int]:
+    from world_model_lstm_inference import load_lstm_world_model, predict_next_state
+
     model, scalers = load_lstm_world_model(
         model_path=model_path,
         scalers_path=scalers_path,

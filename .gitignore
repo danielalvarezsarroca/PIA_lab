@@ -1,2 +1,9 @@
 sprint3/outputs/master_dataset_world_model.csv
 sprint3/outputs/world_model_training_dataset.csv
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.worktrees/
+sprint3/outputs_10min/
+sprint3/outputs_daily/

@@ -104,6 +104,22 @@ def test_crop_risk_dataset_adds_irrigation_actuator_outputs():
     assert not joint_actions.empty
 
 
+def test_crop_risk_scores_gradual_water_stress_before_binary_deficit():
+    model = build_modeling_dataset_10min(_stress_sample())
+    model.loc[:, "VWC_S1_mean"] = 0.245
+    model.loc[:, "precip_intensity_mm10min"] = 0.0
+
+    risk = build_crop_risk_dataset(model, crop_type="lechuga")
+
+    assert {"water_stress_score", "irrigation_need_score", "projected_vwc_no_irrigation_1h"}.issubset(risk.columns)
+    assert not risk["water_deficit"].any()
+    assert risk["water_stress_score"].between(0, 1).all()
+    assert risk["irrigation_need_score"].between(0, 1).all()
+    assert risk["water_stress_score"].gt(0).any()
+    assert risk["projected_vwc_no_irrigation_1h"].lt(risk["VWC_crop_zone_fraction"]).any()
+    assert "riego_preventivo" in set(risk["crop_management_action"])
+
+
 def test_crop_risk_dataset_can_score_independent_crop_zones():
     model = build_modeling_dataset_10min(_stress_sample())
 
@@ -219,11 +235,31 @@ def test_crop_calendar_uses_history_and_flags_harvest():
     assert not tomato["ready_to_harvest"]
     assert tomato["days_to_harvest"] > 0
 
-    ready = crop_calendar_for_date("tomate", "2025-09-20")
+    ready = crop_calendar_for_date("tomate", "2025-09-13")
 
     assert ready["ready_to_harvest"]
     assert ready["days_to_harvest"] == 0
+    assert ready["days_after_planting"] == 95
+    assert ready["cycle_index"] == 0
     assert ready["current_stage"]["name"] == "Listo para recoger"
+
+    next_cycle = crop_calendar_for_date("tomate", "2025-09-20")
+
+    assert not next_cycle["ready_to_harvest"]
+    assert next_cycle["days_after_planting"] == 6
+    assert next_cycle["days_to_harvest"] == 89
+    assert next_cycle["cycle_index"] == 1
+    assert next_cycle["planted_at"] == "2025-09-14"
+    assert next_cycle["harvest_at"] == "2025-12-18"
+    assert next_cycle["current_stage"]["name"] == "Implantacion"
+
+    lettuce = crop_calendar_for_date("lechuga", "2026-02-12")
+
+    assert lettuce["absolute_days_after_planting"] == 176
+    assert lettuce["days_after_planting"] == 8
+    assert lettuce["cycle_index"] == 3
+    assert not lettuce["ready_to_harvest"]
+    assert lettuce["current_stage"]["name"] == "Implantacion"
 
 
 def test_write_agricultural_outputs_creates_crop_files(tmp_path: Path):

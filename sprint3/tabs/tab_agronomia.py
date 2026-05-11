@@ -3,7 +3,6 @@ from base64 import b64encode
 from typing import Any
 
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -34,19 +33,76 @@ def _style_fig(fig: go.Figure, height: int = 280) -> go.Figure:
 
 
 def _metric_card(title: str, value: str, detail: str, color: str) -> str:
+    value_size = 25
+    if len(value) > 20:
+        value_size = 18
+    elif len(value) > 14:
+        value_size = 19
     return f"""
     <div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.88));
                 border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:15px 16px;
                 box-shadow:0 16px 42px rgba(16,24,40,0.08),inset 0 1px 0 rgba(255,255,255,0.96);
-                min-height:106px;position:relative;overflow:hidden;">
+                min-height:106px;position:relative;overflow:hidden;box-sizing:border-box;min-width:0;">
       <div style="position:absolute;left:16px;right:16px;top:0;height:3px;border-radius:999px;
                   background:linear-gradient(90deg,rgba(255,255,255,0),{color},rgba(255,255,255,0));opacity:.72;"></div>
       <div style="font-size:10px;font-weight:780;color:#6e6e73;text-transform:uppercase;
-                  letter-spacing:.06em;margin-bottom:8px;">{html.escape(title)}</div>
-      <div style="font-size:25px;font-weight:820;color:{color};line-height:1;">{html.escape(value)}</div>
-      <div style="font-size:11px;color:#6e6e73;margin-top:8px;line-height:1.35;">{html.escape(detail)}</div>
+                  letter-spacing:.06em;margin-bottom:8px;overflow-wrap:anywhere;">{html.escape(title)}</div>
+      <div style="font-size:{value_size}px;font-weight:820;color:{color};line-height:1.08;
+                  overflow-wrap:anywhere;">{html.escape(value)}</div>
+      <div style="font-size:11px;color:#6e6e73;margin-top:8px;line-height:1.35;
+                  overflow-wrap:anywhere;">{html.escape(detail)}</div>
     </div>
     """
+
+
+def _safe_number(value: Any, default: float = 0.0) -> float:
+    try:
+        if pd.isna(value):
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _timeline_view_model(crop_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str], int]:
+    timeline = crop_df.assign(Time=pd.to_datetime(crop_df["Time"]))
+    timeline = timeline.sort_values("Time").reset_index(drop=True)
+    labels = timeline["Time"].dt.strftime("%Y-%m-%d %H:%M").tolist()
+    selected_idx = max(len(labels) - 1, 0)
+    return timeline, labels, selected_idx
+
+
+def _irrigation_card_view_model(row: pd.Series) -> dict[str, str]:
+    action = str(row.get("crop_management_action", "sin_manejo_directo"))
+    mode = str(row.get("irrigation_mode", "off"))
+    active = bool(row.get("irrigation_active", False))
+    mm_10min = _safe_number(row.get("irrigation_mm_10min", 0))
+    duration_min = _safe_number(row.get("irrigation_duration_min", 0))
+    label = ACTION_LABELS.get(action, action.replace("_", " ").title())
+
+    if active:
+        color = COLOR["blue"] if action == "activar_riego" else COLOR["green"]
+        return {
+            "title": "Riego",
+            "value": "Activo",
+            "detail": f"{label} · {mm_10min:.1f} mm/10min · {duration_min:g} min",
+            "color": color,
+        }
+
+    if mode == "paused" or action == "pausar_riego":
+        return {
+            "title": "Riego",
+            "value": "Pausado",
+            "detail": "sin aporte de agua",
+            "color": "#6e6e73",
+        }
+
+    return {
+        "title": "Riego",
+        "value": "Inactivo",
+        "detail": "0.0 mm/10min · sin acción",
+        "color": "#6e6e73",
+    }
 
 
 def _crop_display_name(crop_type: str) -> str:
@@ -429,7 +485,19 @@ def render_tab_agronomia(
         st.info("No hay registros para este cultivo.")
         return
 
-    latest = crop_df.sort_values(["crop_risk_score", "Time"], ascending=[False, False]).iloc[0]
+    crop_df, time_labels, default_time_idx = _timeline_view_model(crop_df)
+    selected_time_label = time_labels[default_time_idx]
+    if len(time_labels) > 1:
+        selected_time_label = st.select_slider(
+            "Instante de visualización",
+            options=time_labels,
+            value=selected_time_label,
+            key=f"agro_timeline_{selected_zone}_{crop_type}",
+        )
+    selected_time_idx = time_labels.index(selected_time_label)
+    latest = crop_df.iloc[selected_time_idx]
+    st.caption(f"Visualización cada 10 minutos · instante seleccionado: {selected_time_label}")
+
     model_row = df_modelo[pd.to_datetime(df_modelo["Time"]) == pd.to_datetime(latest["Time"])]
     rl_record = latest.copy()
     if not model_row.empty:
@@ -452,8 +520,9 @@ def render_tab_agronomia(
     rl_reward = float(rl_rec.get("rl_reward", 0))
     action_label = ACTION_LABELS.get(management_action, management_action.replace("_", " ").title())
     panel_action_label = ACTION_LABELS.get(panel_action, panel_action.replace("_", " ").title())
+    irrigation_card = _irrigation_card_view_model(latest)
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns([1, 1, 1.22, 1.14, 1])
     with c1:
         st.markdown(_metric_card("Salud cultivo", f"{health:.2f}", "componente agronómica de la recompensa", COLOR["green"]), unsafe_allow_html=True)
     with c2:
@@ -461,6 +530,8 @@ def render_tab_agronomia(
     with c3:
         st.markdown(_metric_card("Manejo cultivo", action_label, f"acción independiente de la placa", COLOR["blue"]), unsafe_allow_html=True)
     with c4:
+        st.markdown(_metric_card(irrigation_card["title"], irrigation_card["value"], irrigation_card["detail"], irrigation_card["color"]), unsafe_allow_html=True)
+    with c5:
         st.markdown(_metric_card("Placa/RL", f"{rl_angle:.0f}°", f"{panel_action_label} · reward {rl_reward:.2f}", "#6d5bd0"), unsafe_allow_html=True)
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
@@ -470,14 +541,10 @@ def render_tab_agronomia(
         st.caption("La visualización representa la acción elegida por la política RL; las reglas agronómicas son expertas y referenciadas.")
 
     with col_charts:
-        hourly = crop_df.groupby("hour_of_day", as_index=False).agg(
-            crop_health_score=("crop_health_score", "mean"),
-            crop_risk_score=("crop_risk_score", "mean"),
-        )
         fig_health = go.Figure()
         fig_health.add_trace(go.Scatter(
-            x=hourly["hour_of_day"],
-            y=hourly["crop_health_score"],
+            x=crop_df["Time"],
+            y=crop_df["crop_health_score"],
             mode="lines",
             name="salud",
             line=dict(color=COLOR["green"], width=3),
@@ -485,20 +552,47 @@ def render_tab_agronomia(
             fillcolor="rgba(47,143,104,.20)",
         ))
         fig_health.add_trace(go.Scatter(
-            x=hourly["hour_of_day"],
-            y=hourly["crop_risk_score"],
+            x=crop_df["Time"],
+            y=crop_df["crop_risk_score"],
             mode="lines",
             name="riesgo",
             line=dict(color=COLOR["red"], width=2),
         ))
-        fig_health.update_layout(title="Riesgo y salud media por hora", legend=dict(orientation="h", y=1.12))
+        fig_health.add_vline(
+            x=latest["Time"],
+            line_width=2,
+            line_dash="dot",
+            line_color="rgba(10,132,255,.72)",
+        )
+        fig_health.update_layout(title="Riesgo y salud cada 10 minutos", legend=dict(orientation="h", y=1.12))
         st.plotly_chart(_style_fig(fig_health, height=238), use_container_width=True)
 
-        action_counts = crop_df["crop_management_action"].map(ACTION_LABELS).fillna(crop_df["crop_management_action"]).value_counts().reset_index()
-        action_counts.columns = ["accion", "registros"]
-        fig_actions = px.bar(action_counts, x="registros", y="accion", orientation="h", title="Manejo agrícola detectado")
-        fig_actions.update_traces(marker_color="#0a84ff")
-        st.plotly_chart(_style_fig(fig_actions, height=238), use_container_width=True)
+        if "irrigation_mm_10min" in crop_df.columns:
+            irrigation_mm = pd.to_numeric(crop_df["irrigation_mm_10min"], errors="coerce").fillna(0)
+        else:
+            irrigation_mm = pd.Series(0.0, index=crop_df.index)
+        irrigation_actions = crop_df["crop_management_action"].map(ACTION_LABELS).fillna(crop_df["crop_management_action"])
+        irrigation_colors = [
+            COLOR["green"] if str(action) == "riego_preventivo" else COLOR["blue"] if mm > 0 else "rgba(110,110,115,.28)"
+            for action, mm in zip(crop_df["crop_management_action"], irrigation_mm)
+        ]
+        fig_irrigation = go.Figure()
+        fig_irrigation.add_trace(go.Bar(
+            x=crop_df["Time"],
+            y=irrigation_mm,
+            text=irrigation_actions,
+            name="mm/10min",
+            marker_color=irrigation_colors,
+            hovertemplate="%{x|%d/%m %H:%M}<br>%{text}<br>%{y:.1f} mm/10min<extra></extra>",
+        ))
+        fig_irrigation.add_vline(
+            x=latest["Time"],
+            line_width=2,
+            line_dash="dot",
+            line_color="rgba(10,132,255,.72)",
+        )
+        fig_irrigation.update_layout(title="Riego aplicado cada 10 minutos", showlegend=False)
+        st.plotly_chart(_style_fig(fig_irrigation, height=238), use_container_width=True)
 
     profile = CROP_PROFILES.get(str(crop_type), {})
     calendar = crop_calendar_for_date(crop_type, latest["Time"])

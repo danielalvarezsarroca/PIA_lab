@@ -30,6 +30,9 @@ POLICY_COLUMNS = [
     "rl_reward",
     "energy_component",
     "agronomic_component",
+    "water_stress_score",
+    "future_water_stress_score",
+    "irrigation_need_score",
     "reward_alpha_agronomic",
     "reward_beta_energy",
     "observations",
@@ -58,6 +61,10 @@ TRAJECTORY_COLUMNS = [
     "ePAR_crop_zone_source",
     "energy_component",
     "agronomic_component",
+    "water_stress_score",
+    "future_water_stress_score",
+    "irrigation_need_score",
+    "projected_vwc_no_irrigation_1h",
     "rl_reward",
     "rl_angle_deg",
     "tracking_regime",
@@ -145,6 +152,10 @@ def _merged_reward_frame(
         "irrigation_active",
         "irrigation_mm_10min",
         "irrigation_duration_min",
+        "water_stress_score",
+        "future_water_stress_score",
+        "irrigation_need_score",
+        "projected_vwc_no_irrigation_1h",
         "stress_type",
         *CRITICAL_DAMAGE_COLUMNS,
     ]
@@ -196,9 +207,33 @@ def _merged_reward_frame(
     )
     df = df.assign(
         energy_component=pd.to_numeric(df["energy_score"], errors="coerce").fillna(0).clip(0, 1),
-        agronomic_component=pd.to_numeric(df["crop_health_score"], errors="coerce").fillna(0).clip(0, 1),
+        water_stress_score=pd.to_numeric(
+            df.get("water_stress_score", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(0).clip(0, 1),
+        future_water_stress_score=pd.to_numeric(
+            df.get("future_water_stress_score", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(0).clip(0, 1),
+        irrigation_need_score=pd.to_numeric(
+            df.get("irrigation_need_score", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(0).clip(0, 1),
+        projected_vwc_no_irrigation_1h=pd.to_numeric(
+            df.get("projected_vwc_no_irrigation_1h", pd.Series(index=df.index, dtype="float64")),
+            errors="coerce",
+        ).fillna(df["VWC_crop_zone_fraction"]).clip(0, 1),
         reward_alpha_agronomic=float(alpha_agronomic),
         reward_beta_energy=float(beta_energy),
+    )
+    projected_water_penalty = (
+        0.16 * df["future_water_stress_score"] + 0.06 * df["irrigation_need_score"]
+    ).clip(0, 0.22)
+    df = df.assign(
+        agronomic_component=(
+            pd.to_numeric(df["crop_health_score"], errors="coerce").fillna(0).clip(0, 1)
+            - projected_water_penalty
+        ).clip(0, 1)
     )
     for column in CRITICAL_DAMAGE_COLUMNS:
         if column not in df.columns:
@@ -262,6 +297,9 @@ def build_offline_rl_policy(
             rl_reward=("rl_reward", "mean"),
             energy_component=("energy_component", "mean"),
             agronomic_component=("agronomic_component", "mean"),
+            water_stress_score=("water_stress_score", "mean"),
+            future_water_stress_score=("future_water_stress_score", "mean"),
+            irrigation_need_score=("irrigation_need_score", "mean"),
             reward_alpha_agronomic=("reward_alpha_agronomic", "first"),
             reward_beta_energy=("reward_beta_energy", "first"),
             observations=("rl_reward", "size"),
@@ -386,6 +424,9 @@ def write_rl_policy_outputs(output_dir: str | Path, policy: pd.DataFrame) -> dic
         "reward_formula": "alpha * agronomic_component + beta * energy_component",
         "alpha_agronomic": DEFAULT_REWARD_ALPHA_AGRONOMIC,
         "beta_energy": DEFAULT_REWARD_BETA_ENERGY,
+        "agronomic_component_note": (
+            "crop_health_score adjusted by projected no-irrigation water stress and irrigation_need_score"
+        ),
         "penalty_damage": f"fixed_{DEFAULT_DAMAGE_PENALTY}_on_critical_agronomic_damage",
         "action_factorization": {
             "type": "factorized_joint_action",

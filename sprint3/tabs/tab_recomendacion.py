@@ -38,7 +38,11 @@ def _style_policy_fig(fig: go.Figure, height: int = 270) -> go.Figure:
     return fig
 
 
-def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) -> None:
+def render_tab_recomendacion(
+    df_rules: pd.DataFrame,
+    df_modelo: pd.DataFrame,
+    df_rl_policy: pd.DataFrame | None = None,
+) -> None:
     st.markdown(
         '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
         'letter-spacing:0.06em;margin-bottom:12px;">Política de rotación</div>',
@@ -61,7 +65,8 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
     with m1:
         st.markdown(_policy_metric("IEC actual", f"{current_iec:.2f}", "estado operativo reciente", COLOR["green"]), unsafe_allow_html=True)
     with m2:
-        st.markdown(_policy_metric("Reglas", str(len(df_rules)), "políticas candidatas evaluadas", "#1d1d1f"), unsafe_allow_html=True)
+        rl_states = len(df_rl_policy) if df_rl_policy is not None and not df_rl_policy.empty else 0
+        st.markdown(_policy_metric("Estados RL", str(rl_states), "política offline del masterdataset", "#1d1d1f"), unsafe_allow_html=True)
     with m3:
         st.markdown(_policy_metric("Mejor IEC", f"{float(best_rule['iec_mediana']):.2f}", str(best_rule["tipo"]), "#007aff"), unsafe_allow_html=True)
     with m4:
@@ -117,6 +122,25 @@ def render_tab_recomendacion(df_rules: pd.DataFrame, df_modelo: pd.DataFrame) ->
             f'</div>',
             unsafe_allow_html=True,
         )
+
+        if df_rl_policy is not None and not df_rl_policy.empty:
+            best_rl = df_rl_policy.sort_values(["rl_reward", "observations"], ascending=[False, False]).iloc[0]
+            crop_action = str(best_rl.get("crop_management_action", "sin_manejo_directo")).replace("_", " ")
+            panel_action = str(best_rl.get("panel_action", "mantener_placas")).replace("_", " ")
+            st.markdown(
+                f'<div style="margin-top:12px;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));'
+                f'border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:14px 16px;'
+                f'box-shadow:0 14px 34px rgba(10,132,255,0.10),inset 0 1px 0 rgba(255,255,255,0.96);">'
+                f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
+                f'letter-spacing:0.06em;margin-bottom:7px;">Mejor acción RL observada</div>'
+                f'<div style="font-size:20px;font-weight:820;color:#0a84ff;">'
+                f'{float(best_rl.get("rl_angle_deg", 0)):.0f}° · {panel_action}</div>'
+                f'<div style="font-size:11px;color:#6e6e73;margin-top:7px;">'
+                f'Manejo cultivo: {crop_action} · Reward {float(best_rl.get("rl_reward", 0)):.2f} · n={int(best_rl.get("observations", 0))} · '
+                f'{best_rl.get("state_key", "")}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
     # ── Rules table ───────────────────────────────────────────────────────────
     with col_table:

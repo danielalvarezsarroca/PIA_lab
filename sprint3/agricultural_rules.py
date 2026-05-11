@@ -557,6 +557,10 @@ RISK_COLUMNS = [
     "par_fraction_s1",
     "wind_speed_kmh",
     "precip_intensity_mm10min",
+    "water_stress_score",
+    "future_water_stress_score",
+    "irrigation_need_score",
+    "projected_vwc_no_irrigation_1h",
     "heat_stress",
     "cold_stress",
     "water_deficit",
@@ -637,6 +641,7 @@ def _irrigation_actuator_for_action(action: Any) -> dict[str, Any]:
 
 
 def _crop_management_action(row: pd.Series) -> str:
+    irrigation_need = _safe_float(row.get("irrigation_need_score"), 0.0)
     if bool(row.get("water_excess", False)) and bool(row.get("light_deficit", False)):
         return "poda_sanitaria"
     if bool(row.get("water_excess", False)):
@@ -645,6 +650,8 @@ def _crop_management_action(row: pd.Series) -> str:
         return "riego_preventivo"
     if bool(row.get("water_deficit", False)):
         return "activar_riego"
+    if irrigation_need >= 0.45:
+        return "riego_preventivo"
     if bool(row.get("cold_stress", False)):
         return "proteccion_frio"
     return "sin_manejo_directo"
@@ -697,12 +704,16 @@ def crop_calendar_for_date(crop_type: str, current_time: Any) -> dict[str, Any]:
     """Return crop-cycle state for the selected crop and dashboard timestamp."""
     profile = _profile(crop_type)
     history = profile.get("crop_history", {})
-    planted_at = pd.Timestamp(history.get("planted_at", current_time)).normalize()
+    initial_planted_at = pd.Timestamp(history.get("planted_at", current_time)).normalize()
     current_at = pd.Timestamp(current_time).normalize()
     harvest_days = int(history.get("harvest_days", 60))
-    days_after_planting = max(0, int((current_at - planted_at).days))
+    absolute_days_after_planting = max(0, int((current_at - initial_planted_at).days))
+    cycle_span_days = max(harvest_days + 1, 1)
+    cycle_index = 0 if harvest_days <= 0 else absolute_days_after_planting // cycle_span_days
+    days_after_planting = 0 if harvest_days <= 0 else absolute_days_after_planting % cycle_span_days
+    planted_at = initial_planted_at + pd.Timedelta(days=cycle_index * cycle_span_days)
     harvest_at = planted_at + pd.Timedelta(days=harvest_days)
-    days_to_harvest = max(0, int((harvest_at - current_at).days))
+    days_to_harvest = max(0, harvest_days - days_after_planting)
     progress = 1.0 if harvest_days <= 0 else min(1.0, days_after_planting / harvest_days)
 
     stages = profile.get("growth_stages", [])
@@ -711,22 +722,27 @@ def crop_calendar_for_date(crop_type: str, current_time: Any) -> dict[str, Any]:
         if int(stage.get("start_day", 0)) <= days_after_planting <= int(stage.get("end_day", harvest_days)):
             current_stage = stage
             break
-    if days_after_planting > harvest_days:
-        current_stage = {"name": "Listo para recoger", "start_day": harvest_days, "end_day": days_after_planting}
+    ready_to_harvest = days_after_planting >= harvest_days
+    if ready_to_harvest:
+        current_stage = {"name": "Listo para recoger", "start_day": harvest_days, "end_day": harvest_days}
 
     return {
         "crop_type": crop_type,
         "display_name": profile.get("display_name", crop_type),
+        "initial_planted_at": initial_planted_at.date().isoformat(),
         "planted_at": planted_at.date().isoformat(),
         "harvest_at": harvest_at.date().isoformat(),
         "harvest_days": harvest_days,
+        "cycle_index": int(cycle_index),
+        "cycle_span_days": int(cycle_span_days),
+        "absolute_days_after_planting": absolute_days_after_planting,
         "days_after_planting": days_after_planting,
         "days_to_harvest": days_to_harvest,
         "progress": progress,
         "current_stage": current_stage,
         "growth_stages": stages,
         "history_note": history.get("history_note", ""),
-        "ready_to_harvest": days_after_planting >= harvest_days,
+        "ready_to_harvest": ready_to_harvest,
     }
 
 
@@ -767,6 +783,28 @@ def _fill_default_with_source(
     return values.mask(mask, default), sources.mask(mask, default_source)
 
 
+def _water_comfort_target(profile: dict[str, Any]) -> float:
+    low = float(profile["vwc_warn_low"])
+    high = float(profile["vwc_warn_high"])
+    stage_ranges = [
+        requirement.get("vwc_target_range")
+        for requirement in profile.get("stage_requirements", [])
+        if requirement.get("vwc_target_range")
+    ]
+    if stage_ranges:
+        midpoint = float(np.mean([np.mean(target_range) for target_range in stage_ranges]))
+    else:
+        midpoint = low + 0.5 * (high - low)
+    return float(np.clip(midpoint, low + 0.02, high - 0.015))
+
+
+def _water_stress_score(vwc_fraction: pd.Series, profile: dict[str, Any]) -> pd.Series:
+    low = float(profile["vwc_warn_low"])
+    target = _water_comfort_target(profile)
+    comfort_span = max(target - low, 0.01)
+    return ((target - vwc_fraction) / comfort_span).clip(0, 1).fillna(0)
+
+
 def _main_stress_type(row: pd.Series) -> str:
     checks = [
         ("weather_risk", "riesgo_meteorologico"),
@@ -780,12 +818,18 @@ def _main_stress_type(row: pd.Series) -> str:
     for key, label in checks:
         if bool(row.get(key, False)):
             return label
+    if _safe_float(row.get("irrigation_need_score"), 0.0) >= 0.45:
+        return "deficit_hidrico_preventivo"
     return "estable"
 
 
 def _recommended_action(row: pd.Series) -> str:
     crop_action = str(row.get("crop_management_action", "sin_manejo_directo"))
     panel_action = str(row.get("panel_action", "mantener_placas"))
+    if panel_action == "posicion_segura":
+        return panel_action
+    if panel_action == "aumentar_sombreado" and crop_action == "riego_preventivo":
+        return panel_action
     if crop_action != "sin_manejo_directo":
         return crop_action
     if panel_action != "mantener_placas":
@@ -896,10 +940,30 @@ def build_crop_risk_dataset(model_df: pd.DataFrame, crop_type: str = "lechuga", 
     light_deficit = (par_fraction <= profile["par_fraction_min"]) & (rain < profile["rain_pause_mm10min"])
     excess_radiation = (par_fraction >= profile["par_fraction_high"]) & (heat_stress | water_deficit)
     weather_risk = wind >= profile["wind_safe_kmh"]
+    water_stress_score = _water_stress_score(vwc_fraction, profile)
+    solar_demand = (solar_elevation.clip(lower=0, upper=80) / 80).fillna(0)
+    heat_demand = heat_stress.astype(float)
+    wind_demand = (wind.clip(lower=0, upper=35) / 35).fillna(0)
+    drydown_1h = 0.006 + 0.010 * solar_demand + 0.006 * heat_demand + 0.003 * wind_demand
+    rain_recharge_1h = rain.clip(lower=0, upper=float(profile["rain_pause_mm10min"])) * 0.006
+    projected_vwc_no_irrigation_1h = (vwc_fraction - drydown_1h + rain_recharge_1h).clip(0, 1)
+    future_water_stress_score = _water_stress_score(projected_vwc_no_irrigation_1h, profile)
+    irrigation_need_score = pd.concat(
+        [water_stress_score, future_water_stress_score * 0.85],
+        axis=1,
+    ).max(axis=1)
+    irrigation_need_score = irrigation_need_score.mask(water_excess, 0).clip(0, 1)
+    water_risk_component = pd.concat(
+        [
+            0.22 * water_deficit.astype(float),
+            0.16 * water_stress_score + 0.08 * future_water_stress_score,
+        ],
+        axis=1,
+    ).max(axis=1)
 
     risk_score = (
         0.24 * heat_stress.astype(float)
-        + 0.22 * water_deficit.astype(float)
+        + water_risk_component
         + 0.16 * water_excess.astype(float)
         + 0.13 * light_deficit.astype(float)
         + 0.10 * excess_radiation.astype(float)
@@ -933,6 +997,10 @@ def build_crop_risk_dataset(model_df: pd.DataFrame, crop_type: str = "lechuga", 
         "par_fraction_s1": par_fraction,
         "wind_speed_kmh": wind,
         "precip_intensity_mm10min": rain,
+        "water_stress_score": water_stress_score,
+        "future_water_stress_score": future_water_stress_score,
+        "irrigation_need_score": irrigation_need_score,
+        "projected_vwc_no_irrigation_1h": projected_vwc_no_irrigation_1h,
         "heat_stress": heat_stress,
         "cold_stress": cold_stress,
         "water_deficit": water_deficit,
