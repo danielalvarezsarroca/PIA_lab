@@ -72,7 +72,7 @@ def _timeline_view_model(crop_df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]
     return timeline, labels, selected_idx
 
 
-def _irrigation_card_view_model(row: pd.Series) -> dict[str, str]:
+def _external_action_card_view_model(row: pd.Series) -> dict[str, str]:
     action = str(row.get("crop_management_action", "sin_manejo_directo"))
     mode = str(row.get("irrigation_mode", "off"))
     active = bool(row.get("irrigation_active", False))
@@ -83,25 +83,53 @@ def _irrigation_card_view_model(row: pd.Series) -> dict[str, str]:
     if active:
         color = COLOR["blue"] if action == "activar_riego" else COLOR["green"]
         return {
-            "title": "Riego",
-            "value": "Activo",
-            "detail": f"{label} · {mm_10min:.1f} mm/10min · {duration_min:g} min",
+            "title": "Acción externa",
+            "value": label,
+            "detail": f"riego activo · {mm_10min:.1f} mm/10min · {duration_min:g} min",
             "color": color,
         }
 
     if mode == "paused" or action == "pausar_riego":
         return {
-            "title": "Riego",
-            "value": "Pausado",
-            "detail": "sin aporte de agua",
+            "title": "Acción externa",
+            "value": label,
+            "detail": "riego pausado · sin aporte de agua",
             "color": "#6e6e73",
         }
 
+    if action != "sin_manejo_directo":
+        return {
+            "title": "Acción externa",
+            "value": label,
+            "detail": "sin aporte de agua en este intervalo",
+            "color": COLOR["amber"],
+        }
+
     return {
-        "title": "Riego",
-        "value": "Inactivo",
-        "detail": "0.0 mm/10min · sin acción",
+        "title": "Acción externa",
+        "value": "Sin intervención",
+        "detail": "sin riego ni actuador externo",
         "color": "#6e6e73",
+    }
+
+
+def _panel_action_card_view_model(row: pd.Series) -> dict[str, str]:
+    action = str(row.get("panel_action", "mantener_placas"))
+    label = ACTION_LABELS.get(action, action.replace("_", " ").title())
+    angle = _safe_number(row.get("rl_angle_deg", row.get("track_mean", 0)))
+    regime = str(row.get("tracking_regime", "") or "seguimiento RL")
+    color = "#6d5bd0"
+    if action == "aumentar_sombreado":
+        color = COLOR["blue"]
+    elif action == "reducir_sombreado":
+        color = COLOR["amber"]
+    elif action == "posicion_segura":
+        color = COLOR["red"]
+    return {
+        "title": "Acción placas",
+        "value": label,
+        "detail": f"{angle:.0f}° · {regime}",
+        "color": color,
     }
 
 
@@ -518,27 +546,28 @@ def render_tab_agronomia(
     action = str(rl_rec.get("agronomic_action", latest.get("recommended_action", "mantener")))
     rl_angle = float(rl_rec.get("rl_angle_deg", latest.get("track_mean", 0)))
     rl_reward = float(rl_rec.get("rl_reward", 0))
-    action_label = ACTION_LABELS.get(management_action, management_action.replace("_", " ").title())
-    panel_action_label = ACTION_LABELS.get(panel_action, panel_action.replace("_", " ").title())
-    irrigation_card = _irrigation_card_view_model(latest)
+    latest_with_rl = latest.copy()
+    latest_with_rl["crop_management_action"] = management_action
+    latest_with_rl["panel_action"] = panel_action
+    latest_with_rl["rl_angle_deg"] = rl_angle
+    external_card = _external_action_card_view_model(latest_with_rl)
+    panel_card = _panel_action_card_view_model(latest_with_rl)
 
-    c1, c2, c3, c4, c5 = st.columns([1, 1, 1.22, 1.14, 1])
+    c1, c2, c3, c4 = st.columns([1, 1, 1.24, 1.24])
     with c1:
         st.markdown(_metric_card("Salud cultivo", f"{health:.2f}", "componente agronómica de la recompensa", COLOR["green"]), unsafe_allow_html=True)
     with c2:
         st.markdown(_metric_card("Riesgo", f"{risk:.2f}", str(latest.get("stress_type", "estable")).replace("_", " "), COLOR["red"] if risk > 0.45 else COLOR["amber"]), unsafe_allow_html=True)
     with c3:
-        st.markdown(_metric_card("Manejo cultivo", action_label, f"acción independiente de la placa", COLOR["blue"]), unsafe_allow_html=True)
+        st.markdown(_metric_card(external_card["title"], external_card["value"], external_card["detail"], external_card["color"]), unsafe_allow_html=True)
     with c4:
-        st.markdown(_metric_card(irrigation_card["title"], irrigation_card["value"], irrigation_card["detail"], irrigation_card["color"]), unsafe_allow_html=True)
-    with c5:
-        st.markdown(_metric_card("Placa/RL", f"{rl_angle:.0f}°", f"{panel_action_label} · reward {rl_reward:.2f}", "#6d5bd0"), unsafe_allow_html=True)
+        st.markdown(_metric_card(panel_card["title"], panel_card["value"], f"{panel_card['detail']} · reward {rl_reward:.2f}", panel_card["color"]), unsafe_allow_html=True)
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
     col_scene, col_charts = st.columns([1.05, 1])
     with col_scene:
         _render_svg(_crop_scene_svg(management_action, panel_action, health, risk, crop_type))
-        st.caption("La visualización representa la acción elegida por la política RL; las reglas agronómicas son expertas y referenciadas.")
+        st.caption("La política RL muestra acciones factorizadas: placa y acción externa pueden coexistir en el mismo intervalo de 10 minutos.")
 
     with col_charts:
         fig_health = go.Figure()
@@ -591,7 +620,7 @@ def render_tab_agronomia(
             line_dash="dot",
             line_color="rgba(10,132,255,.72)",
         )
-        fig_irrigation.update_layout(title="Riego aplicado cada 10 minutos", showlegend=False)
+        fig_irrigation.update_layout(title="Acción externa y riego aplicado cada 10 minutos", showlegend=False)
         st.plotly_chart(_style_fig(fig_irrigation, height=238), use_container_width=True)
 
     profile = CROP_PROFILES.get(str(crop_type), {})

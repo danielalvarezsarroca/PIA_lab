@@ -13,7 +13,11 @@ sys.modules.setdefault(
     ),
 )
 
-from tabs.tab_agronomia import _irrigation_card_view_model, _timeline_view_model
+from tabs.tab_agronomia import (
+    _external_action_card_view_model,
+    _panel_action_card_view_model,
+    _timeline_view_model,
+)
 
 
 def test_timeline_view_model_keeps_10_minute_records_and_defaults_to_latest():
@@ -38,7 +42,7 @@ def test_timeline_view_model_keeps_10_minute_records_and_defaults_to_latest():
     assert timeline["crop_health_score"].tolist() == [0.78, 0.80, 0.82]
 
 
-def test_irrigation_card_view_model_describes_preventive_10_minute_dose():
+def test_external_action_card_view_model_describes_preventive_10_minute_dose():
     row = pd.Series(
         {
             "crop_management_action": "riego_preventivo",
@@ -48,15 +52,16 @@ def test_irrigation_card_view_model_describes_preventive_10_minute_dose():
         }
     )
 
-    card = _irrigation_card_view_model(row)
+    card = _external_action_card_view_model(row)
 
-    assert card["value"] == "Activo"
+    assert card["title"] == "Acción externa"
+    assert card["value"] == "Riego preventivo"
     assert "1.2 mm/10min" in card["detail"]
     assert "6 min" in card["detail"]
     assert card["color"]
 
 
-def test_irrigation_card_view_model_reports_paused_irrigation():
+def test_external_action_card_view_model_reports_paused_irrigation():
     row = pd.Series(
         {
             "crop_management_action": "pausar_riego",
@@ -67,8 +72,26 @@ def test_irrigation_card_view_model_reports_paused_irrigation():
         }
     )
 
-    card = _irrigation_card_view_model(row)
+    card = _external_action_card_view_model(row)
 
-    assert card["value"] == "Pausado"
-    assert card["detail"] == "sin aporte de agua"
+    assert card["title"] == "Acción externa"
+    assert card["value"] == "Pausar riego"
+    assert card["detail"] == "riego pausado · sin aporte de agua"
     assert card["color"] == "#6e6e73"
+
+
+def test_panel_action_card_view_model_describes_panel_action_separately():
+    row = pd.Series(
+        {
+            "panel_action": "aumentar_sombreado",
+            "rl_angle_deg": 35,
+            "tracking_regime": "anti-estres",
+        }
+    )
+
+    card = _panel_action_card_view_model(row)
+
+    assert card["title"] == "Acción placas"
+    assert card["value"] == "Aumentar sombreado"
+    assert "35°" in card["detail"]
+    assert "anti-estres" in card["detail"]
