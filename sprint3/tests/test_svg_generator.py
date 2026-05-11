@@ -59,6 +59,22 @@ def test_positive_angle_labels_west_orientation():
     assert "Orientación visual: Oeste" in out
 
 
+def test_action_badges_use_external_and_panel_labels():
+    out = generate_solar_svg(
+        12.0,
+        35.0,
+        38.0,
+        75.0,
+        600.0,
+        management_action="riego_preventivo",
+        panel_action="mantener_placas",
+    )
+    assert "ACCION EXTERNA" in out
+    assert "ACCION PLACAS" in out
+    assert "AGRONOMICA" not in out
+    assert "ENERGETICA" not in out
+
+
 def test_negative_morning_angle_keeps_clockwise_visual_tilt():
     out = generate_solar_svg(6.0, -31.0, -30.0, 42.0, 220.0)
     assert "rotate(31" in out

@@ -463,8 +463,8 @@ def generate_solar_svg(
     arrow_y1 = sun_y + sun_r + 7
     next_arrow_y1 = next_sun_y + sun_r + 7
     direction = _direction_label(track_angle)
-    agri_badge = _short_label(_label_for_action(management_action))
-    energy_badge = _short_label(_label_for_action(panel_action))
+    external_badge = _short_label(_label_for_action(management_action))
+    panel_badge = _short_label(_label_for_action(panel_action))
     crop_label = _short_label(_crop_display_name(crop_type), 16)
     zone_s1_label = _short_label(_crop_display_name(crop_type_s1), 18)
     zone_s2_label = _short_label(_crop_display_name(crop_type_s2), 18)
@@ -570,13 +570,13 @@ def generate_solar_svg(
     <text x="{zone_crop_x}" y="17" font-size="11" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">{crop_label}</text>
     <g transform="translate(14 28)">
       <rect x="0" y="0" width="106" height="52" rx="14" fill="rgba(10,132,255,0.12)" stroke="rgba(10,132,255,0.22)"/>
-      <text x="10" y="16" font-size="9" fill="#0a84ff" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">AGRONOMICA</text>
-      <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{agri_badge}</text>
+      <text x="10" y="16" font-size="9" fill="#0a84ff" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">ACCION EXTERNA</text>
+      <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{external_badge}</text>
     </g>
     <g transform="translate(132 28)">
       <rect x="0" y="0" width="106" height="52" rx="14" fill="rgba(109,91,208,0.12)" stroke="rgba(109,91,208,0.22)"/>
-      <text x="10" y="16" font-size="9" fill="#6d5bd0" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">ENERGETICA</text>
-      <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{energy_badge}</text>
+      <text x="10" y="16" font-size="9" fill="#6d5bd0" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800">ACCION PLACAS</text>
+      <text x="10" y="35" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="850">{panel_badge}</text>
     </g>
   </g>
   {crop_zone_panel}
