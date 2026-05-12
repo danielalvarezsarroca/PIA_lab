@@ -76,7 +76,7 @@ def test_stream_cursor_reports_insufficient_context_safely():
 
     assert state["ready"] is False
     assert state["recent_window"].empty
-    assert "contexto" in state["message"].lower()
+    assert "pasos anteriores" in state["message"].lower()
 
 
 def test_empty_stream_has_no_slider_bounds():
@@ -90,9 +90,8 @@ def test_empty_stream_state_explains_prerequisite_commands():
     state = build_stream_empty_state(training_dataset_exists=False)
 
     assert state["can_render_controls"] is False
-    assert "master_dataset_world_model.csv" in state["body"]
-    assert "world_model_training_dataset.csv" in state["body"]
-    assert "master_dataset.csv" not in state["body"]
+    assert "datos suficientes" in state["body"]
+    assert "simulación semanal" in state["body"]
     assert "build_world_model_training_dataset.py" in state["training_command"]
     assert "train_world_model_lstm.py --mode simulate-retraining" in state["command"]
 
@@ -129,8 +128,8 @@ def test_retraining_timeline_handles_present_runs():
 
     timeline = build_retraining_timeline_frame(metrics)
 
-    assert list(timeline.columns) == ["cutoff_time", "observed_rows", "VWC MAE", "Tsoil MAE", "GPOA MAE"]
-    assert timeline.loc[0, "VWC MAE"] == 0.01
+    assert list(timeline.columns) == ["cutoff_time", "observed_rows", "Error humedad", "Error suelo", "Error luz"]
+    assert timeline.loc[0, "Error humedad"] == 0.01
 
 
 def test_retraining_timeline_handles_generated_metrics_keys():
@@ -175,8 +174,8 @@ def test_metric_comparison_frame_uses_initial_and_stream_metrics():
 
     frame = build_metric_comparison_frame(metrics)
 
-    assert list(frame["serie"]) == ["Test inicial", "Stream holdout"]
-    assert list(frame["VWC MAE"]) == [0.01, 0.02]
+    assert list(frame["serie"]) == ["Prueba inicial", "Datos de prueba"]
+    assert list(frame["Error humedad"]) == [0.01, 0.02]
 
 
 def test_metric_comparison_frame_uses_generated_stream_target_metrics():
@@ -187,5 +186,5 @@ def test_metric_comparison_frame_uses_generated_stream_target_metrics():
 
     frame = build_metric_comparison_frame(metrics)
 
-    assert list(frame["serie"]) == ["Test inicial", "Stream holdout"]
-    assert list(frame["VWC MAE"]) == [0.01, 0.02]
+    assert list(frame["serie"]) == ["Prueba inicial", "Datos de prueba"]
+    assert list(frame["Error humedad"]) == [0.01, 0.02]

@@ -7,12 +7,11 @@ import streamlit as st
 
 from agricultural_rules import CROP_PROFILES
 from alert_logic import build_alert_list, get_anomalous_trackers
-from data_loader import load_crop_risk_for_crop, load_rl_policy_for_crop
-from rule_engine import format_regime_label, get_active_rule_index
+from data_loader import load_crop_risk_for_crop, load_dqn_policy_for_crop
 from rl_policy import recommend_action_for_record
 from solar_logic import estimate_solar_elevation, get_recommended_angle
 from svg_generator import generate_solar_svg
-from styles import COLOR, card_html, iec_gauge_html
+from styles import COLOR, card_html
 
 _ALL_TRACKERS = ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09", "M10"]
 _ANOMALY_THRESHOLD = 450.0
@@ -47,16 +46,133 @@ def _selected_crop_risk(fallback: pd.DataFrame | None) -> pd.DataFrame:
 
 
 def _get_hour_record(df_modelo: pd.DataFrame, hour: int) -> pd.Series:
-    """Return the row with the highest IEC for the given hour of day.
+    """Return a representative row for the given hour of day.
     Falls back to nearest available hour if no data for requested hour."""
-    rows = df_modelo[df_modelo["hour_of_day"] == hour].dropna(subset=["IEC", "track_mean"])
+    rows = df_modelo[df_modelo["hour_of_day"] == hour].dropna(subset=["track_mean"])
     if not rows.empty:
-        return rows.loc[rows["IEC"].idxmax()]
-    valid = df_modelo.dropna(subset=["IEC", "track_mean"])
+        return _representative_hour_row(rows)
+    valid = df_modelo.dropna(subset=["track_mean"])
     if valid.empty:
         return df_modelo.iloc[-1]
     idx = (valid["hour_of_day"] - hour).abs().idxmin()
-    return valid.loc[idx]
+    nearest_hour = valid.loc[idx, "hour_of_day"]
+    nearest_rows = valid[valid["hour_of_day"] == nearest_hour]
+    return _representative_hour_row(nearest_rows)
+
+
+def _representative_hour_row(rows: pd.DataFrame) -> pd.Series:
+    """Pick the row closest to the average score for this hour."""
+    for score_col in ("crop_score", "energy_score", "IEC"):
+        if score_col in rows.columns:
+            values = pd.to_numeric(rows[score_col], errors="coerce")
+            if values.notna().any():
+                target_value = values.mean()
+                distance = (values - target_value).abs()
+                return rows.loc[distance.idxmin()]
+
+    for time_col in ("Time", "timestamp", "datetime", "date_time", "fecha_hora"):
+        if time_col in rows.columns:
+            parsed_time = pd.to_datetime(rows[time_col], errors="coerce")
+            if parsed_time.notna().any():
+                return rows.loc[parsed_time.idxmax()]
+    return rows.iloc[-1]
+
+
+def _finite_float(value: object, fallback: float = float("nan")) -> float:
+    try:
+        if pd.isna(value):
+            return fallback
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if math.isfinite(parsed) else fallback
+
+
+def _clamp_pct(value: float, *, low: float = 0.0, high: float = 100.0) -> float:
+    return max(low, min(high, value))
+
+
+def _dataset_scaled_pct(row: pd.Series, df_modelo: pd.DataFrame, value_col: str) -> float:
+    """Scale a value against the full dataset: dataset min = 0%, max = 100%."""
+    current_value = _finite_float(row.get(value_col), float("nan"))
+    if math.isnan(current_value) or value_col not in df_modelo.columns:
+        return 0.0
+
+    values = pd.to_numeric(df_modelo[value_col], errors="coerce").dropna()
+    if values.empty:
+        return 0.0
+
+    min_value = float(values.min())
+    max_value = float(values.max())
+    if math.isclose(min_value, max_value):
+        return 100.0
+
+    return _clamp_pct(((current_value - min_value) / (max_value - min_value)) * 100.0)
+
+
+def _crop_health_pct(row: pd.Series, df_modelo: pd.DataFrame) -> float:
+    return _dataset_scaled_pct(row, df_modelo, "crop_score")
+
+
+def _energy_efficiency_pct(row: pd.Series, df_modelo: pd.DataFrame) -> float:
+    if "GPOA_mean" in df_modelo.columns:
+        return _dataset_scaled_pct(row, df_modelo, "GPOA_mean")
+    return _dataset_scaled_pct(row, df_modelo, "energy_score")
+
+
+def _raw_metric_value(
+    row: pd.Series,
+    primary_col: str,
+    fallback_col: str | list[str] | tuple[str, ...] | None = None,
+) -> tuple[str, float]:
+    fallback_cols: list[str] = []
+    if isinstance(fallback_col, str):
+        fallback_cols = [fallback_col]
+    elif fallback_col is not None:
+        fallback_cols = list(fallback_col)
+
+    for value_col in [primary_col, *fallback_cols]:
+        if value_col in row.index:
+            value = _finite_float(row.get(value_col), float("nan"))
+            if not math.isnan(value):
+                return value_col, value
+
+    return primary_col, float("nan")
+
+
+def _format_raw_value(value: float, suffix: str = "") -> str:
+    if math.isnan(value):
+        return "Sin datos"
+    return f"{value:.2f}{suffix}"
+
+
+def _score_button_html(label: str, value_pct: float, color: str, hint: str) -> str:
+    value_pct = _clamp_pct(value_pct)
+    return (
+        f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.90));'
+        f'border:1px solid rgba(255,255,255,0.74);border-radius:18px;padding:12px 13px;'
+        f'box-shadow:0 14px 30px rgba(16,24,40,0.08),inset 0 1px 0 rgba(255,255,255,0.96);">'
+        f'<div style="font-size:10px;font-weight:800;color:#64706d;text-transform:uppercase;'
+        f'letter-spacing:0.04em;line-height:1.25;">{label}</div>'
+        f'<div style="font-size:25px;font-weight:850;color:{color};margin-top:5px;line-height:1;">'
+        f'{value_pct:.0f}%</div>'
+        f'<div style="font-size:11px;color:#6e6e73;margin-top:7px;line-height:1.3;">{hint}</div>'
+        f'</div>'
+    )
+
+
+def _raw_metric_button_html(label: str, value_text: str, color: str, source: str) -> str:
+    return (
+        f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.88));'
+        f'border:1px solid rgba(255,255,255,0.72);border-radius:16px;padding:10px 12px;'
+        f'box-shadow:0 10px 24px rgba(16,24,40,0.06),inset 0 1px 0 rgba(255,255,255,0.94);">'
+        f'<div style="font-size:10px;font-weight:800;color:#64706d;text-transform:uppercase;'
+        f'letter-spacing:0.04em;line-height:1.25;">{label}</div>'
+        f'<div style="font-size:19px;font-weight:820;color:{color};margin-top:5px;line-height:1.05;">'
+        f'{value_text}</div>'
+        f'<div style="font-size:10px;color:#8e8e93;margin-top:6px;line-height:1.25;">{source}</div>'
+        f'</div>'
+    )
 
 
 def _get_query_hour() -> int:
@@ -96,6 +212,13 @@ def _rl_recommendation(
         return pd.Series(dtype="object")
 
 
+def _action_label(value: object, fallback: str = "—") -> str:
+    if value is None or pd.isna(value):
+        return fallback
+    label = str(value).replace("_", " ").strip()
+    return label[:1].upper() + label[1:] if label else fallback
+
+
 def _zone_visual_state(
     crop_zone: str,
     row: pd.Series,
@@ -112,7 +235,7 @@ def _zone_visual_state(
     crop_record = _matching_crop_record(crop_risk_df, row)
     next_crop_record = _matching_crop_record(crop_risk_df, next_row)
 
-    rl_policy = load_rl_policy_for_crop(crop_type, crop_zone=crop_zone)
+    rl_policy = load_dqn_policy_for_crop(crop_type, crop_zone=crop_zone)
     if rl_policy.empty and crop_zone == _selected_crop_zone() and fallback_rl_policy is not None:
         rl_policy = fallback_rl_policy
 
@@ -146,7 +269,7 @@ def _render_svg_image(
     *,
     min_height: int = 498,
     image_min_height: int = 478,
-    alt: str = "Visualización solar de trackers agrovoltaicos",
+    alt: str = "Vista de placas y cultivo",
 ) -> None:
     """Render the SVG as a data image so Streamlit does not sanitize SVG tags."""
     encoded = b64encode(svg_html.encode("utf-8")).decode("ascii")
@@ -167,8 +290,11 @@ def _angle_justification(
     hour: int,
     track_angle: float,
     rec_angle: float,
-    regime: str,
-    iec_safe: float,
+    panel_action: str,
+    crop_action: str,
+    confidence: float | None,
+    crop_health_pct: float,
+    energy_efficiency_pct: float,
     in_range: bool,
     solar_elev: float,
 ) -> tuple[str, str, str]:
@@ -176,44 +302,36 @@ def _angle_justification(
     direction = "oeste" if track_angle > 0 else "este"
     angle_abs = abs(track_angle)
 
-    if regime == "TRACKING_PM":
-        icon  = "☀"
-        title = "Tracking de tarde — máximo rendimiento agrovoltaico"
-        body  = (
-            f"A las {hour:02d}:00h el sol está en su punto más alto (elevación {solar_elev:.0f}°). "
-            f"Los paneles se inclinan <b>{angle_abs:.0f}° hacia el {direction}</b> siguiendo la regla de "
-            f"Tracking PM, el régimen con mayor IEC registrado históricamente. "
-            f"El ángulo {'coincide con' if in_range else 'se desvía del'} óptimo recomendado ({rec_angle:.0f}°). "
-            f"IEC actual: <b>{iec_safe:.2f}</b> — zona {'óptima' if iec_safe >= 0.6 else 'media' if iec_safe >= 0.35 else 'crítica'}."
-        )
-    elif regime == "TRACKING_AM":
-        icon  = "↗"
-        title = "Tracking de mañana — seguimiento del sol naciente"
-        body  = (
-            f"A las {hour:02d}:00h el sol sale por el este (elevación {solar_elev:.0f}°). "
-            f"Los paneles apuntan <b>{angle_abs:.0f}° hacia el {direction}</b> para aprovechar "
-            f"la irradiancia matinal. La regla de Tracking AM maximiza la producción en las primeras "
-            f"horas del día, aunque el IEC ({iec_safe:.2f}) es menor que en la tarde."
-        )
-    elif regime == "HORIZONTAL":
-        if hour <= 8 or hour >= 17:
-            reason = (
-                "el sol está bajo en el horizonte o ausente — "
-                "los trackers se colocan en posición de reposo horizontal para protegerse del viento"
-            )
-        else:
-            reason = "el sistema mantiene posición horizontal según la política activa"
-        icon  = "−"
-        title = "Posición horizontal — régimen de reposo"
-        body  = (
-            f"A las {hour:02d}:00h {reason}. "
-            f"Ángulo ≈ {track_angle:.1f}° (prácticamente plano). "
-            f"En este régimen el IEC es bajo ({iec_safe:.2f}) al no haber seguimiento activo del sol."
-        )
+    panel_label = _action_label(panel_action)
+    crop_label = _action_label(crop_action)
+    confidence_text = (
+        f"Confianza <b>{confidence * 100:.0f}%</b>. "
+        if confidence is not None and not math.isnan(confidence)
+        else ""
+    )
+    status = "coincide con" if in_range else "se desvía del"
+
+    if panel_action == "aumentar_sombreado":
+        icon = "◐"
+        title = "Aumentar sombra"
+    elif panel_action == "reducir_sombreado":
+        icon = "☀"
+        title = "Reducir sombra"
+    elif panel_action == "posicion_segura":
+        icon = "−"
+        title = "Posición segura"
     else:
-        icon  = "◇"
-        title = f"Régimen: {format_regime_label(regime)}"
-        body  = f"Ángulo actual {track_angle:.1f}° · elevación solar {solar_elev:.0f}° · IEC {iec_safe:.2f}."
+        icon = "◇"
+        title = "Mantener placas"
+
+    body = (
+        f"A las {hour:02d}:00h se sugiere <b>{panel_label}</b> "
+        f"con objetivo <b>{rec_angle:.0f}°</b>. El registro actual muestra "
+        f"<b>{angle_abs:.0f}° hacia el {direction}</b> y {status} objetivo. "
+        f"{confidence_text}Acción sobre el cultivo: <b>{crop_label}</b>. Elevación solar {solar_elev:.0f}°. "
+        f"Salud del cultivo <b>{crop_health_pct:.0f}%</b> y eficiencia energética "
+        f"<b>{energy_efficiency_pct:.0f}%</b>."
+    )
 
     return icon, title, body
 
@@ -223,10 +341,10 @@ def _epar_label(v: float) -> tuple[str, str]:
     if math.isnan(v):
         return "Sin datos", COLOR["muted"]
     if v >= 500:
-        return "Alta irradiancia PAR — condiciones óptimas", COLOR["green"]
+        return "Mucha luz para el cultivo", COLOR["green"]
     if v >= 200:
-        return "Irradiancia PAR normal — cultivo activo", COLOR["green"]
-    return "Bajo umbral crítico (200 µmol/m²/s)", COLOR["red"]
+        return "Luz suficiente para el cultivo", COLOR["green"]
+    return "Poca luz: vigilar crecimiento", COLOR["red"]
 
 
 def _vwc_label(v: float) -> tuple[str, str]:
@@ -237,15 +355,15 @@ def _vwc_label(v: float) -> tuple[str, str]:
         return "Suelo bien hidratado", COLOR["green"]
     if v >= 20.0:
         return "Humedad adecuada", COLOR["amber"]
-    return "Humedad crítica — riego necesario", COLOR["red"]
+    return "Humedad baja: conviene regar", COLOR["red"]
 
 
 def _tracker_label(variance: float) -> tuple[str, str, str]:
-    """Return (status_text, bg_color, border_color) for a tracker variance."""
+    """Return (status_text, bg_color, border_color) for panel movement spread."""
     if math.isnan(variance):
         return "Sin datos", "#f9fafb", "#e5e7eb"
     if variance > _ANOMALY_THRESHOLD:
-        return "Alta varianza", "#fff0ef", "#ffd1cf"
+        return "Revisar", "#fff0ef", "#ffd1cf"
     return "Normal", "#eaf6ef", "#c9ead8"
 
 
@@ -256,6 +374,8 @@ def _render_interactive_section(
     df_rl_policy: pd.DataFrame | None = None,
     df_crop_risk: pd.DataFrame | None = None,
 ) -> None:
+    del df_rules
+
     # ── Hour controls ─────────────────────────────────────────────────────────
     query_hour = _get_query_hour()
     query_autoplay = st.query_params.get("autoplay", "1") != "0"
@@ -330,8 +450,6 @@ def _render_interactive_section(
     # ── Compute all values for selected hour ──────────────────────────────────
     row          = _get_hour_record(df_modelo, hour)
     track_angle  = float(row.get("track_mean", 0.0))
-    iec_val      = float(row.get("IEC", float("nan")))
-    regime       = str(row.get("tracking_regime", "—"))
     epar_s1      = float(row.get("ePAR_S1_mean", float("nan")))
     epar_s2      = float(row.get("ePAR_S2_mean", float("nan")))
     vwc_s1       = float(row.get("VWC_S1_mean", float("nan")))
@@ -343,9 +461,22 @@ def _render_interactive_section(
     if not rl_rec.empty and pd.notna(rl_rec.get("rl_angle_deg")):
         rec_angle = float(rl_rec.get("rl_angle_deg"))
     panel_action = str(rl_rec.get("panel_action", crop_record.get("panel_action", "mantener_placas")))
-    regime_label = format_regime_label(regime)
-    iec_safe     = iec_val if not math.isnan(iec_val) else 0.0
-    active_idx   = get_active_rule_index(df_rules, row)
+    crop_action = str(
+        rl_rec.get(
+            "crop_management_action",
+            crop_record.get("crop_management_action", "sin_manejo_directo"),
+        )
+    )
+    rl_reward_raw = rl_rec.get("rl_reward", float("nan")) if not rl_rec.empty else float("nan")
+    rl_confidence_raw = rl_rec.get("rl_confidence", rl_reward_raw) if not rl_rec.empty else float("nan")
+    rl_confidence = float(rl_confidence_raw) if pd.notna(rl_confidence_raw) else float("nan")
+    crop_health = _crop_health_pct(row, df_modelo)
+    energy_efficiency = _energy_efficiency_pct(row, df_modelo)
+    vwc_value_col, vwc_value = _raw_metric_value(row, "VWC_S1_mean")
+    soil_temp_value_col, soil_temp_value = _raw_metric_value(row, "Tsoil_S1_mean")
+    crop_light_value_col, crop_light_value = _raw_metric_value(row, "ePAR_S1_mean", "PAR_S1")
+    ref_light_value_col, ref_light_value = _raw_metric_value(row, "ePAR_R1_mean", "PAR_R1")
+    energy_value_col, energy_value = _raw_metric_value(row, "GPOA_mean")
     in_range     = abs(track_angle - rec_angle) <= 5
 
     next_visual_hour = _next_hour(hour) if autoplay else hour
@@ -361,12 +492,27 @@ def _render_interactive_section(
 
     # ── Natural language justification ────────────────────────────────────────
     icon, just_title, just_body = _angle_justification(
-        hour, track_angle, rec_angle, regime, iec_safe, in_range, solar_elev
+        hour,
+        track_angle,
+        rec_angle,
+        panel_action,
+        crop_action,
+        rl_confidence,
+        crop_health,
+        energy_efficiency,
+        in_range,
+        solar_elev,
     )
     box_bg  = "linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86))"
     box_bdr = "rgba(255,255,255,0.72)"
-    box_clr = COLOR["green"] if regime == "TRACKING_PM" else COLOR["blue"] if regime == "TRACKING_AM" else COLOR["muted"]
-    icon_class = "green" if regime == "TRACKING_PM" else "" if regime == "TRACKING_AM" else "amber"
+    box_clr = (
+        COLOR["green"]
+        if panel_action == "reducir_sombreado"
+        else COLOR["blue"]
+        if panel_action == "mantener_placas"
+        else COLOR["purple"]
+    )
+    icon_class = "green" if panel_action == "reducir_sombreado" else "" if panel_action == "mantener_placas" else "amber"
     st.markdown(
         f'<div style="background:{box_bg};border:1px solid {box_bdr};border-radius:22px;'
         f'padding:16px 18px;margin-bottom:16px;box-shadow:0 16px 42px rgba(16,24,40,0.08),'
@@ -408,11 +554,11 @@ def _render_interactive_section(
                 svg_html,
                 min_height=382,
                 image_min_height=362,
-                alt=f"Visualización solar zona {zone}",
+                alt=f"Vista solar zona {zone}",
             )
             if index < len(_CROP_ZONES) - 1:
                 st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
-        status_txt = "En rango óptimo" if in_range else "Fuera del rango recomendado"
+        status_txt = "Alineado con objetivo" if in_range else "Diferente al objetivo"
         status_clr = COLOR["green"] if in_range else COLOR["orange"]
         st.markdown(
             f'<div style="text-align:center;margin-top:10px;">'
@@ -422,12 +568,41 @@ def _render_interactive_section(
         )
 
     with col_info:
-        st.markdown(iec_gauge_html(iec_safe), unsafe_allow_html=True)
-        st.markdown("<div style='margin:10px 0;'></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;'>"
+            + _score_button_html("Salud cultivo", crop_health, COLOR["green"], "Estado general")
+            + _score_button_html("Eficiencia energética", energy_efficiency, COLOR["orange"], "Luz aprovechada")
+            + _raw_metric_button_html("Humedad suelo", _format_raw_value(vwc_value, "%"), COLOR["green"], vwc_value_col)
+            + _raw_metric_button_html("Temp. suelo", _format_raw_value(soil_temp_value, " °C"), COLOR["green"], soil_temp_value_col)
+            + _raw_metric_button_html("Luz cultivo", _format_raw_value(crop_light_value), COLOR["blue"], crop_light_value_col)
+            + _raw_metric_button_html("Luz referencia", _format_raw_value(ref_light_value), COLOR["blue"], ref_light_value_col)
+            + _raw_metric_button_html(
+                "Sol en placas",
+                _format_raw_value(energy_value, " W/m²"),
+                COLOR["orange"],
+                energy_value_col,
+            )
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+        if not rl_rec.empty:
+            confidence_label = f"{rl_confidence * 100:.0f}%" if not math.isnan(rl_confidence) else "Sin datos"
+            st.markdown(
+                f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));'
+                f'border:1px solid rgba(255,255,255,0.72);border-radius:20px;'
+                f'padding:13px 15px;margin-bottom:9px;box-shadow:0 14px 34px rgba(10,132,255,0.10),'
+                f'inset 0 1px 0 rgba(255,255,255,0.96);">'
+                f'<div style="font-size:11px;font-weight:760;color:#64706d;text-transform:uppercase;'
+                f'letter-spacing:0.05em;">Recomendación actual</div>'
+                f'<div style="font-size:19px;font-weight:800;color:#0a84ff;margin-top:5px;">'
+                f'Confianza {confidence_label}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
         for lbl, val, clr in [
             ("Ángulo actual",      f"{track_angle:.1f}°", COLOR["blue"]),
-            ("Ángulo recomendado", f"{rec_angle:.1f}°",   COLOR["green"]),
-            ("Régimen activo",     regime_label,           COLOR["purple"]),
+            ("Ángulo sugerido",    f"{rec_angle:.1f}°",   COLOR["green"]),
+            ("Placas",            _action_label(panel_action), COLOR["purple"]),
             ("Elevación solar",    f"{solar_elev:.1f}°",  COLOR["orange"]),
         ]:
             st.markdown(
@@ -441,67 +616,9 @@ def _render_interactive_section(
                 f'</div>',
                 unsafe_allow_html=True,
             )
-        if not rl_rec.empty:
-            crop_action = str(rl_rec.get("crop_management_action", "sin_manejo_directo")).replace("_", " ")
-            panel_action_label = str(rl_rec.get("panel_action", "mantener_placas")).replace("_", " ")
-            reward = float(rl_rec.get("rl_reward", 0))
-            st.markdown(
-                f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));'
-                f'border:1px solid rgba(255,255,255,0.72);border-radius:20px;'
-                f'padding:13px 15px;margin-bottom:9px;box-shadow:0 14px 34px rgba(10,132,255,0.10),'
-                f'inset 0 1px 0 rgba(255,255,255,0.96);">'
-                f'<div style="font-size:11px;font-weight:760;color:#64706d;text-transform:uppercase;'
-                f'letter-spacing:0.05em;">Política RL agroenergética</div>'
-                f'<div style="font-size:19px;font-weight:800;color:#0a84ff;margin-top:5px;">'
-                f'Reward {reward:.2f}</div>'
-                f'<div style="font-size:12px;color:#424245;margin-top:5px;">Manejo cultivo: {crop_action}</div>'
-                f'<div style="font-size:12px;color:#424245;margin-top:3px;">Acción placa: {panel_action_label}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-
-    st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
-
-    # ── Rules table ───────────────────────────────────────────────────────────
-    st.markdown(
-        '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:10px;">Reglas de rotación candidatas</div>',
-        unsafe_allow_html=True,
-    )
-    if df_rules.empty:
-        st.info("No se encontraron reglas.")
-    else:
-        for i, rule_row in df_rules.iterrows():
-            is_active = (i == active_idx)
-            bg    = "linear-gradient(180deg,#f3fbf7,#e7f5ee)" if is_active else "linear-gradient(180deg,#ffffff,#f5f7fb)"
-            lbdr  = f"4px solid {COLOR['green']}" if is_active else f"1px solid {COLOR['border']}"
-            bdr   = "#b8dccb" if is_active else COLOR["border"]
-            tipo_bg  = "#dff1e8" if "alta" in str(rule_row.get("tipo", "")) else "#edf5fb"
-            tipo_clr = COLOR["green"] if "alta" in str(rule_row.get("tipo", "")) else COLOR["blue"]
-            active_badge = (
-                f'<span style="font-size:11px;font-weight:800;color:{COLOR["green"]};">ACTIVA</span>'
-                if is_active else ""
-            )
-            st.markdown(
-                f'<div style="background:{bg};border:1px solid {bdr};border-radius:20px;'
-                f'border-left:{lbdr};padding:12px 16px;margin-bottom:8px;'
-                f'box-shadow:0 12px 30px rgba(16,24,40,0.06),inset 0 1px 0 rgba(255,255,255,0.92);">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'margin-bottom:6px;">'
-                f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:11px;font-weight:700;'
-                f'padding:4px 10px;border-radius:999px;">{rule_row.get("tipo","—")}</span>'
-                f'<span style="font-size:12px;color:#64706d;">IEC mediana: '
-                f'<b style="color:{COLOR["green"]};">{float(rule_row.get("iec_mediana",0)):.2f}</b>'
-                f' · n={int(rule_row.get("soporte_obs",0))}</span>'
-                f'{active_badge}'
-                f'</div>'
-                f'<div style="font-size:12px;color:#35413d;line-height:1.6;">{rule_row.get("regla","—")}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
 
     st.caption(
-        "Azul sólido = ángulo actual del registro · verde discontinuo = ángulo óptimo histórico"
+        "Azul = posición actual · verde = posición sugerida"
     )
 
 
@@ -517,7 +634,7 @@ def render_tab_estado(
 
     st.markdown("<hr style='border-color:#dfe7e2;margin:24px 0 16px;'>", unsafe_allow_html=True)
 
-    # ── Static section: trackers + alerts (not in fragment) ───────────────────
+    # ── Static section: panel movement + alerts (not in fragment) ─────────────
     anomalous = get_anomalous_trackers(df_diagnostic, threshold=_ANOMALY_THRESHOLD)
     alerts    = build_alert_list(df_diagnostic, df_modelo)
 
@@ -526,14 +643,13 @@ def render_tab_estado(
     with col_trackers:
         st.markdown(
             '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-            'letter-spacing:0.06em;margin-bottom:6px;">Estado de los 10 trackers</div>',
+            'letter-spacing:0.06em;margin-bottom:6px;">Estado de las placas</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
             '<div style="font-size:11px;color:#64706d;margin-bottom:10px;line-height:1.55;">'
-            'La varianza angular mide la estabilidad del seguimiento. '
-            'Una varianza alta (&gt;450 deg²) indica que el tracker no sigue con precisión '
-            'las consignas — posible fallo mecánico o de comunicación.</div>',
+            'Compara si cada placa se mueve de forma estable. '
+            'Si el desvío es alto, conviene revisar el motor, el sensor o la comunicación.</div>',
             unsafe_allow_html=True,
         )
         cols = st.columns(5)
@@ -549,7 +665,7 @@ def render_tab_estado(
                     f'padding:11px 8px;text-align:center;margin-bottom:7px;'
                     f'box-shadow:0 10px 22px rgba(16,24,40,0.07),inset 0 1px 0 rgba(255,255,255,0.92);">'
                     f'<div style="font-size:13px;font-weight:700;color:{clr};">{tracker_id}</div>'
-                    f'<div style="font-size:10px;color:#64706d;margin-top:2px;">{variance:.0f} deg²</div>'
+                    f'<div style="font-size:10px;color:#64706d;margin-top:2px;">desvío {variance:.0f}</div>'
                     f'<div style="font-size:10px;font-weight:700;color:{clr};margin-top:3px;">'
                     f'{status_txt}</div>'
                     f'</div>',

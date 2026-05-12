@@ -21,9 +21,9 @@ from data_loader import (
 from styles import COLOR, card_html
 
 _TARGET_LABELS = {
-    "next_VWC_R1_sim": "VWC MAE",
-    "next_Tsoil_R1_sim": "Tsoil MAE",
-    "next_GPOA_mean": "GPOA MAE",
+    "next_VWC_R1_sim": "Error humedad",
+    "next_Tsoil_R1_sim": "Error suelo",
+    "next_GPOA_mean": "Error luz",
 }
 
 
@@ -49,7 +49,7 @@ def select_stream_cursor_state(
     if stream_df.empty:
         return {
             "ready": False,
-            "message": "No hay datos de stream holdout disponibles.",
+            "message": "No hay datos guardados para la simulación.",
             "policy_stream": pd.DataFrame(),
             "recent_window": pd.DataFrame(),
             "current_row": pd.Series(dtype="object"),
@@ -68,7 +68,7 @@ def select_stream_cursor_state(
     if scoped.empty:
         return {
             "ready": False,
-            "message": f"No hay filas de stream para la política {policy_id}.",
+            "message": f"No hay datos guardados para la opción {policy_id}.",
             "policy_stream": scoped,
             "recent_window": pd.DataFrame(),
             "current_row": pd.Series(dtype="object"),
@@ -82,7 +82,7 @@ def select_stream_cursor_state(
     if len(observed) < int(window_size):
         return {
             "ready": False,
-            "message": f"Faltan filas de contexto: {len(observed)}/{int(window_size)} observadas.",
+            "message": f"Faltan pasos anteriores: {len(observed)}/{int(window_size)} vistos.",
             "policy_stream": scoped,
             "recent_window": pd.DataFrame(),
             "current_row": current,
@@ -92,7 +92,7 @@ def select_stream_cursor_state(
 
     return {
         "ready": True,
-        "message": "Contexto suficiente para inferencia online.",
+        "message": "Hay datos suficientes para calcular el siguiente paso.",
         "policy_stream": scoped,
         "recent_window": observed.tail(int(window_size)).reset_index(drop=True),
         "current_row": current,
@@ -207,15 +207,13 @@ def build_world_model_training_command() -> str:
 def build_stream_empty_state(training_dataset_exists: bool) -> dict[str, str | bool]:
     if training_dataset_exists:
         body = (
-            "Falta `sprint3/outputs/world_model_lstm_stream_holdout.csv`. "
-            "El dataset de entrenamiento existe, así que puedes regenerar los artefactos LSTM."
+            "Aún no hay una simulación guardada para mostrar. "
+            "Los datos base existen, así que puedes regenerarla."
         )
     else:
         body = (
-            "Falta `sprint3/outputs/world_model_lstm_stream_holdout.csv` y también "
-            "`sprint3/outputs/world_model_training_dataset.csv`. Primero necesitas "
-            "`sprint3/outputs/master_dataset_world_model.csv`; después genera el dataset de entrenamiento "
-            "y lanza la simulación LSTM."
+            "Aún no hay datos suficientes para mostrar la simulación. "
+            "Primero genera los datos base y después lanza la simulación semanal."
         )
     return {
         "can_render_controls": False,
@@ -235,7 +233,7 @@ def build_retraining_timeline_frame(metrics: dict[str, Any]) -> pd.DataFrame:
         for target, label in _TARGET_LABELS.items():
             row[label] = _target_mae(run, target)
         rows.append(row)
-    return pd.DataFrame(rows, columns=["cutoff_time", "observed_rows", "VWC MAE", "Tsoil MAE", "GPOA MAE"])
+    return pd.DataFrame(rows, columns=["cutoff_time", "observed_rows", *_TARGET_LABELS.values()])
 
 
 def build_metric_comparison_frame(metrics: dict[str, Any]) -> pd.DataFrame:
@@ -249,7 +247,7 @@ def build_metric_comparison_frame(metrics: dict[str, Any]) -> pd.DataFrame:
         return pd.DataFrame()
 
     rows = []
-    for label, source in [("Test inicial", metrics), ("Stream holdout", stream_metrics)]:
+    for label, source in [("Prueba inicial", metrics), ("Datos de prueba", stream_metrics)]:
         row = {"serie": label}
         for target, metric_label in _TARGET_LABELS.items():
             row[metric_label] = _target_mae(source, target)
@@ -312,17 +310,17 @@ def _prediction_plot(frame: pd.DataFrame) -> None:
 
 
 def _metric_plot(frame: pd.DataFrame) -> None:
-    long = frame.melt(id_vars="serie", var_name="métrica", value_name="MAE").dropna()
+    long = frame.melt(id_vars="serie", var_name="métrica", value_name="error").dropna()
     if long.empty:
-        st.info("No hay métricas comparables de stream holdout en el JSON.")
+        st.info("No hay datos suficientes para comparar la precisión.")
         return
     fig = px.bar(
         long,
         x="métrica",
-        y="MAE",
+        y="error",
         color="serie",
         barmode="group",
-        color_discrete_map={"Test inicial": COLOR["purple"], "Stream holdout": COLOR["orange"]},
+        color_discrete_map={"Prueba inicial": COLOR["purple"], "Datos de prueba": COLOR["orange"]},
     )
     fig.update_layout(
         height=280,
@@ -358,7 +356,7 @@ def _render_stream_fragment(
 
     control_cols = st.columns([0.36, 0.44, 0.20])
     with control_cols[0]:
-        selected_policy = st.selectbox("Política", policy_options, key="lstm_sim_policy", label_visibility="collapsed")
+        selected_policy = st.selectbox("Opción", policy_options, key="lstm_sim_policy", label_visibility="collapsed")
 
     policy_stream = stream_df.copy()
     if "policy_id" in policy_stream.columns:
@@ -373,9 +371,9 @@ def _render_stream_fragment(
         empty_state = build_stream_empty_state(WORLD_MODEL_TRAINING_PATH.exists())
         st.info(str(empty_state["body"]))
         if not WORLD_MODEL_TRAINING_PATH.exists():
-            st.caption("Cuando exista `master_dataset_world_model.csv`, genera el dataset de entrenamiento:")
+            st.caption("Generar datos base:")
             st.code(str(empty_state["training_command"]), language="powershell")
-            st.caption("Después genera el stream holdout y la simulación de reentrenamiento:")
+            st.caption("Generar simulación semanal:")
         st.code(str(empty_state["command"]), language="powershell")
         return
 
@@ -403,7 +401,7 @@ def _render_stream_fragment(
 
     if week_start < week_end:
         st.slider(
-            "Avance del stream",
+            "Avance de la simulación",
             min_value=week_start,
             max_value=week_end,
             step=1,
@@ -429,17 +427,17 @@ def _render_stream_fragment(
     status = get_world_model_lstm_status()
     kpi_cols = st.columns(4)
     cards = [
-        ("Stream", f"{state['observed_rows']:,}", f"{current_time}", COLOR["blue"]),
+        ("Pasos vistos", f"{state['observed_rows']:,}", f"{current_time}", COLOR["blue"]),
         ("Semana", str(state["week_index"]), f"{int(selected_week['row_count'])} pasos", COLOR["purple"]),
-        ("Modelo", status["state"], status["window"], COLOR["green"]),
-        ("Próx. reentreno", next_retrain, "corte semanal", COLOR["orange"]),
+        ("Simulación", status["state"], status["window"], COLOR["green"]),
+        ("Próxima mejora", next_retrain, "revisión semanal", COLOR["orange"]),
     ]
     for col, (title, value, subtitle, color) in zip(kpi_cols, cards, strict=False):
         with col:
             st.markdown(card_html(title, value, subtitle, color), unsafe_allow_html=True)
 
     if chart_frame.empty:
-        st.info("No hay variables suficientes para dibujar el stream.")
+        st.info("No hay datos suficientes para dibujar la simulación.")
     else:
         fig = px.line(
             chart_frame,
@@ -475,7 +473,7 @@ def _render_stream_fragment(
         if not state["ready"]:
             st.info(state["message"])
         elif not artifacts_available(availability):
-            st.warning("Faltan artefactos de modelo, scalers o métricas.")
+            st.warning("Faltan archivos necesarios para calcular la previsión.")
         else:
             try:
                 predicted = predict_dashboard_next_state(
@@ -489,7 +487,7 @@ def _render_stream_fragment(
                 prediction_frame = build_prediction_frame_if_available(state["current_row"], predicted, True)
                 st.dataframe(prediction_frame, use_container_width=True, hide_index=True)
             except (ValueError, KeyError, RuntimeError, FileNotFoundError) as exc:
-                st.warning(f"Inferencia no disponible: {exc}")
+                st.warning(f"Previsión no disponible: {exc}")
 
 
 def render_tab_lstm_simulation() -> None:
@@ -498,34 +496,34 @@ def render_tab_lstm_simulation() -> None:
     availability = get_world_model_lstm_artifact_availability()
 
     _section_title(
-        "Estado del modelo",
-        "Simulación read-only basada en artefactos offline: no lanza reentrenamientos desde Streamlit.",
+        "Estado de la simulación",
+        "Vista de solo lectura: muestra una simulación guardada y no recalcula desde el panel.",
     )
 
     missing = [name for name, exists in availability.items() if not exists]
     if missing:
-        st.warning("Artefactos no disponibles: " + ", ".join(missing))
+        st.warning("Archivos no disponibles: " + ", ".join(missing))
     split = metrics.get("split") or metrics.get("split_metadata") or {}
     if split:
         st.caption(
-            "Split sin leakage: "
+            "Separación de datos revisada: "
             + " · ".join(f"{key}: {value}" for key, value in split.items() if value is not None)
         )
 
     _render_stream_fragment(stream_df, metrics, availability)
 
-    with st.expander("Métricas y reentrenamientos", expanded=False):
+    with st.expander("Precisión y mejoras", expanded=False):
         timeline = build_retraining_timeline_frame(metrics)
         comparison = build_metric_comparison_frame(metrics)
         metric_cols = st.columns(2)
         with metric_cols[0]:
             if timeline.empty:
-                st.info("Simulación de reentrenamiento no generada.")
+                st.info("Aún no hay simulación semanal guardada.")
                 st.code(lstm_retraining_command(), language="powershell")
             else:
                 st.dataframe(timeline, use_container_width=True, hide_index=True)
         with metric_cols[1]:
             if comparison.empty:
-                st.info("No hay métricas de stream holdout comparables en el JSON.")
+                st.info("No hay datos suficientes para comparar la precisión.")
             else:
                 st.dataframe(comparison, use_container_width=True, hide_index=True)

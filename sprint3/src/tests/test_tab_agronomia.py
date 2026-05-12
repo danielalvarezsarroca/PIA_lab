@@ -54,7 +54,7 @@ def test_external_action_card_view_model_describes_preventive_10_minute_dose():
 
     card = _external_action_card_view_model(row)
 
-    assert card["title"] == "Acción externa"
+    assert card["title"] == "Acción de riego"
     assert card["value"] == "Riego preventivo"
     assert "1.2 mm/10min" in card["detail"]
     assert "6 min" in card["detail"]
@@ -74,7 +74,7 @@ def test_external_action_card_view_model_reports_paused_irrigation():
 
     card = _external_action_card_view_model(row)
 
-    assert card["title"] == "Acción externa"
+    assert card["title"] == "Acción de riego"
     assert card["value"] == "Pausar riego"
     assert card["detail"] == "riego pausado · sin aporte de agua"
     assert card["color"] == "#6e6e73"
@@ -91,7 +91,7 @@ def test_panel_action_card_view_model_describes_panel_action_separately():
 
     card = _panel_action_card_view_model(row)
 
-    assert card["title"] == "Acción placas"
+    assert card["title"] == "Placas"
     assert card["value"] == "Aumentar sombreado"
     assert "35°" in card["detail"]
     assert "anti-estres" in card["detail"]

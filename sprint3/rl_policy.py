@@ -28,6 +28,7 @@ POLICY_COLUMNS = [
     "irrigation_mm_10min",
     "irrigation_duration_min",
     "rl_reward",
+    "rl_confidence",
     "energy_component",
     "agronomic_component",
     "water_stress_score",
@@ -93,6 +94,35 @@ CRITICAL_DAMAGE_COLUMNS = [
     "cold_stress",
     "excess_radiation",
 ]
+
+DQN_ACTION_COLUMNS = [
+    "rl_angle_deg",
+    "tracking_regime",
+    "recommended_action",
+    "crop_management_action",
+    "panel_action",
+    "irrigation_mode",
+    "irrigation_active",
+    "irrigation_mm_10min",
+    "irrigation_duration_min",
+]
+
+DQN_NUMERIC_STATE_COLUMNS = [
+    "hour_of_day",
+    "solar_elevation_deg",
+    "track_mean",
+    "energy_component",
+    "agronomic_component",
+    "water_stress_score",
+    "future_water_stress_score",
+    "irrigation_need_score",
+    "projected_vwc_no_irrigation_1h",
+    "VWC_crop_zone_fraction",
+    "Tsoil_crop_zone_mean",
+    "ePAR_crop_zone_mean",
+]
+
+DQN_CATEGORICAL_STATE_COLUMNS = ["state_key", "solar_band", "stress_type", "crop_type", "crop_zone"]
 
 
 def _solar_band(elevation: float) -> str:
@@ -309,6 +339,10 @@ def build_offline_rl_policy(
             ascending=[True, True, True, False, False],
         )
     )
+    confidence_by_state = action_values.groupby(["state_key", "crop_type", "crop_zone"])["rl_reward"].transform(
+        _confidence_from_q_values
+    )
+    action_values = action_values.assign(rl_confidence=confidence_by_state)
     best = action_values.groupby(["state_key", "crop_type", "crop_zone"], as_index=False).head(1).copy()
     best = best.rename(
         columns={
@@ -317,6 +351,204 @@ def build_offline_rl_policy(
         }
     )
     best["source"] = "offline_rl_tabular_masterdataset"
+    return best[POLICY_COLUMNS].round(4).reset_index(drop=True)
+
+
+def _confidence_from_q_values(q_values: list[float] | np.ndarray | pd.Series) -> float:
+    values = pd.to_numeric(pd.Series(q_values), errors="coerce").dropna().to_numpy(dtype=float)
+    if len(values) == 0:
+        return 0.0
+    if len(values) == 1:
+        return 1.0
+
+    ordered = np.sort(values)[::-1]
+    best = float(ordered[0])
+    second_best = float(ordered[1])
+    if best <= 0:
+        return 0.0
+    return round(float(np.clip((best - second_best) / best, 0, 1)), 4)
+
+
+def _action_key_frame(df: pd.DataFrame) -> pd.Series:
+    parts = []
+    for column in DQN_ACTION_COLUMNS:
+        if column not in df.columns:
+            parts.append(pd.Series([""] * len(df), index=df.index, dtype="object"))
+        else:
+            parts.append(df[column].astype(str).fillna(""))
+    return pd.concat(parts, axis=1).agg("|".join, axis=1)
+
+
+def _dqn_feature_frame(df: pd.DataFrame) -> pd.DataFrame:
+    frame = df.copy().reset_index(drop=True)
+    frame = frame.assign(action_key=_action_key_frame(frame).reset_index(drop=True))
+    numeric = pd.DataFrame(index=frame.index)
+    for column in DQN_NUMERIC_STATE_COLUMNS:
+        numeric[column] = pd.to_numeric(
+            frame.get(column, pd.Series(0.0, index=frame.index)),
+            errors="coerce",
+        ).fillna(0.0)
+    categorical_columns = [
+        column for column in [*DQN_CATEGORICAL_STATE_COLUMNS, "action_key"] if column in frame.columns
+    ]
+    categorical = pd.get_dummies(
+        frame[categorical_columns].astype(str),
+        prefix=categorical_columns,
+        dtype=float,
+    )
+    return pd.concat([numeric, categorical], axis=1)
+
+
+def _fit_numpy_q_network(
+    x: np.ndarray,
+    rewards: np.ndarray,
+    next_x: np.ndarray,
+    terminal: np.ndarray,
+    *,
+    epochs: int,
+    gamma: float,
+    hidden_size: int,
+    seed: int,
+    learning_rate: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    input_size = x.shape[1]
+    hidden = max(4, min(hidden_size, max(4, input_size * 2)))
+    w1 = rng.normal(0.0, 0.08, size=(input_size, hidden))
+    b1 = np.zeros(hidden)
+    w2 = rng.normal(0.0, 0.08, size=(hidden, 1))
+    b2 = np.zeros(1)
+    target_w1 = w1.copy()
+    target_b1 = b1.copy()
+    target_w2 = w2.copy()
+    target_b2 = b2.copy()
+
+    def forward(values: np.ndarray, params: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]):
+        layer_w1, layer_b1, layer_w2, layer_b2 = params
+        hidden_raw = values @ layer_w1 + layer_b1
+        hidden_act = np.maximum(hidden_raw, 0)
+        q_values = hidden_act @ layer_w2 + layer_b2
+        return hidden_raw, hidden_act, q_values.reshape(-1)
+
+    for epoch in range(max(1, epochs)):
+        _, _, next_q = forward(next_x, (target_w1, target_b1, target_w2, target_b2))
+        td_target = rewards + gamma * next_q * (~terminal).astype(float)
+        td_target = np.clip(td_target, 0, 1)
+
+        hidden_raw, hidden_act, q_pred = forward(x, (w1, b1, w2, b2))
+        error = (q_pred - td_target) / max(1, len(x))
+        grad_q = error[:, None]
+        grad_w2 = hidden_act.T @ grad_q
+        grad_b2 = grad_q.sum(axis=0)
+        grad_hidden = (grad_q @ w2.T) * (hidden_raw > 0)
+        grad_w1 = x.T @ grad_hidden
+        grad_b1 = grad_hidden.sum(axis=0)
+
+        w1 -= learning_rate * grad_w1
+        b1 -= learning_rate * grad_b1
+        w2 -= learning_rate * grad_w2
+        b2 -= learning_rate * grad_b2
+
+        if (epoch + 1) % 5 == 0:
+            target_w1, target_b1, target_w2, target_b2 = w1.copy(), b1.copy(), w2.copy(), b2.copy()
+
+    return w1, b1, w2, b2
+
+
+def _predict_numpy_q_network(
+    x: np.ndarray,
+    params: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+) -> np.ndarray:
+    w1, b1, w2, b2 = params
+    hidden = np.maximum(x @ w1 + b1, 0)
+    return (hidden @ w2 + b2).reshape(-1)
+
+
+def build_offline_dqn_policy(
+    model_df: pd.DataFrame,
+    crop_risk: pd.DataFrame,
+    *,
+    alpha_agronomic: float = DEFAULT_REWARD_ALPHA_AGRONOMIC,
+    beta_energy: float = DEFAULT_REWARD_BETA_ENERGY,
+    epochs: int = 60,
+    gamma: float = 0.85,
+    hidden_size: int = 48,
+    learning_rate: float = 0.025,
+    seed: int = 42,
+    max_candidate_actions: int = 24,
+) -> pd.DataFrame:
+    df = _merged_reward_frame(model_df, crop_risk, alpha_agronomic=alpha_agronomic, beta_energy=beta_energy)
+    df = df.dropna(subset=["state_key", "rl_angle_deg", "tracking_regime", "rl_reward"]).copy()
+    if df.empty:
+        raise ValueError("Cannot build DQN policy without valid model and crop risk rows")
+
+    df = df.sort_values("Time").reset_index(drop=True)
+    features = _dqn_feature_frame(df)
+    feature_columns = list(features.columns)
+    mean = features.mean(axis=0)
+    std = features.std(axis=0).replace(0, 1).fillna(1)
+    x = ((features - mean) / std).to_numpy(dtype=float)
+    rewards = pd.to_numeric(df["rl_reward"], errors="coerce").fillna(0).to_numpy(dtype=float)
+
+    next_x = np.roll(x, -1, axis=0)
+    next_day = df["Time"].dt.date.shift(-1)
+    terminal = df["Time"].dt.date.ne(next_day).fillna(True).to_numpy(dtype=bool)
+    if len(next_x):
+        next_x[-1] = x[-1]
+        terminal[-1] = True
+
+    params = _fit_numpy_q_network(
+        x,
+        rewards,
+        next_x,
+        terminal,
+        epochs=epochs,
+        gamma=gamma,
+        hidden_size=hidden_size,
+        seed=seed,
+        learning_rate=learning_rate,
+    )
+
+    action_stats = (
+        df.groupby(DQN_ACTION_COLUMNS, as_index=False, dropna=False)
+        .agg(
+            observed_reward=("rl_reward", "mean"),
+            observations=("rl_reward", "size"),
+        )
+        .sort_values(["observed_reward", "observations"], ascending=[False, False])
+        .head(max(1, max_candidate_actions))
+        .reset_index(drop=True)
+    )
+    state_rows = (
+        df.sort_values("Time")
+        .groupby(["state_key", "crop_type", "crop_zone"], as_index=False, dropna=False)
+        .tail(1)
+        .reset_index(drop=True)
+    )
+
+    best_rows = []
+    for _, state_row in state_rows.iterrows():
+        candidates = pd.concat([state_row.to_frame().T] * len(action_stats), ignore_index=True)
+        for column in DQN_ACTION_COLUMNS:
+            candidates[column] = action_stats[column].to_numpy()
+        candidate_features = _dqn_feature_frame(candidates).reindex(columns=feature_columns, fill_value=0)
+        candidate_x = ((candidate_features - mean) / std).to_numpy(dtype=float)
+        q_values = np.clip(_predict_numpy_q_network(candidate_x, params), 0, 1)
+        selected_idx = int(np.argmax(q_values))
+        selected = candidates.iloc[selected_idx].copy()
+        selected["rl_reward"] = float(q_values[selected_idx])
+        selected["rl_confidence"] = _confidence_from_q_values(q_values)
+        selected["observations"] = int(action_stats.iloc[selected_idx]["observations"])
+        best_rows.append(selected)
+
+    best = pd.DataFrame(best_rows)
+    best = best.rename(
+        columns={
+            "tracking_regime": "rl_tracking_regime",
+            "recommended_action": "agronomic_action",
+        }
+    )
+    best["source"] = "offline_dqn_double_dqn"
     return best[POLICY_COLUMNS].round(4).reset_index(drop=True)
 
 

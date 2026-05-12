@@ -12,7 +12,7 @@ if str(_SPRINT3_DIR) not in sys.path:
 
 from agricultural_rules import build_crop_risk_dataset, generate_agricultural_rules_10min
 from dashboard_lstm import format_model_status
-from rl_policy import build_offline_rl_policy
+from rl_policy import build_offline_dqn_policy, build_offline_rl_policy
 from ten_min_pipeline import build_modeling_dataset_10min, regenerate_candidate_rules_10min
 from world_model_dataset import build_dashboard_model_frame, load_world_model_dataset
 
@@ -206,6 +206,17 @@ def load_rl_policy_for_crop(crop_type: str, crop_zone: str = "S1") -> pd.DataFra
     if model_df.empty or crop_risk.empty:
         return pd.DataFrame()
     return build_offline_rl_policy(model_df, crop_risk)
+
+
+@st.cache_data
+def load_dqn_policy_for_crop(crop_type: str, crop_zone: str = "S1") -> pd.DataFrame:
+    model_df = load_world_model_dashboard_frame(crop_zone=crop_zone)
+    crop_risk = load_crop_risk_for_crop(crop_type, crop_zone=crop_zone)
+    if model_df.empty and (MASTER_10MIN_PATH.exists() or MODELO_10MIN_PATH.exists()):
+        model_df = load_modelo()
+    if model_df.empty or crop_risk.empty:
+        return pd.DataFrame()
+    return build_offline_dqn_policy(model_df, crop_risk)
 
 
 def get_latest_record(df: pd.DataFrame) -> pd.Series:

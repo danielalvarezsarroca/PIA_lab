@@ -1,10 +1,12 @@
+from html import escape
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
 from data_loader import get_latest_record
-from rule_engine import format_regime_label, get_active_rule_index
+from rl_policy import recommend_action_for_record
 from styles import COLOR
 
 
@@ -17,9 +19,9 @@ def _policy_metric(title: str, value: str, detail: str, color: str = "#007aff") 
       <div style="position:absolute;left:14px;right:14px;top:0;height:3px;border-radius:999px;
                   background:linear-gradient(90deg,rgba(255,255,255,0),{color},rgba(255,255,255,0));opacity:0.78;"></div>
       <div style="font-size:10px;font-weight:780;color:#6e6e73;text-transform:uppercase;
-                  letter-spacing:0.06em;margin-bottom:8px;">{title}</div>
-      <div style="font-size:26px;font-weight:820;color:{color};line-height:1;">{value}</div>
-      <div style="font-size:11px;color:#6e6e73;margin-top:8px;line-height:1.35;">{detail}</div>
+                  letter-spacing:0.06em;margin-bottom:8px;">{escape(title)}</div>
+      <div style="font-size:26px;font-weight:820;color:{color};line-height:1;">{escape(value)}</div>
+      <div style="font-size:11px;color:#6e6e73;margin-top:8px;line-height:1.35;">{escape(detail)}</div>
     </div>"""
 
 
@@ -38,158 +40,280 @@ def _style_policy_fig(fig: go.Figure, height: int = 270) -> go.Figure:
     return fig
 
 
+def _action_label(value: object, fallback: str = "—") -> str:
+    if value is None or pd.isna(value):
+        return fallback
+    label = str(value).replace("_", " ").strip()
+    return label[:1].upper() + label[1:] if label else fallback
+
+
+def _safe_float(value: object, fallback: float = 0.0) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return fallback if pd.isna(numeric) else numeric
+
+
+def _safe_int(value: object, fallback: int = 0) -> int:
+    try:
+        numeric = int(float(value))
+    except (TypeError, ValueError):
+        return fallback
+    return fallback if pd.isna(numeric) else numeric
+
+
+def _policy_series(policy_view: pd.DataFrame, column: str, fallback: object) -> pd.Series:
+    if column in policy_view.columns:
+        return policy_view[column]
+    return pd.Series([fallback] * len(policy_view), index=policy_view.index)
+
+
+_SUN_LABELS = {
+    "night": "noche",
+    "low": "sol bajo",
+    "medium": "sol medio",
+    "high": "sol alto",
+}
+
+
+def _state_label(value: object) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return "situación parecida"
+
+    hour_label = ""
+    parts: dict[str, str] = {}
+    for chunk in raw.split("|"):
+        if chunk.startswith("h") and chunk[1:].isdigit():
+            hour_label = f"{int(chunk[1:]):02d}:00"
+        elif ":" in chunk:
+            key, item = chunk.split(":", 1)
+            parts[key] = item
+
+    sun = _SUN_LABELS.get(parts.get("sun", ""), parts.get("sun", "").replace("_", " "))
+    stress = parts.get("stress", "").replace("_", " ")
+    labels = [item for item in (hour_label, sun, stress) if item]
+    return " · ".join(labels) if labels else raw.replace("|", " · ")
+
+
+def _current_rl_recommendation(df_rl_policy: pd.DataFrame | None, record: pd.Series) -> pd.Series:
+    if df_rl_policy is None or df_rl_policy.empty:
+        return pd.Series(dtype="object")
+    try:
+        return recommend_action_for_record(df_rl_policy, record)
+    except (ValueError, KeyError, TypeError):
+        return pd.Series(dtype="object")
+
+
+def _recommendation_card(
+    recommendation: pd.Series,
+    current_iec: float,
+    title: str = "Qué hacer ahora",
+    accent: str = "#0a84ff",
+) -> str:
+    if recommendation.empty:
+        return f"""
+        <div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86));
+                    border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:16px;
+                    box-shadow:0 16px 42px rgba(16,24,40,0.08),inset 0 1px 0 rgba(255,255,255,0.96);">
+          <div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+            {escape(title)}
+          </div>
+          <div style="font-size:19px;font-weight:820;color:{COLOR["muted"]};line-height:1.2;">
+            Sin recomendación disponible
+          </div>
+          <div style="font-size:12px;color:#6e6e73;margin-top:9px;line-height:1.45;">
+            Equilibrio actual: {current_iec:.2f}. No hay una acción cargada para esta situación.
+          </div>
+        </div>"""
+
+    panel_action = _action_label(recommendation.get("panel_action", "mantener_placas"))
+    crop_action = _action_label(recommendation.get("crop_management_action", "sin_manejo_directo"))
+    angle = _safe_float(recommendation.get("rl_angle_deg"), 0.0)
+    confidence = _safe_float(recommendation.get("rl_confidence", recommendation.get("rl_reward")), 0.0)
+    observations = _safe_int(recommendation.get("observations"), 0)
+    irrigation_active = _safe_int(recommendation.get("irrigation_active"), 0) == 1
+    irrigation_mm = _safe_float(recommendation.get("irrigation_mm_10min"), 0.0)
+    irrigation_mode = _action_label(recommendation.get("irrigation_mode", "sin_riego"))
+    state_key = escape(_state_label(recommendation.get("state_key", "estado actual")))
+
+    irrigation_text = (
+        f"Riego activo · {irrigation_mm:.1f} mm/10 min · {irrigation_mode}"
+        if irrigation_active
+        else "Sin riego en este intervalo"
+    )
+
+    return f"""
+    <div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));
+                border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:16px;
+                box-shadow:0 16px 42px rgba(10,132,255,0.10),inset 0 1px 0 rgba(255,255,255,0.96);">
+      <div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
+        {escape(title)}
+      </div>
+      <div style="font-size:27px;font-weight:850;color:{accent};line-height:1;">{angle:.0f}°</div>
+      <div style="font-size:12px;color:#6e6e73;margin-top:6px;">Posición sugerida para las placas ahora.</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px;">
+        <div style="background:rgba(255,255,255,0.70);border:1px solid rgba(60,60,67,0.10);border-radius:15px;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:800;color:#6d5bd0;text-transform:uppercase;letter-spacing:0.06em;">Placas</div>
+          <div style="font-size:15px;font-weight:820;color:#1d1d1f;margin-top:4px;">{escape(panel_action)}</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.70);border:1px solid rgba(60,60,67,0.10);border-radius:15px;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:800;color:#0a84ff;text-transform:uppercase;letter-spacing:0.06em;">Cultivo</div>
+          <div style="font-size:15px;font-weight:820;color:#1d1d1f;margin-top:4px;">{escape(crop_action)}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#424245;margin-top:12px;line-height:1.55;">
+        {escape(irrigation_text)}<br>
+        Confianza: <b>{confidence * 100:.0f}%</b> · Casos parecidos: <b>{observations}</b><br>
+        Situación: {state_key}
+      </div>
+    </div>"""
+
+
 def render_tab_recomendacion(
     df_rules: pd.DataFrame,
     df_modelo: pd.DataFrame,
     df_rl_policy: pd.DataFrame | None = None,
 ) -> None:
+    del df_rules
+
     st.markdown(
         '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:12px;">Política de rotación</div>',
+        'letter-spacing:0.06em;margin-bottom:12px;">Recomendación actual</div>',
         unsafe_allow_html=True,
     )
 
-    latest          = get_latest_record(df_modelo)
-    current_iec     = float(latest.get("IEC", float("nan")))
-    current_regime  = str(latest.get("tracking_regime", "—"))
-    active_idx      = get_active_rule_index(df_rules, latest)
+    latest = get_latest_record(df_modelo)
+    current_iec = _safe_float(latest.get("IEC"), 0.0)
+    current_recommendation = _current_rl_recommendation(df_rl_policy, latest)
+    policy_available = df_rl_policy is not None and not df_rl_policy.empty
 
-    if df_rules.empty:
-        st.info("No se encontraron reglas.")
-        return
-
-    best_rule = df_rules.loc[df_rules["iec_mediana"].idxmax()]
-    active_support = int(df_rules.iloc[active_idx]["soporte_obs"]) if active_idx is not None else 0
+    reward = _safe_float(current_recommendation.get("rl_reward"), 0.0) if not current_recommendation.empty else 0.0
+    confidence = (
+        _safe_float(current_recommendation.get("rl_confidence", current_recommendation.get("rl_reward")), 0.0)
+        if not current_recommendation.empty
+        else 0.0
+    )
+    observations = _safe_int(current_recommendation.get("observations"), 0) if not current_recommendation.empty else 0
+    rl_states = len(df_rl_policy) if policy_available else 0
+    panel_action = (
+        _action_label(current_recommendation.get("panel_action", "mantener_placas"))
+        if not current_recommendation.empty
+        else "Sin accion"
+    )
+    crop_action = (
+        _action_label(current_recommendation.get("crop_management_action", "sin_manejo_directo"))
+        if not current_recommendation.empty
+        else "Sin accion"
+    )
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.markdown(_policy_metric("IEC actual", f"{current_iec:.2f}", "estado operativo reciente", COLOR["green"]), unsafe_allow_html=True)
+        st.markdown(_policy_metric("Confianza", f"{confidence * 100:.0f}%", "diferencia con la segunda opción", "#0a84ff"), unsafe_allow_html=True)
     with m2:
-        rl_states = len(df_rl_policy) if df_rl_policy is not None and not df_rl_policy.empty else 0
-        st.markdown(_policy_metric("Estados RL", str(rl_states), "política offline del masterdataset", "#1d1d1f"), unsafe_allow_html=True)
+        st.markdown(_policy_metric("Placas", panel_action, "posición sugerida", COLOR["purple"]), unsafe_allow_html=True)
     with m3:
-        st.markdown(_policy_metric("Mejor IEC", f"{float(best_rule['iec_mediana']):.2f}", str(best_rule["tipo"]), "#007aff"), unsafe_allow_html=True)
+        st.markdown(_policy_metric("Cultivo", crop_action, "acción sugerida", COLOR["green"]), unsafe_allow_html=True)
     with m4:
-        st.markdown(_policy_metric("Soporte activo", str(active_support), "observaciones de la regla activa", "#6d5bd0"), unsafe_allow_html=True)
-
-    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-
-    col_rec, col_table = st.columns([1, 2])
-
-    # ── Active recommendation box ─────────────────────────────────────────────
-    with col_rec:
-        regime_label = format_regime_label(current_regime)
-        active_rule_text = "—"
-        active_iec_med   = float("nan")
-        if active_idx is not None:
-            active_row       = df_rules.iloc[active_idx]
-            active_rule_text = active_row["regla"]
-            active_iec_med   = float(active_row["iec_mediana"])
-
         st.markdown(
-            f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86));'
-            f'border:1px solid rgba(255,255,255,0.72);border-radius:22px;'
-            f'padding:16px;box-shadow:0 16px 42px rgba(16,24,40,0.08),inset 0 1px 0 rgba(255,255,255,0.96);">'
-            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
-            f'letter-spacing:0.06em;margin-bottom:6px;">Régimen activo</div>'
-            f'<div style="font-size:17px;font-weight:800;color:{COLOR["green"]};margin-bottom:10px;">'
-            f'{regime_label}</div>'
-            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
-            f'letter-spacing:0.06em;margin-bottom:4px;">IEC actual</div>'
-            f'<div style="font-size:30px;font-weight:820;color:{COLOR["green"]};margin-bottom:10px;line-height:1;">'
-            f'{current_iec:.2f}</div>'
-            f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
-            f'letter-spacing:0.06em;margin-bottom:4px;">Regla recomendada</div>'
-            f'<div style="font-size:12px;color:#35413d;line-height:1.55;">{active_rule_text}</div>'
-            f'<div style="font-size:11px;color:#64706d;margin-top:8px;">'
-            f'IEC mediana regla: {active_iec_med:.2f}</div>'
-            f'</div>',
+            _policy_metric(
+                "Equilibrio",
+                f"{current_iec:.2f}",
+                f"indicador de apoyo · {observations} casos parecidos · {rl_states} patrones",
+                "#8e8e93",
+            ),
             unsafe_allow_html=True,
         )
 
-        gauge_pct = max(0, min(100, current_iec * 100))
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+    col_rec, col_policy = st.columns([1, 2])
+
+    with col_rec:
+        st.markdown(_recommendation_card(current_recommendation, current_iec), unsafe_allow_html=True)
+
+        gauge_pct = max(0, min(100, confidence * 100))
         st.markdown(
             f'<div style="margin-top:12px;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86));'
             f'border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:14px 16px;'
             f'box-shadow:0 14px 34px rgba(16,24,40,0.07),inset 0 1px 0 rgba(255,255,255,0.96);">'
             f'<div style="display:flex;justify-content:space-between;font-size:11px;color:#6e6e73;font-weight:760;'
-            f'text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;"><span>Confianza IEC</span><span>{gauge_pct:.0f}%</span></div>'
+            f'text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;"><span>Confianza de la recomendación</span><span>{gauge_pct:.0f}%</span></div>'
             f'<div style="height:11px;border-radius:999px;background:linear-gradient(180deg,#e5e8ef,#f7f8fb);'
             f'overflow:hidden;box-shadow:inset 0 2px 5px rgba(16,24,40,0.12);">'
             f'<div style="height:100%;width:{gauge_pct:.0f}%;border-radius:999px;'
             f'background:linear-gradient(90deg,#ff3b30,#ffcc00,#2f8f68);"></div></div>'
-            f'<div style="font-size:11px;color:#6e6e73;margin-top:9px;">Comparado con el rango IEC [0,1].</div>'
+            f'<div style="font-size:11px;color:#6e6e73;margin-top:9px;">Cuanto más alto, más clara es la recomendación para una situación parecida.</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
 
-        if df_rl_policy is not None and not df_rl_policy.empty:
-            best_rl = df_rl_policy.sort_values(["rl_reward", "observations"], ascending=[False, False]).iloc[0]
-            crop_action = str(best_rl.get("crop_management_action", "sin_manejo_directo")).replace("_", " ")
-            panel_action = str(best_rl.get("panel_action", "mantener_placas")).replace("_", " ")
-            st.markdown(
-                f'<div style="margin-top:12px;background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));'
-                f'border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:14px 16px;'
-                f'box-shadow:0 14px 34px rgba(10,132,255,0.10),inset 0 1px 0 rgba(255,255,255,0.96);">'
-                f'<div style="font-size:10px;font-weight:760;color:#64706d;text-transform:uppercase;'
-                f'letter-spacing:0.06em;margin-bottom:7px;">Mejor acción RL observada</div>'
-                f'<div style="font-size:20px;font-weight:820;color:#0a84ff;">'
-                f'{float(best_rl.get("rl_angle_deg", 0)):.0f}° · {panel_action}</div>'
-                f'<div style="font-size:11px;color:#6e6e73;margin-top:7px;">'
-                f'Manejo cultivo: {crop_action} · Reward {float(best_rl.get("rl_reward", 0)):.2f} · n={int(best_rl.get("observations", 0))} · '
-                f'{best_rl.get("state_key", "")}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+    with col_policy:
+        if not policy_available:
+            st.info("No hay recomendaciones cargadas para este cultivo.")
+            return
 
-    # ── Rules table ───────────────────────────────────────────────────────────
-    with col_table:
-        rules_plot = df_rules.copy().sort_values("iec_mediana", ascending=True)
-        rules_plot["Regla"] = rules_plot["tipo"].astype(str)
-        fig_rules = px.bar(
-            rules_plot,
-            x="iec_mediana",
-            y="Regla",
-            orientation="h",
-            color="iec_mediana",
-            color_continuous_scale=["#ff3b30", "#ffcc00", "#2f8f68"],
-            text=rules_plot["iec_mediana"].map(lambda v: f"{v:.2f}"),
-            title="Ranking de reglas por IEC mediana",
+        policy_view = df_rl_policy.copy().assign(
+            situacion=_policy_series(df_rl_policy, "state_key", "situación parecida").map(_state_label),
+            accion_placas=_policy_series(df_rl_policy, "panel_action", "mantener_placas").map(_action_label),
+            accion_externa=_policy_series(
+                df_rl_policy,
+                "crop_management_action",
+                "sin_manejo_directo",
+            ).map(_action_label),
+            angle_label=_policy_series(df_rl_policy, "rl_angle_deg", 0).map(lambda value: f"{_safe_float(value):.0f}°"),
+            claridad=_policy_series(df_rl_policy, "rl_confidence", 0.0),
         )
-        fig_rules.update_traces(textposition="outside", marker_line_width=0)
-        fig_rules.update_coloraxes(showscale=False)
-        st.plotly_chart(_style_policy_fig(fig_rules, height=260), use_container_width=True)
+        policy_view = policy_view.sort_values(["claridad", "rl_reward", "observations"], ascending=[False, False, False]).head(12)
+
+        fig_policy = px.bar(
+            policy_view.sort_values("claridad", ascending=True),
+            x="claridad",
+            y="situacion",
+            orientation="h",
+            color="claridad",
+            color_continuous_scale=["#ff3b30", "#ffcc00", "#2f8f68"],
+            text="angle_label",
+            title="Recomendaciones más claras",
+            labels={"claridad": "confianza", "situacion": "situación"},
+            hover_data=["accion_placas", "accion_externa", "rl_reward", "observations"],
+        )
+        fig_policy.update_traces(textposition="outside", marker_line_width=0)
+        fig_policy.update_coloraxes(showscale=False)
+        st.plotly_chart(_style_policy_fig(fig_policy, height=280), use_container_width=True)
 
         st.markdown(
             '<div style="font-size:12px;font-weight:760;color:#64706d;margin-bottom:8px;">'
-            'Reglas candidatas del Sprint 2</div>',
+            'Situaciones parecidas</div>',
             unsafe_allow_html=True,
         )
 
-        for i, row in df_rules.iterrows():
-            is_active = (i == active_idx)
-            bg  = "linear-gradient(180deg,#f3fbf7,#e7f5ee)" if is_active else "linear-gradient(180deg,#ffffff,#f5f7fb)"
-            bdr = "#b8dccb" if is_active else COLOR["border"]
-            lbdr = f"3px solid {COLOR['green']}" if is_active else f"1px solid {COLOR['border']}"
-            tipo_bg  = "#dff1e8" if "alta" in str(row.get("tipo", "")) else "#edf5fb"
-            tipo_clr = COLOR["green"] if "alta" in str(row.get("tipo", "")) else COLOR["blue"]
-            active_badge = f'<span style="font-size:10px;font-weight:800;color:{COLOR["green"]};">ACTIVA</span>' if is_active else ""
-
-            st.markdown(
-                f'<div style="background:{bg};border:1px solid {bdr};border-radius:20px;'
-                f'border-left:{lbdr};padding:12px 14px;margin-bottom:8px;'
-                f'box-shadow:0 12px 30px rgba(16,24,40,0.06),inset 0 1px 0 rgba(255,255,255,0.92);">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'margin-bottom:6px;">'
-                f'<span style="background:{tipo_bg};color:{tipo_clr};font-size:9px;'
-                f'font-weight:700;padding:4px 10px;border-radius:999px;">{row.get("tipo","—")}</span>'
-                f'<span style="font-size:11px;color:#64706d;">IEC mediana: '
-                f'<b style="color:{COLOR["green"]};">{float(row.get("iec_mediana",0)):.2f}</b> · '
-                f'n={int(row.get("soporte_obs",0))}</span>'
-                f'{active_badge}'
-                f'</div>'
-                f'<div style="font-size:12px;color:#35413d;line-height:1.5;">{row.get("regla","—")}</div>'
-                f'<div style="font-size:11px;color:#64706d;margin-top:5px;">{row.get("comentario","")}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+        display_cols = [
+            "situacion",
+            "hour_of_day",
+            "solar_band",
+            "accion_placas",
+            "accion_externa",
+            "irrigation_active",
+            "rl_angle_deg",
+            "claridad",
+            "rl_reward",
+            "observations",
+        ]
+        display_cols = [col for col in display_cols if col in policy_view.columns]
+        table = policy_view[display_cols].rename(
+            columns={
+                "situacion": "situación",
+                "hour_of_day": "hora",
+                "solar_band": "luz",
+                "accion_placas": "placas",
+                "accion_externa": "cultivo",
+                "irrigation_active": "riego",
+                "rl_angle_deg": "ángulo sugerido",
+                "claridad": "confianza",
+                "rl_reward": "valor esperado",
+                "observations": "casos",
+            }
+        )
+        st.dataframe(table, use_container_width=True, hide_index=True)

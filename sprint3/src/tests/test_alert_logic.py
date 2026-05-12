@@ -72,4 +72,4 @@ def test_build_alert_list_reports_vwc_threshold_in_percent_scale():
     })
     alerts = build_alert_list(diag_ok, df_modelo)
     assert alerts[0]["severity"] == "AVISO"
-    assert "umbral crítico: 20.0" in alerts[0]["description"]
+    assert "Revisar si se acerca a 20.0" in alerts[0]["description"]

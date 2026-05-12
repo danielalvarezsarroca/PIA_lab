@@ -475,7 +475,7 @@ def generate_solar_svg(
     crop_zone_panel = _crop_zone_panel(crop_type_s1, crop_type_s2) if show_zone_panel else ""
 
     svg = f"""<svg viewBox="0 0 {_W} {svg_height}" xmlns="http://www.w3.org/2000/svg"
-   role="img" aria-label="Visualización solar de trackers agrovoltaicos{aria_zone} para {crop_label}; S1 {zone_s1_label}; S2 {zone_s2_label}"
+   role="img" aria-label="Vista solar de placas{aria_zone} para {crop_label}; zona 1 {zone_s1_label}; zona 2 {zone_s2_label}"
    style="width:100%;height:100%;display:block;border-radius:22px;">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">

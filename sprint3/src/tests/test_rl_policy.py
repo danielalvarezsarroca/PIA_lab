@@ -3,9 +3,11 @@ import pandas as pd
 
 from agricultural_rules import build_crop_risk_dataset
 from rl_policy import (
-    build_rl_trajectories,
-    build_offline_rl_policy,
+    _confidence_from_q_values,
     _merged_reward_frame,
+    build_offline_dqn_policy,
+    build_offline_rl_policy,
+    build_rl_trajectories,
     recommend_action_for_record,
     write_rl_trajectory_outputs,
     write_rl_policy_outputs,
@@ -75,6 +77,49 @@ def test_recommend_action_for_record_returns_nearest_policy_state():
     assert recommendation["source"] == "offline_rl_tabular_masterdataset"
     assert pd.notna(recommendation["rl_angle_deg"])
     assert pd.notna(recommendation["agronomic_action"])
+
+
+def test_build_offline_dqn_policy_keeps_rl_policy_contract():
+    model = build_modeling_dataset_10min(_stress_sample())
+    crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")
+
+    policy = build_offline_dqn_policy(model, crop_risk, epochs=3, seed=7)
+
+    assert not policy.empty
+    assert {
+        "state_key",
+        "rl_angle_deg",
+        "rl_tracking_regime",
+        "panel_action",
+        "crop_management_action",
+        "irrigation_active",
+        "rl_reward",
+        "rl_confidence",
+        "observations",
+        "source",
+    }.issubset(policy.columns)
+    assert policy["rl_reward"].between(0, 1).all()
+    assert policy["rl_confidence"].between(0, 1).all()
+    assert policy["source"].eq("offline_dqn_double_dqn").all()
+
+
+def test_confidence_from_q_values_uses_gap_to_second_best_action():
+    assert _confidence_from_q_values([1.0, 0.98, 0.20]) == 0.02
+    assert _confidence_from_q_values([0.80, 0.20, 0.10]) == 0.75
+    assert _confidence_from_q_values([0.70]) == 1.0
+
+
+def test_dqn_policy_can_recommend_current_record():
+    model = build_modeling_dataset_10min(_stress_sample())
+    crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")
+    policy = build_offline_dqn_policy(model, crop_risk, epochs=3, seed=7)
+    record = model.iloc[-1].copy()
+
+    recommendation = recommend_action_for_record(policy, record)
+
+    assert recommendation["source"] == "offline_dqn_double_dqn"
+    assert pd.notna(recommendation["rl_angle_deg"])
+    assert pd.notna(recommendation["panel_action"])
 
 
 def test_write_rl_policy_outputs_creates_policy_file(tmp_path):

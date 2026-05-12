@@ -38,8 +38,8 @@ def build_alert_list(df_diagnostic: pd.DataFrame, df_modelo: pd.DataFrame) -> li
     anomalous = get_anomalous_trackers(df_diagnostic)
     if anomalous:
         alerts.append({
-            "title": f"Trackers anómalos: {', '.join(anomalous)}",
-            "description": f"Varianza angular > {ANOMALY_THRESHOLD} deg² — comportamiento irregular detectado",
+            "title": f"Placas a revisar: {', '.join(anomalous)}",
+            "description": f"Movimiento irregular detectado. Desvío por encima de {ANOMALY_THRESHOLD:.0f}.",
             "severity": "CRÍTICO",
         })
 
@@ -47,8 +47,8 @@ def build_alert_list(df_diagnostic: pd.DataFrame, df_modelo: pd.DataFrame) -> li
     if trend < VWC_ALERT_THRESHOLD:
         latest_vwc = df_modelo["VWC_S1_mean"].dropna().iloc[-1] if not df_modelo["VWC_S1_mean"].dropna().empty else float("nan")
         alerts.append({
-            "title": "VWC descendente",
-            "description": f"Tendencia: {trend:.4f} p.p./h. Último valor: {latest_vwc:.2f} (umbral crítico: {VWC_CRITICAL_THRESHOLD:.1f})",
+            "title": "Humedad del suelo bajando",
+            "description": f"La humedad baja {abs(trend):.4f} puntos por hora. Último valor: {latest_vwc:.2f}. Revisar si se acerca a {VWC_CRITICAL_THRESHOLD:.1f}.",
             "severity": "AVISO",
         })
 

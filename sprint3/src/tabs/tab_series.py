@@ -24,7 +24,7 @@ _VARIABLE_OPTIONS = {
     "VWC S1 media":          "VWC_S1_mean",
     "VWC S2 media":          "VWC_S2_mean",
     "GPOA media":            "GPOA_mean",
-    "Ángulo tracker":        "tracker_angle_deg",
+    "Ángulo placa":          "tracker_angle_deg",
     "ePAR S1 (d19)":         "ePAR_S1d19",
     "ePAR S1 (d20)":         "ePAR_S1d20",
     "ePAR S2 (d36)":         "ePAR_S2d36",
@@ -35,9 +35,9 @@ _VARIABLE_OPTIONS = {
     "VWC S2 (d33)":          "VWC_S2d33",
     "Irradiancia S1 (GPOA)": "GPOA_S1",
     "Irradiancia S2 (GPOA)": "GPOA_S2",
-    "Tracking M01":          "track_M01",
-    "Tracking M03":          "track_M03",
-    "Tracking M05":          "track_M05",
+    "Placa M01":             "track_M01",
+    "Placa M03":             "track_M03",
+    "Placa M05":             "track_M05",
 }
 
 _COLOR_MAP = {
@@ -108,7 +108,7 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
 
     variable_options = _available_variable_options(df_integrado)
     if not variable_options:
-        st.info("No hay columnas de series temporales compatibles en el dataset cargado.")
+        st.info("No hay datos históricos compatibles cargados.")
         return
 
     f1, f2, f3 = st.columns([2, 1, 1])
@@ -132,7 +132,7 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
     selected_cols = [variable_options[lbl] for lbl in selected_labels]
     available_cols = [c for c in selected_cols if c in df_integrado.columns]
     if not available_cols:
-        st.warning("Las variables seleccionadas no están disponibles en el dataset actual.")
+        st.warning("Las variables seleccionadas no están disponibles en los datos actuales.")
         return
 
     mask = (df_integrado["Time"].dt.date >= date_from) & (df_integrado["Time"].dt.date <= date_to)
@@ -161,10 +161,10 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         st.markdown(_apple_card("Cobertura", f"{non_null_values}", "valores disponibles en variables", "#007aff"), unsafe_allow_html=True)
     with k3:
         value = "—" if pd.isna(peak_epar) else f"{peak_epar:.0f}"
-        st.markdown(_apple_card("Pico ePAR", value, "máxima irradiancia PAR seleccionada", "#2f8f68"), unsafe_allow_html=True)
+        st.markdown(_apple_card("Máx. luz", value, "valor de luz más alto seleccionado", "#2f8f68"), unsafe_allow_html=True)
     with k4:
         value = "—" if pd.isna(min_vwc) else f"{min_vwc:.2f}"
-        st.markdown(_apple_card("Mín. VWC", value, "punto hídrico más bajo", "#a45f00"), unsafe_allow_html=True)
+        st.markdown(_apple_card("Mín. humedad", value, "punto de humedad más bajo", "#a45f00"), unsafe_allow_html=True)
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
@@ -240,4 +240,4 @@ def render_tab_series(df_integrado: pd.DataFrame) -> None:
         fig_box.update_layout(showlegend=False, xaxis_title="")
         st.plotly_chart(_style_fig(fig_box, height=280), use_container_width=True)
 
-    st.caption(f"{len(df_filtered)} registros · resolución 10 min · fuente: master_dataset.csv")
+    st.caption(f"{len(df_filtered)} registros · resolución 10 min · fuente: datos históricos")

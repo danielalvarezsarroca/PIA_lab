@@ -383,14 +383,14 @@ def card_html(title: str, value: str, subtitle: str = "", color: str = "#16a34a"
 
 
 def iec_gauge_html(iec_value: float) -> str:
-    """Return HTML for the IEC gradient gauge."""
+    """Return HTML for the energy-crop balance gradient gauge."""
     pct = max(0.0, min(1.0, iec_value)) * 100
     if iec_value >= 0.6:
-        status, status_color = "Zona óptima", COLOR["green"]
+        status, status_color = "Lectura alta", COLOR["green"]
     elif iec_value >= 0.35:
-        status, status_color = "Zona media", COLOR["amber"]
+        status, status_color = "Lectura media", COLOR["amber"]
     else:
-        status, status_color = "Zona crítica", COLOR["red"]
+        status, status_color = "Lectura crítica", COLOR["red"]
 
     return f"""
     <div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,247,252,0.86));
@@ -398,11 +398,11 @@ def iec_gauge_html(iec_value: float) -> str:
                 padding:18px;box-shadow:0 18px 48px rgba(16,24,40,0.09),
                 inset 0 1px 0 rgba(255,255,255,0.96);text-align:center;">
       <div style="font-size:12px;font-weight:780;color:#6e6e73;text-transform:uppercase;
-                  letter-spacing:0.06em;margin-bottom:8px;">Índice IEC</div>
+                  letter-spacing:0.06em;margin-bottom:8px;">Equilibrio energía-cultivo</div>
       <div style="font-size:44px;font-weight:820;letter-spacing:0;color:{status_color};line-height:1;">
         {iec_value:.2f}
       </div>
-      <div style="font-size:12px;color:#6e6e73;margin:9px 0 12px;">Equilibrio Energía-Cultivo</div>
+      <div style="font-size:12px;color:#6e6e73;margin:9px 0 12px;">Indicador de apoyo</div>
       <div style="background:linear-gradient(180deg,#e5e8ef,#f7f8fb);border-radius:999px;height:11px;
                   overflow:visible;position:relative;margin:4px 0;box-shadow:inset 0 2px 5px rgba(16,24,40,0.12);">
         <div style="height:100%;border-radius:6px;width:{pct:.0f}%;
@@ -413,9 +413,9 @@ def iec_gauge_html(iec_value: float) -> str:
                     box-shadow:0 5px 12px rgba(16,24,40,0.18), inset 0 1px 0 rgba(255,255,255,1);"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:#8e8e93;margin-top:8px;">
-        <span>0 Crítico</span><span>0.5</span><span>1.0 Óptimo</span>
+        <span>0 Bajo</span><span>0.5</span><span>1.0 Alto</span>
       </div>
       <div style="font-size:13px;font-weight:760;color:{status_color};margin-top:11px;">
-        {status}
+        {status} · ayuda a interpretar la situación
       </div>
     </div>"""

@@ -9,7 +9,7 @@ if str(SPRINT3_DIR) not in sys.path:
 
 # Page config MUST be first Streamlit call
 st.set_page_config(
-    page_title="Agrovoltaic Dashboard",
+    page_title="Panel agrovoltaico",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -19,11 +19,11 @@ from alert_logic import build_alert_list
 from agricultural_rules import CROP_PROFILES
 from data_loader import (
     load_crop_risk,
+    load_dqn_policy_for_crop,
     load_agricultural_rules_for_crop,
     load_crop_risk_for_crop,
     load_integrado,
     load_modelo,
-    load_rl_policy_for_crop,
     load_rules,
     load_tracker_diagnostic,
 )
@@ -69,7 +69,7 @@ df_crop_risk  = load_crop_risk_for_crop(selected_crop_type, crop_zone=selected_c
 if df_crop_risk.empty:
     df_crop_risk = load_crop_risk(selected_crop_type, crop_zone=selected_crop_zone)
 df_agri_rules = load_agricultural_rules_for_crop(selected_crop_type, crop_zone=selected_crop_zone)
-df_rl_policy  = load_rl_policy_for_crop(selected_crop_type, crop_zone=selected_crop_zone)
+df_decision_policy = load_dqn_policy_for_crop(selected_crop_type, crop_zone=selected_crop_zone)
 df_diagnostic = load_tracker_diagnostic()
 n_alerts      = len(build_alert_list(df_diagnostic, df_modelo))
 
@@ -86,15 +86,15 @@ st.markdown(
         <div class="app-mark">SAMO</div>
         <div>
           <div class="app-kicker">Agrovoltaica · Sprint 3</div>
-          <div class="app-title">Agrovoltaic Decision Dashboard</div>
+          <div class="app-title">Panel de control agrovoltaico</div>
           <div class="app-subtitle">
-            Monitorización operativa de trackers, cultivo y equilibrio energía-cultivo.
+            Seguimiento de placas, cultivo, riego y alertas en tiempo real.
           </div>
         </div>
       </div>
       <div class="app-header-meta">
         <span class="status-pill {status_class}">{status_txt}</span>
-        <span class="meta-note">Masterdataset 10 min · política RL offline</span>
+        <span class="meta-note">Datos cada 10 min · recomendación automática</span>
       </div>
     </header>
     """,
@@ -108,19 +108,19 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Dashboard",
     "Series temporales",
     "Recomendación",
-    "Agronomía",
-    "Simulación LSTM",
+    "Cultivo",
+    "Simulación",
     alerts_label,
 ])
 
 with tab1:
-    render_tab_estado(df_modelo, df_diagnostic, df_rules, df_rl_policy, df_crop_risk)
+    render_tab_estado(df_modelo, df_diagnostic, df_rules, df_decision_policy, df_crop_risk)
 with tab2:
     render_tab_series(df_integrado)
 with tab3:
-    render_tab_recomendacion(df_rules, df_modelo, df_rl_policy)
+    render_tab_recomendacion(df_rules, df_modelo, df_decision_policy)
 with tab4:
-    render_tab_agronomia(df_crop_risk, df_agri_rules, df_rl_policy, df_modelo)
+    render_tab_agronomia(df_crop_risk, df_agri_rules, df_decision_policy, df_modelo)
 with tab5:
     render_tab_lstm_simulation()
 with tab6:

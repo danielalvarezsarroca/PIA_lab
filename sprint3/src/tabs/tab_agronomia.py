@@ -10,7 +10,7 @@ from agricultural_rules import ACTION_LABELS, CROP_PROFILES, crop_calendar_for_d
 from data_loader import (
     load_agricultural_rules_for_crop,
     load_crop_risk_for_crop,
-    load_rl_policy_for_crop,
+    load_dqn_policy_for_crop,
 )
 from rl_policy import recommend_action_for_record
 from styles import COLOR
@@ -83,7 +83,7 @@ def _external_action_card_view_model(row: pd.Series) -> dict[str, str]:
     if active:
         color = COLOR["blue"] if action == "activar_riego" else COLOR["green"]
         return {
-            "title": "Acción externa",
+            "title": "Acción de riego",
             "value": label,
             "detail": f"riego activo · {mm_10min:.1f} mm/10min · {duration_min:g} min",
             "color": color,
@@ -91,7 +91,7 @@ def _external_action_card_view_model(row: pd.Series) -> dict[str, str]:
 
     if mode == "paused" or action == "pausar_riego":
         return {
-            "title": "Acción externa",
+            "title": "Acción de riego",
             "value": label,
             "detail": "riego pausado · sin aporte de agua",
             "color": "#6e6e73",
@@ -99,14 +99,14 @@ def _external_action_card_view_model(row: pd.Series) -> dict[str, str]:
 
     if action != "sin_manejo_directo":
         return {
-            "title": "Acción externa",
+            "title": "Acción de riego",
             "value": label,
             "detail": "sin aporte de agua en este intervalo",
             "color": COLOR["amber"],
         }
 
     return {
-        "title": "Acción externa",
+        "title": "Acción de riego",
         "value": "Sin intervención",
         "detail": "sin riego ni actuador externo",
         "color": "#6e6e73",
@@ -117,7 +117,7 @@ def _panel_action_card_view_model(row: pd.Series) -> dict[str, str]:
     action = str(row.get("panel_action", "mantener_placas"))
     label = ACTION_LABELS.get(action, action.replace("_", " ").title())
     angle = _safe_number(row.get("rl_angle_deg", row.get("track_mean", 0)))
-    regime = str(row.get("tracking_regime", "") or "seguimiento RL")
+    regime = str(row.get("tracking_regime", "") or "seguimiento automático")
     color = "#6d5bd0"
     if action == "aumentar_sombreado":
         color = COLOR["blue"]
@@ -126,7 +126,7 @@ def _panel_action_card_view_model(row: pd.Series) -> dict[str, str]:
     elif action == "posicion_segura":
         color = COLOR["red"]
     return {
-        "title": "Acción placas",
+        "title": "Placas",
         "value": label,
         "detail": f"{angle:.0f}° · {regime}",
         "color": color,
@@ -463,7 +463,7 @@ def _render_crop_requirements(profile: dict[str, Any], calendar: dict[str, Any])
     cards = _crop_requirements_view_model(profile, calendar)
     st.markdown(
         '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin:20px 0 10px;">Requerimientos del cultivo</div>',
+        'letter-spacing:0.06em;margin:20px 0 10px;">Necesidades del cultivo</div>',
         unsafe_allow_html=True,
     )
     for col, card in zip(st.columns(len(cards)), cards):
@@ -481,11 +481,11 @@ def render_tab_agronomia(
 ) -> None:
     st.markdown(
         '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin-bottom:12px;">Agronomía y RL agroenergético</div>',
+        'letter-spacing:0.06em;margin-bottom:12px;">Cultivo y riego</div>',
         unsafe_allow_html=True,
     )
     if df_crop_risk.empty:
-        st.info("No hay datos agronómicos disponibles. Genera el pipeline de 10 minutos desde el masterdataset.")
+        st.info("No hay datos de cultivo disponibles. Actualiza los datos de 10 minutos.")
         return
 
     crop_options = _available_crop_options(df_crop_risk)
@@ -517,21 +517,21 @@ def render_tab_agronomia(
     selected_time_label = time_labels[default_time_idx]
     if len(time_labels) > 1:
         selected_time_label = st.select_slider(
-            "Instante de visualización",
+            "Momento",
             options=time_labels,
             value=selected_time_label,
             key=f"agro_timeline_{selected_zone}_{crop_type}",
         )
     selected_time_idx = time_labels.index(selected_time_label)
     latest = crop_df.iloc[selected_time_idx]
-    st.caption(f"Visualización cada 10 minutos · instante seleccionado: {selected_time_label}")
+    st.caption(f"Datos cada 10 minutos · momento seleccionado: {selected_time_label}")
 
     model_row = df_modelo[pd.to_datetime(df_modelo["Time"]) == pd.to_datetime(latest["Time"])]
     rl_record = latest.copy()
     if not model_row.empty:
         for col in ["solar_elevation_deg", "hour_of_day", "tracking_regime", "track_mean"]:
             rl_record[col] = model_row.iloc[0].get(col, rl_record.get(col))
-    rl_policy = load_rl_policy_for_crop(crop_type, crop_zone=selected_zone)
+    rl_policy = load_dqn_policy_for_crop(crop_type, crop_zone=selected_zone)
     rl_rec = pd.Series(dtype="object")
     if not rl_policy.empty:
         try:
@@ -545,7 +545,7 @@ def render_tab_agronomia(
     panel_action = str(rl_rec.get("panel_action", latest.get("panel_action", "mantener_placas")))
     action = str(rl_rec.get("agronomic_action", latest.get("recommended_action", "mantener")))
     rl_angle = float(rl_rec.get("rl_angle_deg", latest.get("track_mean", 0)))
-    rl_reward = float(rl_rec.get("rl_reward", 0))
+    rl_confidence = float(rl_rec.get("rl_confidence", rl_rec.get("rl_reward", 0)))
     latest_with_rl = latest.copy()
     latest_with_rl["crop_management_action"] = management_action
     latest_with_rl["panel_action"] = panel_action
@@ -555,19 +555,19 @@ def render_tab_agronomia(
 
     c1, c2, c3, c4 = st.columns([1, 1, 1.24, 1.24])
     with c1:
-        st.markdown(_metric_card("Salud cultivo", f"{health:.2f}", "componente agronómica de la recompensa", COLOR["green"]), unsafe_allow_html=True)
+        st.markdown(_metric_card("Salud del cultivo", f"{health:.2f}", "estado estimado del cultivo", COLOR["green"]), unsafe_allow_html=True)
     with c2:
         st.markdown(_metric_card("Riesgo", f"{risk:.2f}", str(latest.get("stress_type", "estable")).replace("_", " "), COLOR["red"] if risk > 0.45 else COLOR["amber"]), unsafe_allow_html=True)
     with c3:
         st.markdown(_metric_card(external_card["title"], external_card["value"], external_card["detail"], external_card["color"]), unsafe_allow_html=True)
     with c4:
-        st.markdown(_metric_card(panel_card["title"], panel_card["value"], f"{panel_card['detail']} · reward {rl_reward:.2f}", panel_card["color"]), unsafe_allow_html=True)
+        st.markdown(_metric_card(panel_card["title"], panel_card["value"], f"{panel_card['detail']} · confianza {rl_confidence * 100:.0f}%", panel_card["color"]), unsafe_allow_html=True)
 
     st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
     col_scene, col_charts = st.columns([1.05, 1])
     with col_scene:
         _render_svg(_crop_scene_svg(management_action, panel_action, health, risk, crop_type))
-        st.caption("La política RL muestra acciones factorizadas: placa y acción externa pueden coexistir en el mismo intervalo de 10 minutos.")
+        st.caption("La recomendación puede ajustar placas y riego en el mismo intervalo de 10 minutos.")
 
     with col_charts:
         fig_health = go.Figure()
@@ -620,7 +620,7 @@ def render_tab_agronomia(
             line_dash="dot",
             line_color="rgba(10,132,255,.72)",
         )
-        fig_irrigation.update_layout(title="Acción externa y riego aplicado cada 10 minutos", showlegend=False)
+        fig_irrigation.update_layout(title="Riego aplicado cada 10 minutos", showlegend=False)
         st.plotly_chart(_style_fig(fig_irrigation, height=238), use_container_width=True)
 
     profile = CROP_PROFILES.get(str(crop_type), {})
@@ -631,12 +631,12 @@ def render_tab_agronomia(
     sources = profile.get("sources", [])
     st.markdown(
         '<div style="font-size:13px;font-weight:800;color:#101820;text-transform:uppercase;'
-        'letter-spacing:0.06em;margin:20px 0 10px;">Reglas agronómicas referenciadas</div>',
+        'letter-spacing:0.06em;margin:20px 0 10px;">Criterios usados para el cultivo</div>',
         unsafe_allow_html=True,
     )
     rules = load_agricultural_rules_for_crop(crop_type, crop_zone=selected_zone)
     if rules.empty:
-        st.info("No se han generado reglas agronómicas para este cultivo.")
+        st.info("No se han generado criterios de cultivo para este cultivo.")
     else:
         for _, row in rules.iterrows():
             label = ACTION_LABELS.get(str(row.get("accion", "")), str(row.get("accion", "")))
@@ -646,7 +646,7 @@ def render_tab_agronomia(
                 f'inset 0 1px 0 rgba(255,255,255,.92);">'
                 f'<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:6px;">'
                 f'<span style="font-size:12px;font-weight:800;color:#0a84ff;">{html.escape(label)}</span>'
-                f'<span style="font-size:11px;color:#6e6e73;">riesgo mediano {float(row.get("riesgo_mediano", 0)):.2f} · n={int(row.get("soporte_obs", 0))}</span>'
+                f'<span style="font-size:11px;color:#6e6e73;">riesgo típico {float(row.get("riesgo_mediano", 0)):.2f} · casos {int(row.get("soporte_obs", 0))}</span>'
                 f'</div>'
                 f'<div style="font-size:12px;color:#424245;line-height:1.55;">{html.escape(str(row.get("regla", "—")))}</div>'
                 f'<div style="font-size:11px;color:#6e6e73;margin-top:5px;">{html.escape(str(row.get("comentario", "")))}</div>'
@@ -655,4 +655,4 @@ def render_tab_agronomia(
             )
 
     if sources:
-        st.caption("Fuentes de umbrales: " + " · ".join(source["name"] for source in sources))
+        st.caption("Fuentes de referencia: " + " · ".join(source["name"] for source in sources))
