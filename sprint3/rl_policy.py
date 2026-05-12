@@ -37,7 +37,24 @@ POLICY_COLUMNS = [
     "reward_alpha_agronomic",
     "reward_beta_energy",
     "observations",
+    "alternative_rl_angle_deg",
+    "alternative_panel_action",
+    "alternative_crop_management_action",
+    "alternative_irrigation_mode",
+    "alternative_irrigation_active",
+    "alternative_rl_reward",
+    "alternative_observations",
     "source",
+]
+
+ALTERNATIVE_POLICY_COLUMNS = [
+    "alternative_rl_angle_deg",
+    "alternative_panel_action",
+    "alternative_crop_management_action",
+    "alternative_irrigation_mode",
+    "alternative_irrigation_active",
+    "alternative_rl_reward",
+    "alternative_observations",
 ]
 
 TRAJECTORY_COLUMNS = [
@@ -350,6 +367,8 @@ def build_offline_rl_policy(
             "recommended_action": "agronomic_action",
         }
     )
+    for column in ALTERNATIVE_POLICY_COLUMNS:
+        best[column] = np.nan
     best["source"] = "offline_rl_tabular_masterdataset"
     return best[POLICY_COLUMNS].round(4).reset_index(drop=True)
 
@@ -366,7 +385,11 @@ def _confidence_from_q_values(q_values: list[float] | np.ndarray | pd.Series) ->
     second_best = float(ordered[1])
     if best <= 0:
         return 0.0
-    return round(float(np.clip((best - second_best) / best, 0, 1)), 4)
+    second_best = max(second_best, 0.0)
+    total_top_two = best + second_best
+    if total_top_two <= 0:
+        return 0.0
+    return round(float(np.clip(best / total_top_two, 0, 1)), 4)
 
 
 def _action_key_frame(df: pd.DataFrame) -> pd.Series:
@@ -535,10 +558,20 @@ def build_offline_dqn_policy(
         candidate_x = ((candidate_features - mean) / std).to_numpy(dtype=float)
         q_values = np.clip(_predict_numpy_q_network(candidate_x, params), 0, 1)
         selected_idx = int(np.argmax(q_values))
+        ranked_indices = np.argsort(q_values)[::-1]
+        alternative_idx = int(ranked_indices[1]) if len(ranked_indices) > 1 else selected_idx
         selected = candidates.iloc[selected_idx].copy()
+        alternative = candidates.iloc[alternative_idx]
         selected["rl_reward"] = float(q_values[selected_idx])
         selected["rl_confidence"] = _confidence_from_q_values(q_values)
         selected["observations"] = int(action_stats.iloc[selected_idx]["observations"])
+        selected["alternative_rl_angle_deg"] = float(alternative["rl_angle_deg"])
+        selected["alternative_panel_action"] = alternative["panel_action"]
+        selected["alternative_crop_management_action"] = alternative["crop_management_action"]
+        selected["alternative_irrigation_mode"] = alternative["irrigation_mode"]
+        selected["alternative_irrigation_active"] = bool(alternative["irrigation_active"])
+        selected["alternative_rl_reward"] = float(q_values[alternative_idx])
+        selected["alternative_observations"] = int(action_stats.iloc[alternative_idx]["observations"])
         best_rows.append(selected)
 
     best = pd.DataFrame(best_rows)

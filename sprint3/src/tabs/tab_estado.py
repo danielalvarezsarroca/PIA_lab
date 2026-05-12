@@ -146,6 +146,16 @@ def _format_raw_value(value: float, suffix: str = "") -> str:
     return f"{value:.2f}{suffix}"
 
 
+def _confidence_label(confidence: float | None) -> tuple[str, str]:
+    if confidence is None or math.isnan(confidence):
+        return "Sin datos", COLOR["muted"]
+    if confidence >= 0.85:
+        return "Muy alta", COLOR["green"]
+    if confidence >= 0.65:
+        return "Alta", COLOR["green"]
+    return "Media", COLOR["orange"]
+
+
 def _score_button_html(label: str, value_pct: float, color: str, hint: str) -> str:
     value_pct = _clamp_pct(value_pct)
     return (
@@ -304,11 +314,8 @@ def _angle_justification(
 
     panel_label = _action_label(panel_action)
     crop_label = _action_label(crop_action)
-    confidence_text = (
-        f"Confianza <b>{confidence * 100:.0f}%</b>. "
-        if confidence is not None and not math.isnan(confidence)
-        else ""
-    )
+    confidence_value, _ = _confidence_label(confidence)
+    confidence_text = f"Confianza <b>{confidence_value.lower()}</b>. " if confidence_value != "Sin datos" else ""
     status = "coincide con" if in_range else "se desvía del"
 
     if panel_action == "aumentar_sombreado":
@@ -570,8 +577,8 @@ def _render_interactive_section(
     with col_info:
         st.markdown(
             "<div style='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;'>"
-            + _score_button_html("Salud cultivo", crop_health, COLOR["green"], "Estado general")
-            + _score_button_html("Eficiencia energética", energy_efficiency, COLOR["orange"], "Luz aprovechada")
+            + _score_button_html("Salud cultivo", crop_health, COLOR["green"], "Comparado con el histórico del cultivo")
+            + _score_button_html("Eficiencia energética", energy_efficiency, COLOR["orange"], "Comparado con el máximo energético")
             + _raw_metric_button_html("Humedad suelo", _format_raw_value(vwc_value, "%"), COLOR["green"], vwc_value_col)
             + _raw_metric_button_html("Temp. suelo", _format_raw_value(soil_temp_value, " °C"), COLOR["green"], soil_temp_value_col)
             + _raw_metric_button_html("Luz cultivo", _format_raw_value(crop_light_value), COLOR["blue"], crop_light_value_col)
@@ -586,7 +593,7 @@ def _render_interactive_section(
             unsafe_allow_html=True,
         )
         if not rl_rec.empty:
-            confidence_label = f"{rl_confidence * 100:.0f}%" if not math.isnan(rl_confidence) else "Sin datos"
+            confidence_label, confidence_color = _confidence_label(rl_confidence)
             st.markdown(
                 f'<div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));'
                 f'border:1px solid rgba(255,255,255,0.72);border-radius:20px;'
@@ -594,14 +601,14 @@ def _render_interactive_section(
                 f'inset 0 1px 0 rgba(255,255,255,0.96);">'
                 f'<div style="font-size:11px;font-weight:760;color:#64706d;text-transform:uppercase;'
                 f'letter-spacing:0.05em;">Recomendación actual</div>'
-                f'<div style="font-size:19px;font-weight:800;color:#0a84ff;margin-top:5px;">'
+                f'<div style="font-size:19px;font-weight:800;color:{confidence_color};margin-top:5px;">'
                 f'Confianza {confidence_label}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
         for lbl, val, clr in [
             ("Ángulo actual",      f"{track_angle:.1f}°", COLOR["blue"]),
-            ("Ángulo sugerido",    f"{rec_angle:.1f}°",   COLOR["green"]),
+            ("Siguiente ángulo objetivo", f"{rec_angle:.1f}°", COLOR["green"]),
             ("Placas",            _action_label(panel_action), COLOR["purple"]),
             ("Elevación solar",    f"{solar_elev:.1f}°",  COLOR["orange"]),
         ]:

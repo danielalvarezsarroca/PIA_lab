@@ -69,6 +69,26 @@ def _policy_series(policy_view: pd.DataFrame, column: str, fallback: object) -> 
     return pd.Series([fallback] * len(policy_view), index=policy_view.index)
 
 
+def _confidence_text(confidence: float) -> tuple[str, str, str]:
+    if confidence >= 0.85:
+        return "Muy alta", "la mejor opción destaca claramente", "#2f8f68"
+    if confidence >= 0.65:
+        return "Alta", "la mejor opción destaca", "#34c759"
+    return "Media", "hay otra opción casi igual", "#ff9f0a"
+
+
+def _alternative_text(recommendation: pd.Series) -> str:
+    angle = recommendation.get("alternative_rl_angle_deg")
+    if angle is None or pd.isna(angle):
+        return ""
+    panel_action = _action_label(recommendation.get("alternative_panel_action", "mantener_placas"))
+    crop_action = _action_label(recommendation.get("alternative_crop_management_action", "sin_manejo_directo"))
+    irrigation_active = _safe_int(recommendation.get("alternative_irrigation_active"), 0) == 1
+    irrigation_mode = _action_label(recommendation.get("alternative_irrigation_mode", "sin_riego"))
+    irrigation_text = irrigation_mode if irrigation_active else "sin riego"
+    return f"{_safe_float(angle):.0f}° · {panel_action} · {crop_action} · {irrigation_text}"
+
+
 _SUN_LABELS = {
     "night": "noche",
     "low": "sol bajo",
@@ -132,6 +152,8 @@ def _recommendation_card(
     crop_action = _action_label(recommendation.get("crop_management_action", "sin_manejo_directo"))
     angle = _safe_float(recommendation.get("rl_angle_deg"), 0.0)
     confidence = _safe_float(recommendation.get("rl_confidence", recommendation.get("rl_reward")), 0.0)
+    confidence_label, confidence_detail, confidence_color = _confidence_text(confidence)
+    alternative = _alternative_text(recommendation)
     observations = _safe_int(recommendation.get("observations"), 0)
     irrigation_active = _safe_int(recommendation.get("irrigation_active"), 0) == 1
     irrigation_mm = _safe_float(recommendation.get("irrigation_mm_10min"), 0.0)
@@ -143,6 +165,18 @@ def _recommendation_card(
         if irrigation_active
         else "Sin riego en este intervalo"
     )
+    alternative_block = ""
+    if confidence <= 0.55 and alternative:
+        alternative_block = f"""
+      <div style="background:rgba(255,159,10,0.10);border:1px solid rgba(255,159,10,0.24);
+                  border-radius:15px;padding:10px 12px;margin-top:10px;">
+        <div style="font-size:9px;font-weight:820;color:#a85f00;text-transform:uppercase;letter-spacing:0.06em;">
+          Alternativa casi igual
+        </div>
+        <div style="font-size:12px;font-weight:760;color:#1d1d1f;margin-top:4px;line-height:1.35;">
+          {escape(alternative)}
+        </div>
+      </div>"""
 
     return f"""
     <div style="background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(235,244,255,0.90));
@@ -165,9 +199,11 @@ def _recommendation_card(
       </div>
       <div style="font-size:12px;color:#424245;margin-top:12px;line-height:1.55;">
         {escape(irrigation_text)}<br>
-        Confianza: <b>{confidence * 100:.0f}%</b> · Casos parecidos: <b>{observations}</b><br>
+        Confianza: <b style="color:{confidence_color};">{escape(confidence_label)}</b> · {escape(confidence_detail)}<br>
+        Casos parecidos: <b>{observations}</b><br>
         Situación: {state_key}
       </div>
+      {alternative_block}
     </div>"""
 
 
@@ -195,6 +231,7 @@ def render_tab_recomendacion(
         if not current_recommendation.empty
         else 0.0
     )
+    confidence_label, confidence_detail, confidence_color = _confidence_text(confidence)
     observations = _safe_int(current_recommendation.get("observations"), 0) if not current_recommendation.empty else 0
     rl_states = len(df_rl_policy) if policy_available else 0
     panel_action = (
@@ -210,7 +247,15 @@ def render_tab_recomendacion(
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.markdown(_policy_metric("Confianza", f"{confidence * 100:.0f}%", "diferencia con la segunda opción", "#0a84ff"), unsafe_allow_html=True)
+        st.markdown(
+            _policy_metric(
+                "Confianza",
+                confidence_label,
+                confidence_detail,
+                confidence_color,
+            ),
+            unsafe_allow_html=True,
+        )
     with m2:
         st.markdown(_policy_metric("Placas", panel_action, "posición sugerida", COLOR["purple"]), unsafe_allow_html=True)
     with m3:
@@ -239,12 +284,12 @@ def render_tab_recomendacion(
             f'border:1px solid rgba(255,255,255,0.72);border-radius:22px;padding:14px 16px;'
             f'box-shadow:0 14px 34px rgba(16,24,40,0.07),inset 0 1px 0 rgba(255,255,255,0.96);">'
             f'<div style="display:flex;justify-content:space-between;font-size:11px;color:#6e6e73;font-weight:760;'
-            f'text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;"><span>Confianza de la recomendación</span><span>{gauge_pct:.0f}%</span></div>'
+            f'text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;"><span>Confianza de la recomendación</span><span>{escape(confidence_label)}</span></div>'
             f'<div style="height:11px;border-radius:999px;background:linear-gradient(180deg,#e5e8ef,#f7f8fb);'
             f'overflow:hidden;box-shadow:inset 0 2px 5px rgba(16,24,40,0.12);">'
             f'<div style="height:100%;width:{gauge_pct:.0f}%;border-radius:999px;'
             f'background:linear-gradient(90deg,#ff3b30,#ffcc00,#2f8f68);"></div></div>'
-            f'<div style="font-size:11px;color:#6e6e73;margin-top:9px;">Cuanto más alto, más clara es la recomendación para una situación parecida.</div>'
+            f'<div style="font-size:11px;color:#6e6e73;margin-top:9px;">{escape(confidence_detail)}. La barra muestra cuánto se separa la primera opción de la segunda.</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -264,6 +309,9 @@ def render_tab_recomendacion(
             ).map(_action_label),
             angle_label=_policy_series(df_rl_policy, "rl_angle_deg", 0).map(lambda value: f"{_safe_float(value):.0f}°"),
             claridad=_policy_series(df_rl_policy, "rl_confidence", 0.0),
+            confianza_nivel=_policy_series(df_rl_policy, "rl_confidence", 0.0).map(
+                lambda value: _confidence_text(_safe_float(value))[0]
+            ),
         )
         policy_view = policy_view.sort_values(["claridad", "rl_reward", "observations"], ascending=[False, False, False]).head(12)
 
@@ -275,8 +323,8 @@ def render_tab_recomendacion(
             color="claridad",
             color_continuous_scale=["#ff3b30", "#ffcc00", "#2f8f68"],
             text="angle_label",
-            title="Recomendaciones más claras",
-            labels={"claridad": "confianza", "situacion": "situación"},
+            title="Recomendaciones con más confianza",
+            labels={"claridad": "separación entre opciones", "situacion": "situación"},
             hover_data=["accion_placas", "accion_externa", "rl_reward", "observations"],
         )
         fig_policy.update_traces(textposition="outside", marker_line_width=0)
@@ -297,7 +345,7 @@ def render_tab_recomendacion(
             "accion_externa",
             "irrigation_active",
             "rl_angle_deg",
-            "claridad",
+            "confianza_nivel",
             "rl_reward",
             "observations",
         ]
@@ -310,8 +358,8 @@ def render_tab_recomendacion(
                 "accion_placas": "placas",
                 "accion_externa": "cultivo",
                 "irrigation_active": "riego",
-                "rl_angle_deg": "ángulo sugerido",
-                "claridad": "confianza",
+                "rl_angle_deg": "siguiente ángulo objetivo",
+                "confianza_nivel": "confianza",
                 "rl_reward": "valor esperado",
                 "observations": "casos",
             }

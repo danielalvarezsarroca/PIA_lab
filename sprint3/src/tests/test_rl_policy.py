@@ -96,16 +96,25 @@ def test_build_offline_dqn_policy_keeps_rl_policy_contract():
         "rl_reward",
         "rl_confidence",
         "observations",
+        "alternative_rl_angle_deg",
+        "alternative_panel_action",
+        "alternative_crop_management_action",
+        "alternative_irrigation_mode",
+        "alternative_irrigation_active",
+        "alternative_rl_reward",
+        "alternative_observations",
         "source",
     }.issubset(policy.columns)
     assert policy["rl_reward"].between(0, 1).all()
     assert policy["rl_confidence"].between(0, 1).all()
+    assert policy["alternative_rl_reward"].between(0, 1).all()
     assert policy["source"].eq("offline_dqn_double_dqn").all()
 
 
-def test_confidence_from_q_values_uses_gap_to_second_best_action():
-    assert _confidence_from_q_values([1.0, 0.98, 0.20]) == 0.02
-    assert _confidence_from_q_values([0.80, 0.20, 0.10]) == 0.75
+def test_confidence_from_q_values_splits_weight_between_top_two_actions():
+    assert _confidence_from_q_values([1.0, 1.0, 0.20]) == 0.5
+    assert _confidence_from_q_values([1.0, 0.98, 0.20]) == 0.5051
+    assert _confidence_from_q_values([0.80, 0.20, 0.10]) == 0.8
     assert _confidence_from_q_values([0.70]) == 1.0
 
 
@@ -120,6 +129,20 @@ def test_dqn_policy_can_recommend_current_record():
     assert recommendation["source"] == "offline_dqn_double_dqn"
     assert pd.notna(recommendation["rl_angle_deg"])
     assert pd.notna(recommendation["panel_action"])
+
+
+def test_dqn_policy_exposes_second_best_action_for_shared_decisions():
+    model = build_modeling_dataset_10min(_stress_sample())
+    crop_risk = build_crop_risk_dataset(model, crop_type="lechuga")
+    policy = build_offline_dqn_policy(model, crop_risk, epochs=3, seed=7)
+
+    shared = policy[policy["rl_confidence"].le(0.55)]
+
+    assert not shared.empty
+    assert shared["alternative_rl_angle_deg"].notna().all()
+    assert shared["alternative_panel_action"].notna().all()
+    assert shared["alternative_crop_management_action"].notna().all()
+    assert shared["alternative_observations"].gt(0).all()
 
 
 def test_write_rl_policy_outputs_creates_policy_file(tmp_path):

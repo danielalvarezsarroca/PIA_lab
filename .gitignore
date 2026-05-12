@@ -5,5 +5,10 @@ __pycache__/
 *.py[cod]
 .DS_Store
 .worktrees/
+.pytest_cache/
+.agents/
+.claude/
+.superpowers/
+docs/superpowers/
 sprint3/outputs_10min/
 sprint3/outputs_daily/

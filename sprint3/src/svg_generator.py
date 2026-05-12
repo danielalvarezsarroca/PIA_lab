@@ -557,7 +557,7 @@ def generate_solar_svg(
     <text x="42" y="22" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif">Ángulo actual ({int(track_angle)}°)</text>
     <rect x="15" y="32" width="18" height="8" rx="3" fill="none" stroke="#2f8f68"
           stroke-width="2" stroke-dasharray="5,3"/>
-    <text x="42" y="40" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif">Ángulo recomendado ({int(rec_angle)}°)</text>
+    <text x="42" y="40" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif">Siguiente ángulo objetivo ({int(rec_angle)}°)</text>
     <circle cx="24" cy="58" r="5" fill="#0a84ff" opacity="0.9"/>
     <text x="42" y="62" font-size="12" fill="#1d1d1f" font-family="-apple-system,BlinkMacSystemFont,sans-serif">Orientación visual: {direction}</text>
     <rect x="15" y="74" width="18" height="8" rx="4" fill="#1d1d1f" opacity="{shadow_opacity:.2f}"/>
