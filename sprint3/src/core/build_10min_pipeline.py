@@ -24,12 +24,13 @@ from ten_min_pipeline import (
     write_10min_outputs,
 )
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_MASTER_PATH = BASE_DIR / "outputs" / "master_dataset.csv"
-DEFAULT_OUTPUT_DIR = BASE_DIR / "outputs_10min"
+SPRINT3_DIR = Path(__file__).resolve().parents[2]
+REPO_ROOT = SPRINT3_DIR.parent
+DEFAULT_MASTER_PATH = SPRINT3_DIR / "outputs" / "master_dataset.csv"
+DEFAULT_OUTPUT_DIR = SPRINT3_DIR / "outputs_10min"
 DEFAULT_6H_BACKUP_SOURCES = [
-    BASE_DIR.parent / "sprint2" / "outputs_sprint2" / "dataset_modelizacion_6h.csv",
-    BASE_DIR.parent / "sprint2" / "outputs_sprint2" / "candidate_rotation_rules.csv",
+    REPO_ROOT / "sprint2" / "outputs_sprint2" / "dataset_modelizacion_6h.csv",
+    REPO_ROOT / "sprint2" / "outputs_sprint2" / "candidate_rotation_rules.csv",
 ]
 
 

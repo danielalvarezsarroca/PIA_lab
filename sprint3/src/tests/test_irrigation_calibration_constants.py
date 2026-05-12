@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _notebook_source() -> str:
-    notebook = json.loads((ROOT / "Master_dataset_reg.ipynb").read_text(encoding="utf-8"))
+    notebook = json.loads((ROOT / "notebooks" / "Master_dataset_reg.ipynb").read_text(encoding="utf-8"))
     return "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
 

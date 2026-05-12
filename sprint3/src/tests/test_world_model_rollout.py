@@ -1,7 +1,7 @@
 import pandas as pd
 
-from sprint3.world_model_dataset import ACTION_COLUMNS, ENDO_COLUMNS, EXO_COLUMNS
-from sprint3.world_model_rollout import rollout_with_policy
+from world_model_dataset import ACTION_COLUMNS, ENDO_COLUMNS, EXO_COLUMNS
+from world_model_rollout import rollout_with_policy
 
 
 def _history(rows=12):

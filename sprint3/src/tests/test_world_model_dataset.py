@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from sprint3.world_model_dataset import (
+from world_model_dataset import (
     ACTION_COLUMNS,
     ENDO_COLUMNS,
     EXO_COLUMNS,

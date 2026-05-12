@@ -4,7 +4,7 @@ import pytest
 
 pytest.importorskip("sklearn")
 
-from sprint3.world_model_lstm_dataset import (
+from world_model_lstm_dataset import (
     fit_window_scalers,
     make_policy_windows,
     split_training_and_stream_by_time,

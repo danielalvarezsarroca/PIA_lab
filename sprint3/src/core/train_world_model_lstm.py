@@ -18,9 +18,9 @@ from world_model_lstm_dataset import (
 from world_model_lstm_training import predict, regression_metrics, save_artifacts, train_model
 
 
-BASE_DIR = Path(__file__).resolve().parent
-TRAINING_DATASET = BASE_DIR / "outputs" / "world_model_training_dataset.csv"
-OUTPUT_DIR = BASE_DIR / "outputs"
+SPRINT3_DIR = Path(__file__).resolve().parents[2]
+TRAINING_DATASET = SPRINT3_DIR / "outputs" / "world_model_training_dataset.csv"
+OUTPUT_DIR = SPRINT3_DIR / "outputs"
 
 
 def _require_dataset(path: Path) -> None:

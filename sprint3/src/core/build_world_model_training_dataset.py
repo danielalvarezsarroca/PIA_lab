@@ -6,9 +6,9 @@ from pathlib import Path
 from world_model_dataset import build_reward_training_dataset, load_world_model_dataset
 
 
-BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_WORLD_MODEL_PATH = BASE_DIR / "outputs" / "master_dataset_world_model.csv"
-DEFAULT_OUTPUT_PATH = BASE_DIR / "outputs" / "world_model_training_dataset.csv"
+SPRINT3_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_WORLD_MODEL_PATH = SPRINT3_DIR / "outputs" / "master_dataset_world_model.csv"
+DEFAULT_OUTPUT_PATH = SPRINT3_DIR / "outputs" / "world_model_training_dataset.csv"
 
 
 def main() -> None:

@@ -3,8 +3,8 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from sprint3.world_model_lstm import WorldModelLSTM
-from sprint3.world_model_lstm_training import regression_metrics
+from world_model_lstm import WorldModelLSTM
+from world_model_lstm_training import regression_metrics
 
 
 def test_world_model_lstm_forward_shape():

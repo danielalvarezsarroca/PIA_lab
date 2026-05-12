@@ -4,8 +4,10 @@ from pathlib import Path
 import streamlit as st
 
 SPRINT3_DIR = Path(__file__).resolve().parents[1]
-if str(SPRINT3_DIR) not in sys.path:
-    sys.path.insert(0, str(SPRINT3_DIR))
+CORE_DIR = SPRINT3_DIR / "src" / "core"
+for path in (SPRINT3_DIR, CORE_DIR):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 # Page config MUST be first Streamlit call
 st.set_page_config(

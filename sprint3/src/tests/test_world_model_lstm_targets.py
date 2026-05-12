@@ -1,4 +1,4 @@
-from sprint3.world_model_dataset import DETERMINISTIC_STATE_COLUMNS, LEARNED_ENDO_COLUMNS
+from world_model_dataset import DETERMINISTIC_STATE_COLUMNS, LEARNED_ENDO_COLUMNS
 
 
 def test_lstm_does_not_learn_minutes_since_last_irrigation():

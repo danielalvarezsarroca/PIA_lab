@@ -5,9 +5,9 @@ import pytest
 
 pytest.importorskip("torch")
 
-from sprint3.world_model_dataset import ACTION_COLUMNS, ENDO_COLUMNS, EXO_COLUMNS, LEARNED_ENDO_COLUMNS
-from sprint3.world_model_lstm import WorldModelLSTM
-from sprint3.world_model_lstm_inference import recompute_minutes_since_last_irr, predict_next_state
+from world_model_dataset import ACTION_COLUMNS, ENDO_COLUMNS, EXO_COLUMNS, LEARNED_ENDO_COLUMNS
+from world_model_lstm import WorldModelLSTM
+from world_model_lstm_inference import recompute_minutes_since_last_irr, predict_next_state
 
 
 def _window(window_size=12):

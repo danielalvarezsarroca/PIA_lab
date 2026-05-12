@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_master_dataset_reg_uses_nanosecond_timestamps_for_episode_ids():
-    notebook = json.loads((ROOT / "Master_dataset_reg.ipynb").read_text(encoding="utf-8"))
+    notebook = json.loads((ROOT / "notebooks" / "Master_dataset_reg.ipynb").read_text(encoding="utf-8"))
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
     assert 'to_numpy(dtype="datetime64[ns]")' in source

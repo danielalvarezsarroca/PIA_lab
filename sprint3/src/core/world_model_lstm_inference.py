@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover - supports direct script-style imports f
     from world_model_lstm import WorldModelLSTM
 
 
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "outputs"
+DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "outputs"
 DEFAULT_MODEL_PATH = DEFAULT_OUTPUT_DIR / "world_model_lstm.pt"
 DEFAULT_SCALERS_PATH = DEFAULT_OUTPUT_DIR / "world_model_lstm_scalers.joblib"
 NON_NEGATIVE_OUTPUTS = {"GPOA_mean", "ALBEDO_mean"}

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from sprint3.dashboard_lstm import build_prediction_delta_frame, format_model_status
+from dashboard_lstm import build_prediction_delta_frame, format_model_status
 
 
 def test_format_model_status_extracts_key_metrics():

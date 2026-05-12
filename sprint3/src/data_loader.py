@@ -7,8 +7,10 @@ import pandas as pd
 import streamlit as st
 
 _SPRINT3_DIR = Path(__file__).parent.parent
-if str(_SPRINT3_DIR) not in sys.path:
-    sys.path.insert(0, str(_SPRINT3_DIR))
+_CORE_DIR = _SPRINT3_DIR / "src" / "core"
+for path in (_SPRINT3_DIR, _CORE_DIR):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from agricultural_rules import build_crop_risk_dataset, generate_agricultural_rules_10min
 from dashboard_lstm import format_model_status
