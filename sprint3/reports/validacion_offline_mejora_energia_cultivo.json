@@ -1,0 +1,36 @@
+{
+  "dataset": "outputs_10min/dataset_modelizacion_10min.csv",
+  "crop_type": "lechuga",
+  "crop_zone": "S1",
+  "records": 23043,
+  "comparable_days": 241,
+  "date_min": "2025-06-17 14:00:00",
+  "date_max": "2026-02-12 14:20:00",
+  "hour_filter": "06:00-21:59",
+  "policy_source": "offline_dqn_double_dqn",
+  "policy_states": 251,
+  "historical_iec_mean": 0.2579,
+  "system_dqn_iec_mean": 0.3203,
+  "iec_improvement_pct": 24.19,
+  "historical_reward_mean": 0.3215,
+  "system_dqn_reward_mean": 0.5193,
+  "reward_improvement_pct": 61.52,
+  "estimate_source_share": {
+    "global_action": 0.9667,
+    "same_state_action": 0.0333
+  },
+  "daily_iec_improvement_pct": {
+    "mean": 57.48,
+    "median": 78.04,
+    "p25": -11.44,
+    "p75": 108.45
+  },
+  "daily_reward_improvement_pct": {
+    "mean": 308.07,
+    "median": 57.61,
+    "p25": 21.53,
+    "p75": 142.31
+  },
+  "formula": "((indice_sistema_DQN - indice_historico) / indice_historico) * 100",
+  "interpretation_note": "Estimacion offline basada en datos historicos; no equivale a una prueba experimental en campo."
+}
