@@ -1,0 +1,188 @@
+{
+  "generated_at": "2026-05-28",
+  "purpose": "Respuesta estructurada a la licitacion Data Augmentation and Decision Support System for scaling-up data-based solutions.",
+  "project_context": {
+    "dashboard_entrypoint": "sprint3/src/app.py",
+    "main_dataset": "sprint3/outputs/master_dataset.csv",
+    "rl_dataset": "sprint3/outputs/rl_factored_dataset.csv",
+    "world_model_artifact": "sprint3/outputs/world_model_lstm.pt",
+    "offline_validation": "sprint3/reports/validacion_offline_mejora_energia_cultivo.json",
+    "main_kpis": {
+      "offline_records": 23043,
+      "comparable_days": 241,
+      "historical_iec_mean": 0.2579,
+      "system_dqn_iec_mean": 0.3203,
+      "iec_improvement_pct": 24.19,
+      "historical_reward_mean": 0.3215,
+      "system_dqn_reward_mean": 0.5193,
+      "reward_improvement_pct": 61.52
+    }
+  },
+  "tender_questions": {
+    "answerable_now": [
+      "Variables y restricciones agronomicas del piloto agri-PV.",
+      "Prototipo de gemelo digital basado en datos historicos y modelo LSTM.",
+      "Sistema DSS visual con recomendaciones de angulo, placas y riego.",
+      "Comparacion offline entre decisiones historicas y politica DQN.",
+      "Estimacion numerica de mejora: +24.19% en indice energia-cultivo y +61.52% en reward."
+    ],
+    "remaining_work": [
+      "Formalizar el modelo biologico completo con parametros validados por bibliografia y campo.",
+      "Convertir los escenarios sinteticos actuales en un modulo configurable de Data Augmentation para nuevos cultivos.",
+      "Anadir comparativa explicita entre modelo biologico y modelo data-driven dentro del DSS.",
+      "Conectar el DSS al sistema real de control agri-PV con API, limites de seguridad y pruebas en seco.",
+      "Ejecutar validacion experimental en planta piloto para confirmar las estimaciones offline."
+    ],
+    "timeline": "8 semanas: 1) contrato de datos y variables, 2-3) gemelo digital y modelo biologico, 4-5) data augmentation y comparador DSS, 6-7) integracion de control y pruebas, 8) validacion, documentacion y transferencia.",
+    "organization": "Equipo mixto: IA/datos, modelado agronomico, software e integracion, validacion de piloto y gestion de proyecto.",
+    "budget_summary": "Presupuesto orientativo de 40.700 EUR + IVA para completar la faena total, incluyendo personal, infraestructura, integracion, documentacion y contingencia."
+  },
+  "requirements": [
+    {
+      "id": "i",
+      "requirement": "Determine variables and constraints to be considered in such a form that they agree with the usual biological models.",
+      "status": "implemented",
+      "status_label": "Cubierto con trabajo actual",
+      "evidence": [
+        {
+          "path": "sprint3/src/core/agricultural_rules.py",
+          "why": "Define perfiles de cultivo, umbrales de humedad, temperatura, luz, viento y lluvia con referencias agronomicas."
+        },
+        {
+          "path": "sprint3/docs/ESPECIFICACIO_REG_AUTOMATIC_MDP.md",
+          "why": "Documenta el estado MDP, acciones, variables exogenas y restricciones operativas del piloto."
+        },
+        {
+          "path": "sprint3/src/core/world_model_dataset.py",
+          "why": "Construye los scores energia-cultivo y el indice compuesto usado en entrenamiento y validacion."
+        }
+      ],
+      "presentation_message": "Ya tenemos identificadas las variables ambientales, agronomicas y energeticas que gobiernan la decision: luz en placas, luz en cultivo, humedad, temperatura del suelo, meteorologia, angulo y riego.",
+      "remaining_work": "Ajustar umbrales y pesos con asesoramiento agronomico y ensayos especificos de cada cultivo.",
+      "capacity_to_finish": "Alta: la estructura de variables y restricciones ya esta codificada y se puede recalibrar sin rehacer el sistema."
+    },
+    {
+      "id": "ii",
+      "requirement": "Code a digital twin available and useful for the pilot. Determine how data is accessed for the system.",
+      "status": "partial",
+      "status_label": "Prototipo funcional, pendiente de conexion viva",
+      "evidence": [
+        {
+          "path": "sprint3/src/core/world_model_lstm.py",
+          "why": "Implementa el modelo temporal LSTM que actua como base del gemelo digital data-driven."
+        },
+        {
+          "path": "sprint3/src/core/world_model_lstm_inference.py",
+          "why": "Expone inferencia para predecir el siguiente estado a partir de ventana historica y acciones."
+        },
+        {
+          "path": "sprint3/docs/README_realtime_lstm.md",
+          "why": "Describe el flujo de reentrenamiento temporal, holdout de streaming y uso en tiempo real."
+        },
+        {
+          "path": "sprint3/src/tabs/tab_lstm_simulation.py",
+          "why": "Integra la simulacion del modelo temporal en la interfaz del dashboard."
+        }
+      ],
+      "presentation_message": "El gemelo digital ya existe como prototipo: aprende de historico, simula evolucion temporal y se visualiza en el panel.",
+      "remaining_work": "Definir el contrato de datos con el piloto real, pasar de CSV historico a API/stream y validar la latencia de actualizacion.",
+      "capacity_to_finish": "Media-alta: el modelo y la inferencia ya existen; falta principalmente integracion de datos reales y hardening operativo."
+    },
+    {
+      "id": "iii",
+      "requirement": "Code a decision support system (DSS) for the comparison between biological models based in the literature and data-driven models.",
+      "status": "partial",
+      "status_label": "DSS implementado, comparativa formal pendiente",
+      "evidence": [
+        {
+          "path": "sprint3/src/core/agricultural_rules.py",
+          "why": "Representa el bloque experto/literatura para interpretar riesgo agronomico."
+        },
+        {
+          "path": "sprint3/src/core/rl_policy.py",
+          "why": "Implementa politica offline tabular y DQN Double DQN para recomendar acciones multiobjetivo."
+        },
+        {
+          "path": "sprint3/src/tabs/tab_recomendacion.py",
+          "why": "Muestra la recomendacion del DSS al usuario final."
+        },
+        {
+          "path": "sprint3/reports/validacion_offline_mejora_energia_cultivo.md",
+          "why": "Compara historico frente a politica DQN y cuantifica mejora offline."
+        },
+        {
+          "path": "sprint3/src/tests/test_rl_policy.py",
+          "why": "Verifica entrenamiento DQN, confianza, penalizaciones y metadatos de reward."
+        }
+      ],
+      "presentation_message": "El dashboard ya funciona como DSS: combina reglas agronomicas comprensibles y politica DQN para recomendar angulo, placas y riego.",
+      "remaining_work": "Anadir una vista explicita de acuerdo/desacuerdo entre modelo biologico y modelo data-driven, con ranking de variables influyentes.",
+      "capacity_to_finish": "Alta: ambos bloques ya estan separados; la comparativa se puede construir encima de salidas existentes."
+    },
+    {
+      "id": "iv",
+      "requirement": "Generation of synthetic data for the purpose of speeding-up training and future crops to be considered.",
+      "status": "partial",
+      "status_label": "Escenarios sinteticos iniciales, modulo general pendiente",
+      "evidence": [
+        {
+          "path": "sprint3/docs/ESPECIFICACIO_REG_AUTOMATIC_MDP.md",
+          "why": "Define escenarios de riego, dosis, intervalos y jitter para ampliar situaciones de entrenamiento."
+        },
+        {
+          "path": "sprint3/src/core/build_world_model_training_dataset.py",
+          "why": "Construye datasets de entrenamiento para el world model a partir de historico y variables simulables."
+        },
+        {
+          "path": "sprint3/src/core/world_model_dataset.py",
+          "why": "Genera datasets factorizados para reward, IEC y politica offline."
+        },
+        {
+          "path": "sprint3/outputs/rl_factored_dataset.csv",
+          "why": "Dataset resultante usado para entrenar y validar decisiones multiobjetivo."
+        }
+      ],
+      "presentation_message": "Ya hemos empezado a generar escenarios alternativos para acelerar aprendizaje, especialmente alrededor de riego y acciones de control.",
+      "remaining_work": "Convertir esa logica en un modulo de Data Augmentation parametrizable por cultivo, estacion, meteo y restricciones biologicas.",
+      "capacity_to_finish": "Media: la base de escenarios existe, pero falta empaquetarla como producto reutilizable."
+    },
+    {
+      "id": "v",
+      "requirement": "Connect the DSS with the agri-PV control system to determine better control laws working on the actual pilot plant.",
+      "status": "planned",
+      "status_label": "Preparado a nivel de decision, pendiente de integracion real",
+      "evidence": [
+        {
+          "path": "sprint3/src/core/rl_policy.py",
+          "why": "Produce leyes de decision: angulo objetivo, accion de placas, riego y confianza."
+        },
+        {
+          "path": "sprint3/src/tabs/tab_estado.py",
+          "why": "Muestra las recomendaciones en lenguaje operativo para usuario no tecnico."
+        },
+        {
+          "path": "sprint3/src/tabs/tab_recomendacion.py",
+          "why": "Presenta la decision actual y variables usadas por el sistema."
+        }
+      ],
+      "presentation_message": "La parte de decision ya devuelve acciones accionables; lo que falta es conectarlas con el controlador real de la planta piloto.",
+      "remaining_work": "Implementar API/PLC, limites de seguridad, modo sombra, pruebas en seco y autorizacion humana antes de actuacion automatica.",
+      "capacity_to_finish": "Media: el nucleo de decision esta listo, pero la integracion depende de acceso tecnico al sistema de control de la empresa."
+    }
+  ],
+  "budget_eur": {
+    "currency": "EUR",
+    "personnel": 30000,
+    "cloud_and_data_infrastructure": 2000,
+    "pilot_integration_and_field_validation": 3500,
+    "documentation_training_and_transfer": 1500,
+    "contingency_10_pct": 3700,
+    "total_without_vat": 40700,
+    "assumptions": [
+      "Equipo reducido durante 8 semanas.",
+      "Uso de infraestructura ligera basada en Python, Streamlit y almacenamiento CSV/API.",
+      "No incluye compra de sensores nuevos ni actuadores de campo.",
+      "La validacion experimental depende de disponibilidad de la planta piloto."
+    ]
+  }
+}
