@@ -12,38 +12,38 @@ VARIABLE_CATALOG_ROWS = [
     {
         "variable": "GPOA_mean",
         "nombre_simple": "Luz que llega a las placas",
-        "uso_en_sistema": "Mide cuanta energia puede aprovechar el panel.",
+        "uso_en_sistema": "Mide cuánta energía puede aprovechar el panel.",
         "restriccion_biologica": "No debe maximizarse si deja el cultivo sin luz o con exceso de calor.",
     },
     {
         "variable": "ePAR_S1_mean",
-        "nombre_simple": "Luz util para el cultivo",
+        "nombre_simple": "Luz útil para el cultivo",
         "uso_en_sistema": "Aproxima la luz que puede usar la planta para crecer.",
-        "restriccion_biologica": "Valores bajos durante muchas horas pueden limitar crecimiento.",
+        "restriccion_biologica": "Valores bajos durante muchas horas pueden limitar el crecimiento.",
     },
     {
         "variable": "VWC_S1_mean",
         "nombre_simple": "Humedad del suelo",
         "uso_en_sistema": "Indica si el cultivo tiene agua suficiente.",
-        "restriccion_biologica": "Por debajo de 20 se considera riesgo de falta de agua.",
+        "restriccion_biologica": "Por debajo de 20% se considera riesgo de falta de agua.",
     },
     {
         "variable": "Tsoil_S1_mean",
         "nombre_simple": "Temperatura del suelo",
-        "uso_en_sistema": "Ayuda a detectar estres por calor o frio en raiz.",
-        "restriccion_biologica": "Por encima de 30 C se prioriza proteger el cultivo.",
+        "uso_en_sistema": "Ayuda a detectar estrés por calor o frío en raíz.",
+        "restriccion_biologica": "Por encima de 30 °C se prioriza proteger el cultivo.",
     },
     {
         "variable": "solar_elevation_deg",
         "nombre_simple": "Altura del sol",
-        "uso_en_sistema": "Situa el momento del dia y la utilidad de mover placas.",
-        "restriccion_biologica": "De noche no se recomienda optimizar energia solar.",
+        "uso_en_sistema": "Sitúa el momento del día y la utilidad de mover placas.",
+        "restriccion_biologica": "De noche no se recomienda optimizar energía solar.",
     },
     {
         "variable": "track_mean",
-        "nombre_simple": "Angulo actual de placas",
-        "uso_en_sistema": "Permite comparar la posicion real con el objetivo recomendado.",
-        "restriccion_biologica": "El cambio debe respetar limites fisicos y evitar oscilaciones.",
+        "nombre_simple": "Ángulo actual de placas",
+        "uso_en_sistema": "Permite comparar la posición real con el objetivo recomendado.",
+        "restriccion_biologica": "El cambio debe respetar límites físicos y evitar oscilaciones.",
     },
 ]
 
@@ -53,7 +53,7 @@ TENDER_COVERAGE_ROWS = [
         "id": "i",
         "apartado": "Variables y restricciones",
         "status": "implementado_demo",
-        "entregable": "Catalogo operativo de variables, limites biologicos y uso en decisiones.",
+        "entregable": "Catálogo operativo de variables, límites biológicos y uso en decisiones.",
     },
     {
         "id": "ii",
@@ -65,19 +65,19 @@ TENDER_COVERAGE_ROWS = [
         "id": "iii",
         "apartado": "DSS comparativo",
         "status": "implementado_demo",
-        "entregable": "Comparacion entre recomendacion DQN y regla biologica interpretable.",
+        "entregable": "Comparación entre recomendación DQN y regla biológica interpretable.",
     },
     {
         "id": "iv",
-        "apartado": "Datos sinteticos",
+        "apartado": "Datos sintéticos",
         "status": "implementado_demo",
-        "entregable": "Escenarios que modifican clima, suelo y radiacion alrededor del estado actual.",
+        "entregable": "Escenarios que modifican clima, suelo y radiación alrededor del estado actual.",
     },
     {
         "id": "v",
         "apartado": "Conexion con control agri-PV",
         "status": "implementado_demo",
-        "entregable": "Ley de control candidata con angulo objetivo, accion de placas y fallback.",
+        "entregable": "Ley de control candidata con ángulo objetivo, acción de placas y respaldo.",
     },
 ]
 
@@ -117,6 +117,25 @@ def _latest_representative_record(model_df: pd.DataFrame) -> pd.Series:
     valid = model_df.copy()
     if "Time" in valid.columns:
         valid = valid.sort_values("Time")
+
+    scored = valid.copy(deep=True).reset_index(drop=True)
+    scored.loc[:, "_gpoa_demo"] = pd.to_numeric(scored.get("GPOA_mean", 0.0), errors="coerce").fillna(0.0)
+    scored.loc[:, "_solar_demo"] = pd.to_numeric(scored.get("solar_elevation_deg", 0.0), errors="coerce").fillna(0.0)
+    crop_light = scored.get("ePAR_S1_mean", scored.get("PAR_S1", 0.0))
+    scored.loc[:, "_crop_light_demo"] = pd.to_numeric(crop_light, errors="coerce").fillna(0.0)
+
+    daylight = scored[
+        (scored["_solar_demo"] >= 8.0)
+        & ((scored["_gpoa_demo"] > 0.0) | (scored["_crop_light_demo"] > 0.0))
+    ]
+    if not daylight.empty:
+        recent_start = int(len(daylight) * 0.60)
+        recent_daylight = daylight.iloc[recent_start:] if len(daylight) > 4 else daylight
+        return recent_daylight.sort_values(["_gpoa_demo", "_crop_light_demo"]).iloc[-1].drop(
+            labels=["_gpoa_demo", "_solar_demo", "_crop_light_demo"],
+            errors="ignore",
+        )
+
     for column in ("GPOA_mean", "track_mean", "solar_elevation_deg"):
         if column in valid.columns:
             rows = valid[pd.to_numeric(valid[column], errors="coerce").notna()]
@@ -163,6 +182,7 @@ def build_digital_twin_snapshot(record: pd.Series, crop_record: pd.Series | None
         "crop_light": round(_finite_float(record.get("ePAR_S1_mean", record.get("PAR_S1")), 0.0), 2),
         "panel_light_wm2": round(_finite_float(record.get("GPOA_mean"), 0.0), 2),
         "stress_type": str(crop_record.get("stress_type", "estable")),
+        "snapshot_note": "Instantánea diurna representativa del histórico para enseñar la demo.",
     }
 
 
@@ -179,22 +199,22 @@ def build_biological_baseline(record: pd.Series, crop_record: pd.Series | None =
         panel_action = "posicion_segura"
         crop_action = "sin_manejo_directo"
         target_angle = 0.0
-        reason = "Sin sol util, la prioridad es dejar las placas en posicion segura."
+        reason = "Sin sol útil, la prioridad es dejar las placas en posición segura."
     elif vwc < 20 or tsoil > 30:
         panel_action = "aumentar_sombreado"
         crop_action = "activar_riego" if vwc < 20 else "proteccion_calor"
         target_angle = -25.0
-        reason = "El cultivo muestra riesgo por agua o temperatura; se prioriza proteccion."
+        reason = "El cultivo muestra riesgo por agua o temperatura; se prioriza protección."
     elif epar < 200 and gpoa > 300:
         panel_action = "reducir_sombreado"
         crop_action = "vigilar_crecimiento"
         target_angle = _clip(current_angle * 0.5, -25.0, 25.0)
-        reason = "Hay energia en placas pero poca luz para el cultivo; se abre algo mas la sombra."
+        reason = "Hay energía en placas pero poca luz para el cultivo; se abre algo más la sombra."
     elif gpoa > 700:
         panel_action = "mantener_placas"
         crop_action = "sin_manejo_directo"
         target_angle = _clip(current_angle, -25.0, 25.0)
-        reason = "La energia disponible es alta y el cultivo no muestra alerta fuerte."
+        reason = "La energía disponible es alta y el cultivo no muestra alerta fuerte."
     else:
         panel_action = "mantener_placas"
         crop_action = str(crop_record.get("crop_management_action", "sin_manejo_directo"))
@@ -223,7 +243,7 @@ def build_dqn_recommendation(
             "panel_action": "sin_recomendacion",
             "crop_management_action": "sin_recomendacion",
             "confidence_label": "Sin datos",
-            "explanation": "No hay politica DQN disponible para este cultivo.",
+            "explanation": "No hay política DQN disponible para este cultivo.",
         }
     record_for_policy = pd.Series(record).copy()
     if crop_record is not None and "stress_type" in crop_record.index:
@@ -238,7 +258,7 @@ def build_dqn_recommendation(
             "panel_action": "sin_recomendacion",
             "crop_management_action": "sin_recomendacion",
             "confidence_label": "Sin datos",
-            "explanation": "La politica DQN no encontro un estado comparable.",
+            "explanation": "La política DQN no encontró un estado comparable.",
         }
 
     confidence = _finite_float(recommendation.get("rl_confidence"), float("nan"))
@@ -258,7 +278,7 @@ def build_dqn_recommendation(
         "crop_management_action": str(recommendation.get("crop_management_action", "sin_manejo_directo")),
         "confidence_label": confidence_label,
         "reward": round(_finite_float(recommendation.get("rl_reward"), 0.0), 4),
-        "explanation": "Recomendacion aprendida comparando estados historicos similares.",
+        "explanation": "Recomendación aprendida comparando estados históricos similares.",
     }
 
 
@@ -272,7 +292,7 @@ def compare_dss_decisions(dqn: dict[str, Any], biological: dict[str, Any]) -> di
     panel_match = dqn.get("panel_action") == biological.get("panel_action")
     crop_match = dqn.get("crop_management_action") == biological.get("crop_management_action")
     if panel_match and crop_match:
-        conclusion = "Los modelos coinciden: decision de bajo riesgo operativo."
+        conclusion = "Los modelos coinciden: decisión de bajo riesgo operativo."
     elif panel_match:
         conclusion = "Coinciden en placas, pero difieren en manejo del cultivo."
     else:
@@ -306,10 +326,10 @@ def build_synthetic_scenarios(record: pd.Series) -> pd.DataFrame:
     }
     scenario_defs = [
         ("Estado actual", 1.0, 0.0, 1.0, 1.0, 0.0, "Referencia para comparar decisiones."),
-        ("Dia mas seco", 0.75, 1.5, 0.95, 1.05, 2.0, "Comprueba respuesta ante falta de agua."),
-        ("Dia mas calido", 0.95, 4.0, 0.90, 1.05, 4.0, "Comprueba proteccion ante calor."),
-        ("Menos radiacion", 1.05, -1.0, 0.65, 0.60, -8.0, "Comprueba si merece mover placas con poca energia."),
-        ("Final del dia", 1.0, -2.0, 0.25, 0.20, -30.0, "Comprueba que la energia cae hacia cierre de dia."),
+        ("Día más seco", 0.75, 1.5, 0.95, 1.05, 2.0, "Comprueba respuesta ante falta de agua."),
+        ("Día más cálido", 0.95, 4.0, 0.90, 1.05, 4.0, "Comprueba protección ante calor."),
+        ("Menos radiación", 1.05, -1.0, 0.65, 0.60, -8.0, "Comprueba si merece mover placas con poca energía."),
+        ("Final del día", 1.0, -2.0, 0.25, 0.20, -30.0, "Comprueba que la energía cae hacia cierre de día."),
     ]
     rows = []
     for name, vwc_factor, tsoil_delta, epar_factor, gpoa_factor, solar_delta, usage in scenario_defs:
@@ -349,9 +369,9 @@ def build_control_law_proposal(dqn: dict[str, Any], biological: dict[str, Any], 
         "panel_action": dqn.get("panel_action") if has_dqn_angle else biological.get("panel_action"),
         "crop_management_action": dqn.get("crop_management_action") if has_dqn_angle else biological.get("crop_management_action"),
         "decision_source": source,
-        "operational_mode": "supervisado" if needs_review else "automatico_con_guardarrailes",
-        "safety_limits": "Mantener angulo entre -25 y 25 grados y revisar si DQN y regla biologica discrepan.",
-        "fallback": "Si faltan datos o hay desacuerdo fuerte, aplicar regla biologica simple.",
+        "operational_mode": "supervisado" if needs_review else "automatico_supervisado",
+        "safety_limits": "Mantener ángulo entre -25 y 25 grados y revisar si DQN y regla biológica discrepan.",
+        "fallback": "Si faltan datos o hay desacuerdo fuerte, aplicar regla biológica simple.",
     }
 
 
