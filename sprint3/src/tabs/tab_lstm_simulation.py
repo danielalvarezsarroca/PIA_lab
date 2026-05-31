@@ -265,6 +265,21 @@ def build_prediction_frame_if_available(
     return build_prediction_delta_frame(current, predicted)
 
 
+def try_predict_dashboard_next_state(**kwargs: Any) -> dict[str, Any]:
+    try:
+        return {"prediction": predict_dashboard_next_state(**kwargs), "message": ""}
+    except ModuleNotFoundError as exc:
+        if exc.name in {"joblib", "torch"}:
+            return {
+                "prediction": None,
+                "message": (
+                    "Simulación LSTM no disponible: falta la librería opcional "
+                    f"{exc.name}. El resto del panel puede seguir usándose."
+                ),
+            }
+        raise
+
+
 def _section_title(title: str, subtitle: str = "") -> None:
     st.markdown(
         f"""
@@ -476,7 +491,7 @@ def _render_stream_fragment(
             st.warning("Faltan archivos necesarios para calcular la previsión.")
         else:
             try:
-                predicted = predict_dashboard_next_state(
+                result = try_predict_dashboard_next_state(
                     recent_window=state["recent_window"],
                     tracker_angle_deg=float(state["current_row"].get("tracker_angle_deg", 0.0)),
                     irrigation_on=bool(state["current_row"].get("irrigation_on", False)),
@@ -484,8 +499,12 @@ def _render_stream_fragment(
                     model_path=WORLD_MODEL_LSTM_PATH,
                     scalers_path=WORLD_MODEL_LSTM_SCALERS_PATH,
                 )
+                if result["message"]:
+                    st.warning(result["message"])
+                predicted = result["prediction"]
                 prediction_frame = build_prediction_frame_if_available(state["current_row"], predicted, True)
-                st.dataframe(prediction_frame, use_container_width=True, hide_index=True)
+                if not prediction_frame.empty:
+                    st.dataframe(prediction_frame, use_container_width=True, hide_index=True)
             except (ValueError, KeyError, RuntimeError, FileNotFoundError) as exc:
                 st.warning(f"Previsión no disponible: {exc}")
 

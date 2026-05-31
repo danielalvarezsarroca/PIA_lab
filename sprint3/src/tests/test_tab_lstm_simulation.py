@@ -10,6 +10,7 @@ from tabs.tab_lstm_simulation import (
     build_week_windows,
     build_world_model_training_command,
     lstm_retraining_command,
+    try_predict_dashboard_next_state,
     resolve_stream_slider_bounds,
     select_week_stream_state,
     select_stream_cursor_state,
@@ -159,6 +160,28 @@ def test_prediction_comparison_frame_requires_artifacts():
 
     assert build_prediction_frame_if_available(current, predicted, False).empty
     assert not build_prediction_frame_if_available(current, predicted, True).empty
+
+
+def test_lstm_prediction_missing_optional_dependency_does_not_crash(monkeypatch):
+    def _missing_joblib(**_kwargs):
+        exc = ModuleNotFoundError("No module named 'joblib'")
+        exc.name = "joblib"
+        raise exc
+
+    monkeypatch.setattr("tabs.tab_lstm_simulation.predict_dashboard_next_state", _missing_joblib)
+
+    result = try_predict_dashboard_next_state(
+        recent_window=_stream(12),
+        tracker_angle_deg=0.0,
+        irrigation_on=False,
+        irrigation_dose_mm=0.0,
+        model_path="missing.pt",
+        scalers_path="missing.joblib",
+    )
+
+    assert result["prediction"] is None
+    assert "joblib" in result["message"]
+    assert "Simulación" in result["message"]
 
 
 def test_artifacts_available_requires_model_scalers_and_metrics():
