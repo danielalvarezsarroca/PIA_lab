@@ -41,13 +41,13 @@ La pestana permite mostrar en directo:
 
 ## Plan temporal propuesto
 
-| Semana | Trabajo | Entregable |
+| Semana | Work package | Entregable |
 | --- | --- | --- |
-| 1 | Cerrar contrato de datos, variables, restricciones y criterios de seguridad. | Documento de variables, restricciones y API de datos. |
-| 2-3 | Calibrar modelo biologico y robustecer gemelo digital. | Gemelo digital validado con historico y primeras metricas de error. |
-| 4-5 | Crear modulo Data Augmentation y comparador DSS biologico vs data-driven. | Generador de escenarios y vista de comparacion de modelos. |
-| 6-7 | Integrar DSS con control del piloto en modo sombra. | API de recomendaciones, limites de seguridad y pruebas en seco. |
-| 8 | Validacion, documentacion, transferencia y cierre. | Informe final, demo, manual de uso y plan de despliegue. |
+| 1 | WP1 - Variables biologicas y restricciones | Catalogo agronomico, matriz de variables y criterios de comparacion. |
+| 2 | WP2 - Data augmentation | Modulo sintetico reproducible: interpolacion, riego simulado y escenarios basicos. |
+| 3 | WP3 - Gemelo digital offline | Simulador inicial con world model, metricas de ajuste y separacion real/sintetico. |
+| 4 | WP4 - DSS comparativo | Vista cliente que compara modelo biologico, DQN y explicacion de discrepancias. |
+| 5 | WP5 + QA - Integracion supervisada | Demo final, especificacion de control seguro, validacion y documentacion. |
 
 ## Organizacion del trabajo
 
@@ -57,18 +57,23 @@ La pestana permite mostrar en directo:
 - Validacion de piloto: modo sombra, comparacion historica, pruebas en campo y criterios de aceptacion.
 - Gestion: seguimiento semanal, riesgos, presupuesto y coordinacion con la empresa.
 
-## Presupuesto orientativo
+## Presupuesto propuesto de continuidad
 
-| Partida | Importe |
+| Bloque | Importe |
 | --- | ---: |
-| Personal tecnico y agronomico | 30.000 EUR |
-| Infraestructura cloud/datos | 2.000 EUR |
-| Integracion piloto y validacion | 3.500 EUR |
-| Documentacion, formacion y transferencia | 1.500 EUR |
-| Contingencia 10% | 3.700 EUR |
-| **Total sin IVA** | **40.700 EUR** |
+| Modelos biologicos y restricciones agronomicas | 3.000 EUR |
+| Modulo de datos sinteticos y data augmentation | 4.000 EUR |
+| Gemelo digital y world model | 5.000 EUR |
+| DSS comparativo y dashboard cliente | 5.000 EUR |
+| Integracion con datos reales y control agri-PV | 5.500 EUR |
+| Validacion piloto y QA | 2.500 EUR |
+| Gestion de proyecto y documentacion | 2.000 EUR |
+| Contingencia tecnica | 1.500 EUR |
+| **Total continuidad licitacion** | **28.500 EUR** |
+| Coste acumulado prototipo SAMO | 35.860 EUR |
+| **Total programa completo** | **64.360 EUR** |
 
-Supuestos: 8 semanas de trabajo, equipo reducido, sin compra de sensores ni actuadores nuevos, y disponibilidad tecnica de la planta piloto para integrar datos y control.
+Supuestos: continuidad intensiva de 5 semanas desde el prototipo SAMO actual, sin compra de sensores ni actuadores nuevos, integracion real primero en modo observador/supervisado, y validacion dependiente de disponibilidad de planta piloto y apoyo agronomico.
 
 ## Guion corto para la presentacion
 
@@ -76,7 +81,7 @@ La licitacion pide tres cosas: entender el sistema biologico, simularlo y tomar 
 
 La mejora que podemos cuantificar hoy es offline: en 23.043 registros historicos, nuestro sistema mejora el indice energia-cultivo un 24,19% y el reward multiobjetivo un 61,52% respecto a las decisiones historicas. Esto no sustituye una prueba en campo, pero demuestra que hay margen real de optimizacion.
 
-Para completar la licitacion faltan tres pasos claros: formalizar el comparador entre modelo biologico y modelo data-driven, convertir los escenarios sinteticos en un modulo de Data Augmentation reutilizable y conectar el DSS al control real del piloto en modo seguro. Proponemos hacerlo en 8 semanas, con un presupuesto orientativo de 40.700 EUR + IVA.
+Para completar la licitacion faltan tres pasos claros: formalizar el comparador entre modelo biologico y modelo data-driven, convertir los escenarios sinteticos en un modulo de Data Augmentation reutilizable y conectar el DSS al control real del piloto en modo seguro. Proponemos hacerlo en 5 semanas, con una continuidad estimada de 28.500 EUR desde el prototipo actual. Si se presenta como programa completo, el total es 64.360 EUR al sumar los 35.860 EUR ya ejecutados.
 
 ## Verificacion
 

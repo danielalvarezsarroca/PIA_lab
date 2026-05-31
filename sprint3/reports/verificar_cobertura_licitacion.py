@@ -37,12 +37,10 @@ REQUIRED_REQUIREMENT_FIELDS = {
 }
 REQUIRED_BUDGET_FIELDS = {
     "currency",
-    "personnel",
-    "cloud_and_data_infrastructure",
-    "pilot_integration_and_field_validation",
-    "documentation_training_and_transfer",
-    "contingency_10_pct",
-    "total_without_vat",
+    "prototype_executed_cost",
+    "continuity_total",
+    "total_program",
+    "work_packages",
     "assumptions",
 }
 ALLOWED_STATUSES = {"implemented", "partial", "planned"}
@@ -130,14 +128,51 @@ def _validate_budget(data: dict[str, Any], errors: list[str]) -> None:
         if not _is_present(budget.get(field)):
             errors.append(f"Falta campo de presupuesto: {field}")
 
-    numeric_fields = REQUIRED_BUDGET_FIELDS - {"currency", "assumptions"}
-    for field in sorted(numeric_fields):
+    if budget.get("currency") != "EUR":
+        errors.append("Presupuesto currency: debe ser EUR")
+
+    for field in ("prototype_executed_cost", "continuity_total", "total_program"):
         value = budget.get(field)
         if not isinstance(value, (int, float)) or value <= 0:
             errors.append(f"Presupuesto {field}: debe ser numerico y positivo")
 
-    if isinstance(budget.get("assumptions"), list) and len(budget["assumptions"]) < 2:
+    assumptions = budget.get("assumptions")
+    if isinstance(assumptions, list) and len(assumptions) < 2:
         errors.append("Presupuesto: assumptions debe incluir al menos dos supuestos")
+
+    work_packages = budget.get("work_packages", [])
+    package_total = 0.0
+    if not isinstance(work_packages, list) or not work_packages:
+        errors.append("Presupuesto work_packages: debe ser una lista no vacia")
+    else:
+        for index, package in enumerate(work_packages, start=1):
+            if not isinstance(package, dict):
+                errors.append(f"Presupuesto work_package {index}: debe ser objeto")
+                continue
+            for field in ("wp", "block", "amount_eur"):
+                if not _is_present(package.get(field)):
+                    errors.append(f"Presupuesto work_package {index}: falta campo {field}")
+            amount = package.get("amount_eur")
+            if not isinstance(amount, (int, float)) or amount <= 0:
+                errors.append(f"Presupuesto work_package {index}: amount_eur debe ser positivo")
+            else:
+                package_total += float(amount)
+
+    continuity = budget.get("continuity_total")
+    prototype = budget.get("prototype_executed_cost")
+    total_program = budget.get("total_program")
+    if (
+        isinstance(continuity, (int, float))
+        and package_total
+        and abs(package_total - float(continuity)) > 0.01
+    ):
+        errors.append("Presupuesto: suma de work_packages no coincide con continuity_total")
+    if all(isinstance(value, (int, float)) for value in (prototype, continuity, total_program)):
+        expected_total = float(prototype) + float(continuity)
+        if abs(expected_total - float(total_program)) > 0.01:
+            errors.append(
+                "Presupuesto: prototype_executed_cost + continuity_total no coincide con total_program"
+            )
 
 
 def main() -> None:
@@ -167,7 +202,8 @@ def main() -> None:
     print(
         "Preguntas de empresa: respuesta actual, faena restante, plan, organizacion y presupuesto cubiertos"
     )
-    print(f"Presupuesto orientativo: {budget['total_without_vat']} {budget['currency']} + IVA")
+    print(f"Presupuesto continuidad: {budget['continuity_total']} {budget['currency']}")
+    print(f"Programa completo: {budget['total_program']} {budget['currency']}")
 
 
 if __name__ == "__main__":

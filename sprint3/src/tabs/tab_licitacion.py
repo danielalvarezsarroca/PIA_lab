@@ -293,23 +293,87 @@ def _friendly_variables(frame: pd.DataFrame) -> pd.DataFrame:
 
 def _render_plan_budget() -> None:
     st.markdown("#### Plan temporal y presupuesto")
-    cols = st.columns(4)
+    cols = st.columns(5)
     phases = [
-        ("Fase 1", "2 semanas", "Datos, acceso y validación de sensores."),
-        ("Fase 2", "4 semanas", "Gemelo digital y reglas biológicas calibradas."),
-        ("Fase 3", "4 semanas", "Datos sintéticos, entrenamiento y evaluación DSS."),
-        ("Fase 4", "4-6 semanas", "Integración con control y prueba piloto supervisada."),
+        ("Semana 1", "WP1", "Variables biologicas, restricciones y criterios de comparacion."),
+        ("Semana 2", "WP2", "Data augmentation: interpolacion, riego sintetico y escenarios."),
+        ("Semana 3", "WP3", "Gemelo digital offline, world model y metricas de ajuste."),
+        ("Semana 4", "WP4", "DSS comparativo: modelo biologico, DQN y explicacion."),
+        ("Semana 5", "WP5 + QA", "Integracion supervisada, validacion final y documentacion."),
     ]
     for col, (title, value, caption) in zip(cols, phases):
         with col:
             _metric_card(title, value, caption, "#1d232b")
 
+    st.markdown("##### Presupuesto de continuidad")
+    budget_cols = st.columns(3)
+    with budget_cols[0]:
+        _metric_card("Continuidad licitacion", "28.500 EUR", "Fase piloto de 5 semanas.", "#b85d19")
+    with budget_cols[1]:
+        _metric_card("Prototipo ya ejecutado", "35.860 EUR", "Coste acumulado SAMO.", "#2f80ed")
+    with budget_cols[2]:
+        _metric_card("Programa completo", "64.360 EUR", "Prototipo + continuidad.", "#1d232b")
+
+    budget_rows = pd.DataFrame(
+        [
+            {
+                "WP": "WP1",
+                "Bloque": "Variables biologicas y restricciones",
+                "Importe": "3.000 EUR",
+                "Justificacion": "Rangos, restricciones y validacion agronomica inicial.",
+            },
+            {
+                "WP": "WP2",
+                "Bloque": "Data augmentation",
+                "Importe": "4.000 EUR",
+                "Justificacion": "Interpolacion, riego sintetico, escenarios y cultivos futuros.",
+            },
+            {
+                "WP": "WP3",
+                "Bloque": "Gemelo digital offline",
+                "Importe": "5.000 EUR",
+                "Justificacion": "Mejora del simulador, calibracion principal y world model.",
+            },
+            {
+                "WP": "WP4",
+                "Bloque": "DSS comparativo",
+                "Importe": "5.000 EUR",
+                "Justificacion": "Comparacion de modelos, explicacion y vista cliente.",
+            },
+            {
+                "WP": "WP5",
+                "Bloque": "Integracion supervisada",
+                "Importe": "5.500 EUR",
+                "Justificacion": "API, telemetria, limites de seguridad y pruebas tecnicas.",
+            },
+            {
+                "WP": "WP6",
+                "Bloque": "Gestion y documentacion",
+                "Importe": "2.000 EUR",
+                "Justificacion": "Coordinacion, riesgos, presupuesto y manuales.",
+            },
+            {
+                "WP": "QA",
+                "Bloque": "Validacion piloto y QA",
+                "Importe": "2.500 EUR",
+                "Justificacion": "Protocolo de pruebas, metricas y aceptacion inicial.",
+            },
+            {
+                "WP": "CT",
+                "Bloque": "Contingencia tecnica",
+                "Importe": "1.500 EUR",
+                "Justificacion": "Margen para datos reales, integracion y validacion agronomica.",
+            },
+        ]
+    )
+    st.dataframe(budget_rows, hide_index=True, use_container_width=True)
+
     st.markdown(
         """
         <div class="tender-callout">
-          <strong>Presupuesto orientativo:</strong> 70k-110k EUR para una primera versión de producción
-          con conexión a datos reales, validación agronómica, módulo de datos sintéticos y prueba piloto.
-          La demo actual sirve para defender alcance, arquitectura y viabilidad técnica.
+          <strong>Lectura comercial:</strong> la continuidad de licitacion son 28.500 EUR desde el prototipo SAMO actual.
+          El total del programa completo seria 64.360 EUR al sumar los 35.860 EUR ya ejecutados.
+          La integracion real queda planteada primero en modo observador/supervisado y no incluye compra de sensores o actuadores nuevos.
         </div>
         """,
         unsafe_allow_html=True,

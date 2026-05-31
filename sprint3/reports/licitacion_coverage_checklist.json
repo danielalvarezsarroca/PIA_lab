@@ -33,9 +33,9 @@
       "Conectar el DSS al sistema real de control agri-PV con API, limites de seguridad y pruebas en seco.",
       "Ejecutar validacion experimental en planta piloto para confirmar las estimaciones offline."
     ],
-    "timeline": "8 semanas: 1) contrato de datos y variables, 2-3) gemelo digital y modelo biologico, 4-5) data augmentation y comparador DSS, 6-7) integracion de control y pruebas, 8) validacion, documentacion y transferencia.",
+    "timeline": "5 semanas: WP1 variables biologicas y restricciones, WP2 data augmentation, WP3 gemelo digital offline, WP4 DSS comparativo, WP5 integracion supervisada, validacion final y documentacion.",
     "organization": "Equipo mixto: IA/datos, modelado agronomico, software e integracion, validacion de piloto y gestion de proyecto.",
-    "budget_summary": "Presupuesto orientativo de 40.700 EUR + IVA para completar la faena total, incluyendo personal, infraestructura, integracion, documentacion y contingencia."
+    "budget_summary": "Continuidad estimada de 28.500 EUR desde el prototipo SAMO actual; coste ejecutado 35.860 EUR y programa completo 64.360 EUR."
   },
   "requirements": [
     {
@@ -92,8 +92,16 @@
       "id": "iii",
       "requirement": "Code a decision support system (DSS) for the comparison between biological models based in the literature and data-driven models.",
       "status": "partial",
-      "status_label": "DSS implementado, comparativa formal pendiente",
+      "status_label": "DSS comparativo implementado como demo inicial",
       "evidence": [
+        {
+          "path": "sprint3/src/core/licitacion_system.py",
+          "why": "Construye la demo de licitacion con comparacion entre politica DQN, regla biologica simple, discrepancias y propuesta de control."
+        },
+        {
+          "path": "sprint3/src/tabs/tab_licitacion.py",
+          "why": "Presenta la vista Licitacion DSS con cobertura, gemelo digital, comparacion de modelos, escenarios sinteticos y presupuesto."
+        },
         {
           "path": "sprint3/src/core/agricultural_rules.py",
           "why": "Representa el bloque experto/literatura para interpretar riesgo agronomico."
@@ -103,20 +111,12 @@
           "why": "Implementa politica offline tabular y DQN Double DQN para recomendar acciones multiobjetivo."
         },
         {
-          "path": "sprint3/src/tabs/tab_recomendacion.py",
-          "why": "Muestra la recomendacion del DSS al usuario final."
-        },
-        {
           "path": "sprint3/reports/validacion_offline_mejora_energia_cultivo.md",
           "why": "Compara historico frente a politica DQN y cuantifica mejora offline."
-        },
-        {
-          "path": "sprint3/src/tests/test_rl_policy.py",
-          "why": "Verifica entrenamiento DQN, confianza, penalizaciones y metadatos de reward."
         }
       ],
-      "presentation_message": "El dashboard ya funciona como DSS: combina reglas agronomicas comprensibles y politica DQN para recomendar angulo, placas y riego.",
-      "remaining_work": "Anadir una vista explicita de acuerdo/desacuerdo entre modelo biologico y modelo data-driven, con ranking de variables influyentes.",
+      "presentation_message": "El dashboard ya incorpora una vista DSS de licitacion: compara la recomendacion DQN con una regla biologica simple y muestra acuerdos, discrepancias y acciones candidatas.",
+      "remaining_work": "Sustituir la regla biologica simple por modelos biologicos de literatura mas completos, anadir ranking de variables influyentes y ampliar la comparativa por cultivo/fase.",
       "capacity_to_finish": "Alta: ambos bloques ya estan separados; la comparativa se puede construir encima de salidas existentes."
     },
     {
@@ -172,17 +172,56 @@
   ],
   "budget_eur": {
     "currency": "EUR",
-    "personnel": 30000,
-    "cloud_and_data_infrastructure": 2000,
-    "pilot_integration_and_field_validation": 3500,
-    "documentation_training_and_transfer": 1500,
-    "contingency_10_pct": 3700,
-    "total_without_vat": 40700,
+    "prototype_executed_cost": 35860,
+    "continuity_total": 28500,
+    "total_program": 64360,
+    "work_packages": [
+      {
+        "wp": "WP1",
+        "block": "Variables biologicas y restricciones",
+        "amount_eur": 3000
+      },
+      {
+        "wp": "WP2",
+        "block": "Data augmentation",
+        "amount_eur": 4000
+      },
+      {
+        "wp": "WP3",
+        "block": "Gemelo digital offline",
+        "amount_eur": 5000
+      },
+      {
+        "wp": "WP4",
+        "block": "DSS comparativo",
+        "amount_eur": 5000
+      },
+      {
+        "wp": "WP5",
+        "block": "Integracion supervisada",
+        "amount_eur": 5500
+      },
+      {
+        "wp": "WP6",
+        "block": "Gestion, riesgos y documentacion",
+        "amount_eur": 2000
+      },
+      {
+        "wp": "QA",
+        "block": "Validacion piloto y QA",
+        "amount_eur": 2500
+      },
+      {
+        "wp": "CT",
+        "block": "Contingencia tecnica",
+        "amount_eur": 1500
+      }
+    ],
     "assumptions": [
-      "Equipo reducido durante 8 semanas.",
-      "Uso de infraestructura ligera basada en Python, Streamlit y almacenamiento CSV/API.",
+      "Continuidad intensiva de 5 semanas desde el prototipo SAMO actual.",
       "No incluye compra de sensores nuevos ni actuadores de campo.",
-      "La validacion experimental depende de disponibilidad de la planta piloto."
+      "La conexion real empieza en modo observador/supervisado con limites de seguridad.",
+      "La validacion experimental depende de disponibilidad de la planta piloto y apoyo agronomico."
     ]
   }
 }

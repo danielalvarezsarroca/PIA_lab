@@ -108,4 +108,4 @@ def test_licitacion_tab_renders_demo_contract(monkeypatch):
 
     tab_licitacion.render_tab_licitacion(model, crop_risk, policy)
 
-    assert fake_st.dataframe_calls == 2
+    assert fake_st.dataframe_calls == 3
