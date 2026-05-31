@@ -6,6 +6,21 @@ El proyecto ya no se presenta solo como un dashboard, sino como un prototipo de 
 
 El resultado numerico que podemos defender ahora es una estimacion offline: al aplicar la politica DQN sobre 23.043 registros comparables, el indice energia-cultivo sube de 0,258 a 0,320, una mejora del 24,19%. El reward multiobjetivo sube de 0,322 a 0,519, una mejora del 61,52%. Es una validacion historica, no una prueba experimental en campo.
 
+## Primera version implementada en codigo
+
+La demo de licitacion ya esta implementada en el dashboard como una pestana propia: `Licitacion DSS`.
+El nucleo esta en `sprint3/src/core/licitacion_system.py` y la vista en
+`sprint3/src/tabs/tab_licitacion.py`.
+
+La pestana permite mostrar en directo:
+
+- cobertura de los apartados i-v de la licitacion;
+- variables y restricciones usadas por el sistema;
+- snapshot del gemelo digital con datos historicos reales;
+- comparacion entre regla biologica simple y politica DQN;
+- escenarios sinteticos basicos para probar sequia, calor, baja radiacion y final de dia;
+- primera propuesta de ley de control con modo supervisado y limites de seguridad.
+
 ## Que podemos responder ya
 
 | Apartado de licitacion | Estado | Que tenemos hoy | Como explicarlo |
