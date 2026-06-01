@@ -1,0 +1,574 @@
+﻿\documentclass[11pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{pdflscape}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+\titlespacing*{\section}{0pt}{1.2ex plus .2ex minus .1ex}{0.6ex plus .1ex}
+\titlespacing*{\subsection}{0pt}{0.8ex plus .2ex minus .1ex}{0.4ex plus .1ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Propuesta de licitacion}
+\rhead{SAMO -- PIA-GIA}
+\cfoot{\thepage}
+
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setlength{\parskip}{0.4em}
+\renewcommand{\arraystretch}{1.18}
+
+\begin{document}
+
+% --- Portada ---
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    \includegraphics[width=0.45\textwidth]{upc (1) (2).png}\par
+    \vspace{1.5cm}
+    {\scshape\LARGE Universitat Politècnica de Catalunya \par}
+    \vspace{0.5cm}
+    {\large\color{blue!60!black}\uppercase{Organización: Sostenibilidad y Ciencia} \par}
+    \vspace{2.5cm}
+    {\hrule height 1.5pt \vspace{0.4cm}}
+    {\bfseries\Huge Propuesta de Licitación SAMO \par}
+    \vspace{0.4cm}
+    {\large\itshape Data Augmentation and Decision Support System for agri-PV \par}
+    {\vspace{0.4cm} \hrule height 1.5pt}
+    \vfill
+    {\linewidth=0.8\textwidth
+    \centering
+    \begin{tabular}{rl}
+        \textbf{Equipo:} & Chacorocalfarobar \\
+        \textbf{Curso:} & 2025--2026 \\
+        \textbf{Asignatura:} & PIA-GIA \\
+    \end{tabular}\par}
+    \vspace*{1cm}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Resumen ejecutivo}
+
+La novedad introducida por la empresa reorienta la presentacion final del proyecto: no se trata solo de mostrar el trabajo realizado durante los cuatro sprints, sino de explicar hasta que punto ese trabajo puede servir como base para una licitacion real. La licitacion plantea desarrollar un modulo de \textit{Data Augmentation} y un \textit{Decision Support System} para sistemas agrovoltaicos, con un futuro gemelo digital, comparacion entre modelos biologicos y modelos basados en datos, generacion de datos sinteticos y conexion con el sistema de control de la planta piloto.
+
+El proyecto SAMO ya cubre una parte relevante de esa vision. Se ha construido una base de datos tratada, una primera capa de variables agrovoltaicas, un dashboard estable de apoyo a la decision, reglas interpretables, simulacion de riego, interpolaciones y reconstruccion de trayectorias a 10 minutos, una politica DQN offline para recomendar acciones y un modelo LSTM como aproximacion inicial al modelo del mundo. Ademas, se dispone de validacion offline sobre 23.043 registros historicos comparables y 241 dias, con una mejora estimada de +24,19\% en el indice energia-cultivo y +61,52\% en la recompensa agregada.
+
+La propuesta no debe presentarse como un sistema ya listo para controlar fisicamente la planta. La lectura correcta es mas prudente y mas defendible: SAMO constituye un prototipo funcional y una prueba de capacidad tecnica para ejecutar la licitacion. La parte pendiente consiste en formalizar modelos biologicos de literatura, evolucionar el simulador hacia un gemelo digital validado, ampliar el modulo de datos sinteticos, conectar el DSS con datos en tiempo real y cerrar la integracion con actuadores reales bajo criterios de seguridad.
+
+Este documento organiza la respuesta en el mismo orden que la licitacion: primero se identifica que apartados estan cubiertos con el trabajo hecho, despues se define que falta para completar el alcance, se propone una planificacion temporal y organizacion del equipo, y finalmente se estima un presupuesto de continuidad para convertir el prototipo en una solucion piloto completa.
+
+\newpage
+
+\section{Lectura de la licitacion}
+
+La licitacion se puede resumir en cinco bloques tecnicos:
+
+\begin{enumerate}
+    \item Determinar variables y restricciones biologicas compatibles con modelos biologicos habituales.
+    \item Codificar un gemelo digital util para el piloto y definir como accede a los datos.
+    \item Codificar un DSS para comparar modelos biologicos de literatura y modelos \textit{data-driven}.
+    \item Generar datos sinteticos para acelerar entrenamiento y considerar cultivos futuros.
+    \item Conectar el DSS con el sistema de control agri-PV para determinar mejores leyes de control en la planta piloto real.
+\end{enumerate}
+
+El objetivo de fondo es modelar un sistema dinamico y estocastico, con transitorios lentos, donde las decisiones sobre placas afectan tanto a energia como a crecimiento vegetal. La empresa no busca solo un dashboard, sino una arquitectura que permita analizar interacciones entre control fotovoltaico, microclima y cultivo, comparar modelos, acelerar experimentacion mediante datos sinteticos y orientar decisiones de control.
+
+\subsection{Cambio de enfoque para la presentacion}
+
+El cambio principal respecto a una presentacion academica de sprint es que el discurso debe pasar de:
+
+\begin{quote}
+``Hemos desarrollado un dashboard y modelos de decision para el proyecto.''
+\end{quote}
+
+a:
+
+\begin{quote}
+``Hemos desarrollado una primera version funcional de un sistema de ayuda a la decision agri-PV, validada offline con datos historicos y ampliada con simulacion. Este prototipo cubre una parte relevante de la licitacion y define una hoja de ruta realista para llegar a un gemelo digital conectado al piloto.''
+\end{quote}
+
+Esta reformulacion evita sobreprometer y, al mismo tiempo, permite mostrar valor. El equipo ya dispone de datos tratados, modelos, dashboard, simulacion, metricas y experiencia gestionando riesgos reales. Lo que falta no invalida el trabajo hecho; define la fase de industrializacion y validacion.
+
+\newpage
+
+\section{Respuesta a los apartados de la licitacion}
+
+\subsection{Mapa general de cobertura}
+
+\begin{longtable}{p{0.26\linewidth}p{0.30\linewidth}p{0.34\linewidth}}
+\caption{Cobertura actual de los requisitos de licitacion}\\
+\toprule
+\textbf{Requisito de la licitacion} & \textbf{Trabajo ya realizado} & \textbf{Trabajo restante} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requisito de la licitacion} & \textbf{Trabajo ya realizado} & \textbf{Trabajo restante} \\
+\midrule
+\endhead
+(i) Variables y restricciones biologicas & Se han usado variables de radiacion, ePAR, VWC, temperatura de suelo, temperatura del aire, viento, zona, cultivo y posicion de placas. Se han definido rangos agronomicos y riesgo por cultivo. & Formalizar restricciones contra modelos biologicos de literatura, validar umbrales con especialista agricola y diferenciar mas etapas fenologicas. \\ \addlinespace
+(ii) Gemelo digital del piloto & Existe una primera aproximacion mediante dataset a 10 minutos, simulacion de riego, reconstruccion de humedad/temperatura y LSTM como modelo del mundo. & Convertirlo en gemelo digital completo, conectado a datos reales, con calibracion fisica, validacion de campo y versionado de escenarios. \\ \addlinespace
+(iii) DSS comparativo & El dashboard ya actua como DSS inicial: visualiza estado, series, recomendaciones y alertas. El backend incluye DQN offline, reglas y metricas interpretables. & Incorporar modelos biologicos explicitos y una vista que compare acuerdos/desacuerdos entre modelos fisicos, biologicos y data-driven. \\ \addlinespace
+(iv) Datos sinteticos & Ya se ha implementado una primera generacion sintetica mediante interpolaciones, simulacion de riego, ruido controlado, trayectorias a 10 minutos y variables derivadas de humedad y temperatura de suelo. & Ampliar el modulo a mas cultivos, mas condiciones climaticas, escenarios extremos, validacion estadistica y generacion parametrizable para entrenamiento. \\ \addlinespace
+(v) Conexion con control agri-PV & El sistema recomienda acciones sobre placas y riego de forma offline, pero no controla actuadores reales. & Integrar telemetria, API de control, limites de seguridad, modo supervisado, pruebas en sombra y validacion progresiva en piloto. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Apartado (i): variables y restricciones biologicas}
+
+El proyecto ya identifica y utiliza variables relevantes para la interaccion energia-cultivo:
+
+\begin{itemize}
+    \item radiacion disponible y radiacion util para cultivo mediante ePAR/PAR;
+    \item humedad volumetrica del suelo (VWC);
+    \item temperatura del suelo;
+    \item temperatura del aire y viento como contexto ambiental;
+    \item posicion y regimen de las placas;
+    \item zona experimental S1/S2/R1;
+    \item cultivo seleccionado y rangos favorables de crecimiento.
+\end{itemize}
+
+La parte biologica esta cubierta como primera aproximacion operativa. Se han definido rangos de cultivo y se ha tratado la parte agronomica como componente de recompensa. Sin embargo, para responder completamente a la licitacion falta contrastar esos rangos con modelos biologicos de literatura: necesidades hidricas por fase, respuesta a temperatura, radiacion fotosinteticamente activa, crecimiento acumulado y posibles penalizaciones por estres.
+
+\subsection{Apartado (ii): gemelo digital para el piloto}
+
+SAMO no dispone aun de un gemelo digital industrial completo, pero si contiene los elementos de una primera version:
+
+\begin{itemize}
+    \item dataset maestro con granularidad de 10 minutos;
+    \item reconstruccion temporal a partir de lecturas historicas;
+    \item interpolacion de variables para poder simular transiciones mas frecuentes;
+    \item simulacion de riego y de efectos sobre humedad/temperatura de suelo;
+    \item separacion entre variables exogenas, acciones y estado interno;
+    \item modelo LSTM para aproximar la evolucion futura del sistema.
+\end{itemize}
+
+La propuesta para la licitacion debe definir este punto como \textbf{gemelo digital inicial o prototipo de world model}. El salto pendiente es conectarlo con datos vivos del piloto, calibrarlo contra observaciones reales y permitir que sea usado para ensayar politicas antes de aplicarlas fisicamente.
+
+\subsection{Apartado (iii): DSS para comparar modelos}
+
+El dashboard desarrollado funciona ya como una primera capa DSS. Permite:
+
+\begin{itemize}
+    \item consultar estado general del sistema;
+    \item explorar series temporales;
+    \item revisar recomendaciones;
+    \item visualizar alertas;
+    \item interpretar reglas y variables relevantes;
+    \item comunicar metricas de mejora offline.
+\end{itemize}
+
+El componente que falta para cubrir literalmente la licitacion es la comparacion formal entre modelos biologicos y modelos data-driven. La propuesta es ampliar el DSS con una vista comparativa donde el usuario pueda observar:
+
+\begin{itemize}
+    \item recomendacion del modelo biologico;
+    \item recomendacion del modelo data-driven;
+    \item grado de acuerdo;
+    \item variables que explican la diferencia;
+    \item riesgo asociado a seguir una u otra recomendacion.
+\end{itemize}
+
+\subsection{Apartado (iv): generacion de datos sinteticos}
+
+Este apartado no parte de cero. Durante el Sprint 4 ya se ha implementado una primera capa de datos sinteticos:
+
+\begin{itemize}
+    \item interpolacion de lecturas historicas para pasar de una frecuencia limitada a trayectorias mas densas;
+    \item generacion de un dataset a 10 minutos;
+    \item simulacion de riego con diferentes intervalos y cantidades;
+    \item adicion de ruido controlado para evitar trayectorias excesivamente deterministas;
+    \item reconstruccion de humedad y temperatura del suelo bajo hipotesis explicitas;
+    \item creacion de variables como tiempo desde ultimo riego, estado de riego y deltas respecto a zonas de referencia.
+\end{itemize}
+
+La parte pendiente consiste en convertir esta primera implementacion en un modulo formal de \textit{Data Augmentation}: parametrizable, validado estadisticamente, reusable para distintos cultivos y capaz de generar escenarios climaticos, hidricos y de operacion de placas.
+
+\subsection{Apartado (v): conexion con control real}
+
+Actualmente el sistema recomienda, simula y valida offline. No ejecuta acciones sobre la planta. Esta separacion es correcta para el estado actual, porque la integracion con actuadores requiere una capa de seguridad que no puede improvisarse.
+
+Para completar la licitacion se propone una integracion progresiva:
+
+\begin{enumerate}
+    \item modo observador: el DSS recomienda, pero no actua;
+    \item modo supervisado: un operador confirma o rechaza la accion;
+    \item modo semiautomatico: acciones permitidas solo dentro de limites seguros;
+    \item modo piloto controlado: ejecucion real en ventanas de prueba;
+    \item modo operativo: control integrado con monitorizacion, logs y rollback.
+\end{enumerate}
+
+\newpage
+
+\section{Trabajo restante y capacidad de finalizacion}
+
+\subsection{Trabajo pendiente por bloques}
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.26\linewidth}}
+\caption{Trabajo restante para completar la licitacion}\\
+\toprule
+\textbf{Bloque} & \textbf{Tareas pendientes} & \textbf{Capacidad actual del equipo} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Bloque} & \textbf{Tareas pendientes} & \textbf{Capacidad actual del equipo} \\
+\midrule
+\endhead
+Modelos biologicos & Revisar literatura, parametrizar cultivos, definir restricciones por etapa, validar umbrales. & Alta para integracion tecnica; requiere apoyo experto agronomico externo. \\ \addlinespace
+Gemelo digital & Formalizar simulador, calibrar parametros, conectar datos reales, versionar escenarios. & Media-alta: ya existe world model inicial, pero falta validacion fisica. \\ \addlinespace
+DSS comparativo & Integrar modelo biologico, modelo data-driven y explicacion de discrepancias en dashboard. & Alta: el dashboard y backend ya ofrecen base funcional. \\ \addlinespace
+Data augmentation & Industrializar interpolaciones, riego simulado y escenarios sinteticos; incluir mas cultivos y clima. & Alta: ya existe una primera implementacion con trayectorias a 10 minutos. \\ \addlinespace
+Control real & Diseñar API, limites de seguridad, telemetria, actuadores, pruebas supervisadas. & Media: requiere informacion tecnica de la planta y colaboracion con el equipo de control. \\ \addlinespace
+Validacion piloto & Definir protocolo experimental, comparar recomendaciones y medir impacto real. & Media: requiere tiempo de campo y datos de rendimiento agricola. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Capacidad demostrada por el proyecto}
+
+La capacidad de finalizacion se apoya en resultados ya obtenidos:
+
+\begin{itemize}
+    \item se ha trabajado con datos reales de sensores agrovoltaicos;
+    \item se ha construido un pipeline reproducible;
+    \item se han detectado y documentado limitaciones reales de datos;
+    \item se ha creado un dashboard estable;
+    \item se ha pasado de reglas e indicadores a una politica DQN offline;
+    \item se ha implementado simulacion de riego y generacion sintetica inicial;
+    \item se ha entrenado un LSTM como primer modelo dinamico;
+    \item se han ejecutado tests automatizados y validacion offline;
+    \item se ha gestionado rollback de frontend, archivos grandes y desviaciones tecnicas sin romper el entregable.
+\end{itemize}
+
+Por tanto, el equipo puede defender que no parte de una idea teorica, sino de una base ya probada. La finalizacion de la licitacion exige mas validacion, datos y conexion fisica, pero el riesgo tecnico inicial se ha reducido porque ya existen componentes funcionales.
+
+\newpage
+
+\section{Planificacion temporal propuesta}
+
+\subsection{Estrategia de ejecucion}
+
+Se propone una planificacion intensiva de 5 semanas para evolucionar el prototipo SAMO hacia una propuesta piloto defendible. El objetivo no es cerrar un despliegue industrial completo, sino entregar una version ampliada y demostrable que responda a la licitacion: variables biologicas, data augmentation, gemelo digital offline, DSS comparativo y preparacion de integracion con control en modo supervisado.
+
+\begin{longtable}{p{0.13\linewidth}p{0.23\linewidth}p{0.34\linewidth}p{0.20\linewidth}}
+\caption{Plan temporal propuesto para completar la licitacion}\\
+\toprule
+\textbf{Fase} & \textbf{Semanas} & \textbf{Objetivo} & \textbf{Entregable} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Fase} & \textbf{Semanas} & \textbf{Objetivo} & \textbf{Entregable} \\
+\midrule
+\endhead
+F1 & Semana 1 & Formalizar variables biologicas, restricciones y criterios de comparacion. & Catalogo agronomico y matriz de variables. \\ \addlinespace
+F2 & Semana 2 & Consolidar data augmentation ya iniciado: interpolaciones, riego sintetico y escenarios basicos. & Modulo sintetico reproducible y documentado. \\ \addlinespace
+F3 & Semana 3 & Ajustar world model y gemelo digital offline con trayectorias historicas/simuladas. & Simulador offline con metricas de ajuste. \\ \addlinespace
+F4 & Semana 4 & Ampliar DSS para comparar modelo biologico, modelo data-driven y politica DQN. & Dashboard/DSS comparativo y vista cliente. \\ \addlinespace
+F5 & Semana 5 & Preparar integracion supervisada, validacion final y documentacion de entrega. & Demo final, informe tecnico y plan de control real. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Work packages}
+
+El trabajo se organiza en paquetes cerrados para facilitar seguimiento, reparto de responsabilidades y validacion semanal. Cada paquete produce una salida verificable y se apoya en componentes ya existentes del prototipo SAMO.
+
+\begin{longtable}{p{0.12\linewidth}p{0.25\linewidth}p{0.28\linewidth}p{0.17\linewidth}p{0.10\linewidth}}
+\caption{Work packages propuestos}\\
+\toprule
+\textbf{WP} & \textbf{Nombre} & \textbf{Contenido} & \textbf{Entregable} & \textbf{Semana} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{WP} & \textbf{Nombre} & \textbf{Contenido} & \textbf{Entregable} & \textbf{Semana} \\
+\midrule
+\endhead
+WP1 & Variables biologicas y restricciones & Revision de variables disponibles, cultivos, rangos, fases y restricciones biologicas basicas. & Matriz biologica & 1 \\ \addlinespace
+WP2 & Data augmentation & Consolidacion de interpolaciones, riego sintetico, ruido controlado, escenarios y dataset a 10 minutos. & Dataset sintetico v1 & 2 \\ \addlinespace
+WP3 & Gemelo digital offline & Ajuste del simulador, LSTM/world model, evaluacion de trayectorias y separacion real/sintetico. & World model v1 & 3 \\ \addlinespace
+WP4 & DSS comparativo & Comparacion entre reglas/modelo biologico, politica DQN y metricas interpretables. & DSS comparativo & 4 \\ \addlinespace
+WP5 & Integracion supervisada & Definicion de API, modo observador, limites de seguridad y requisitos para actuadores. & Especificacion control & 5 \\ \addlinespace
+WP6 & Gestion, riesgos y documentacion & Seguimiento semanal, presupuesto, riesgos, validacion y preparacion de entrega. & Informe final piloto & 1--5 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Matriz requisito--work package--entregable}
+
+La siguiente matriz conecta directamente los puntos de la licitacion con los paquetes de trabajo y entregables propuestos. Su objetivo es demostrar trazabilidad: cada requisito de la empresa tiene una respuesta concreta dentro del plan de 5 semanas.
+
+\begin{longtable}{p{0.28\linewidth}p{0.16\linewidth}p{0.28\linewidth}p{0.12\linewidth}}
+\caption{Trazabilidad entre requisitos de licitacion, work packages y entregables}\\
+\toprule
+\textbf{Requisito de licitacion} & \textbf{WP} & \textbf{Entregable asociado} & \textbf{Semana} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Requisito de licitacion} & \textbf{WP} & \textbf{Entregable asociado} & \textbf{Semana} \\
+\midrule
+\endhead
+(i) Variables y restricciones biologicas & WP1 & E1 -- Especificacion biologica y matriz de variables. & 1 \\ \addlinespace
+(ii) Gemelo digital disponible para el piloto & WP3 & E3 -- Gemelo digital offline y world model inicial. & 3 \\ \addlinespace
+(iii) DSS para comparar modelos biologicos y data-driven & WP4 & E4 -- DSS comparativo con explicacion de acuerdos y discrepancias. & 4 \\ \addlinespace
+(iv) Generacion de datos sinteticos & WP2 & E2 -- Modulo de datos sinteticos con interpolacion, riego simulado y escenarios. & 2 \\ \addlinespace
+(v) Conexion con sistema de control agri-PV & WP5 & E5 -- Especificacion de integracion supervisada y plan de control real. & 5 \\ \addlinespace
+Gestion transversal, riesgos y documentacion & WP6 & Seguimiento, presupuesto, registro de riesgos y paquete final de licitacion. & 1--5 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Calendario de entregables}
+
+\begin{longtable}{p{0.14\linewidth}p{0.30\linewidth}p{0.46\linewidth}}
+\caption{Calendario de entregables de la fase piloto}\\
+\toprule
+\textbf{Semana} & \textbf{Entrega} & \textbf{Contenido principal} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Semana} & \textbf{Entrega} & \textbf{Contenido principal} \\
+\midrule
+\endhead
+1 & E1 -- Especificacion biologica & Variables, restricciones, cultivos prioritarios, rangos y criterios de evaluacion. \\ \addlinespace
+2 & E2 -- Modulo de datos sinteticos & Interpolaciones, riego simulado, escenarios basicos y documentacion de supuestos. \\ \addlinespace
+3 & E3 -- Gemelo digital offline & Simulador inicial, LSTM/world model, metricas y separacion entre real y sintetico. \\ \addlinespace
+4 & E4 -- DSS comparativo & Dashboard con lectura cliente, comparacion de modelos y explicacion de discrepancias. \\ \addlinespace
+5 & E5 -- Paquete final de licitacion & Demo, informe, presupuesto, riesgos, plan de integracion supervisada y siguientes pasos. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Hitos de decision}
+
+Para controlar el riesgo, no se recomienda pasar directamente del prototipo a control automatico. Se proponen los siguientes hitos:
+
+\begin{itemize}
+    \item \textbf{Hito 1}: aceptacion de variables y restricciones biologicas al final de la semana 1.
+    \item \textbf{Hito 2}: validacion minima del modulo de datos sinteticos al final de la semana 2.
+    \item \textbf{Hito 3}: gemelo digital offline capaz de reproducir trayectorias historicas/simuladas al final de la semana 3.
+    \item \textbf{Hito 4}: DSS comparativo con explicacion de acuerdos y discrepancias al final de la semana 4.
+    \item \textbf{Hito 5}: paquete final de licitacion y plan de integracion supervisada al final de la semana 5.
+\end{itemize}
+
+\newpage
+
+\section{Organizacion del trabajo}
+
+\subsection{Equipo y responsabilidades}
+
+La organizacion se basa en los roles acumulados del proyecto, pero adaptados a una propuesta de licitacion:
+
+\begin{longtable}{p{0.22\linewidth}p{0.26\linewidth}p{0.42\linewidth}}
+\caption{Organizacion propuesta para la fase de licitacion}\\
+\toprule
+\textbf{Perfil} & \textbf{Responsabilidad} & \textbf{Relacion con el trabajo ya realizado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Perfil} & \textbf{Responsabilidad} & \textbf{Relacion con el trabajo ya realizado} \\
+\midrule
+\endhead
+Project manager / documentacion & Coordinacion, seguimiento, gestion de riesgos, presupuesto y comunicacion con cliente. & Ya se ha gestionado plan acumulado, riesgos, DoD, presupuesto y cierre de Sprint 4. \\ \addlinespace
+Ingenieria de datos & Ingesta, limpieza, sincronizacion, versionado de datasets y pipeline de datos sinteticos. & Ya existe integracion de datos, dataset 6h, dataset 10 minutos e identificacion de problemas de CSV grandes. \\ \addlinespace
+Modelizacion AI / RL & DQN, LSTM, reward multiobjetivo, rollouts y evaluacion offline. & Ya se ha implementado politica DQN offline y modelo LSTM inicial. \\ \addlinespace
+Agronomia / modelos biologicos & Restricciones por cultivo, fases fenologicas, interpretacion biologica y validacion de umbrales. & Parcialmente cubierto con rangos de cultivo; requiere apoyo experto externo. \\ \addlinespace
+Dashboard / DSS & Interfaz de usuario, comparacion de modelos, explicabilidad y vista cliente. & Ya existe dashboard estable con estado, series, recomendacion y alertas. \\ \addlinespace
+Integracion control & API, telemetria, actuadores, seguridad y pruebas supervisadas. & Pendiente; requiere informacion tecnica de la planta piloto. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Modelo de trabajo}
+
+Se propone mantener una metodologia iterativa con entregas parciales cada dos o tres semanas:
+
+\begin{itemize}
+    \item reuniones semanales de seguimiento;
+    \item revision tecnica de modelos y datos;
+    \item revision agronomica de supuestos;
+    \item demos incrementales del DSS;
+    \item control de riesgos y decisiones de alcance;
+    \item validacion de cada fase antes de avanzar a control real.
+\end{itemize}
+
+\newpage
+
+\section{Presupuesto propuesto}
+
+\subsection{Base economica de partida}
+
+El documento de gestion acumulada cierra el proyecto academico con:
+
+\begin{itemize}
+    \item presupuesto aprobado: 37.977,50 euros;
+    \item coste acumulado comprometido: 35.860,00 euros;
+    \item valor ganado acumulado: 35.160,00 euros;
+    \item contingencia consumida: 1.335,00 euros;
+    \item contingencia remanente: 2.117,50 euros.
+\end{itemize}
+
+Estas cifras sirven como referencia de esfuerzo ya ejecutado. Para la licitacion, el presupuesto debe estimar la faena total restante para llevar el prototipo a una solucion piloto completa. Por tanto, se separan dos conceptos:
+
+\begin{itemize}
+    \item \textbf{Base ya desarrollada}: prototipo SAMO, datos, dashboard, DQN, LSTM, simulacion e informe tecnico.
+    \item \textbf{Continuidad de licitacion}: industrializacion, validacion, gemelo digital completo, DSS comparativo e integracion con control real.
+\end{itemize}
+
+\subsection{Estimacion de presupuesto para completar la licitacion}
+
+\begin{longtable}{p{0.34\linewidth}r p{0.46\linewidth}}
+\caption{Presupuesto estimado de continuidad para cubrir la licitacion}\\
+\toprule
+\textbf{Bloque de trabajo} & \textbf{Importe (EUR)} & \textbf{Justificacion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Bloque de trabajo} & \textbf{Importe (EUR)} & \textbf{Justificacion} \\
+\midrule
+\endhead
+Modelos biologicos y restricciones agronomicas & 3.000,00 & Revision de literatura, parametrizacion basica de cultivos, validacion inicial de umbrales y apoyo experto puntual. \\ \addlinespace
+Modulo de datos sinteticos y data augmentation & 4.000,00 & Consolidar interpolaciones, riego sintetico, escenarios climaticos basicos y cultivos futuros prioritarios. \\ \addlinespace
+Gemelo digital y world model & 5.000,00 & Mejorar el simulador actual, calibrar parametros principales, revisar LSTM/world model y versionar escenarios offline. \\ \addlinespace
+DSS comparativo y dashboard cliente & 5.000,00 & Comparacion entre modelos biologicos y data-driven, explicabilidad, vista cliente simplificada y reportes. \\ \addlinespace
+Integracion con datos reales y control agri-PV & 5.500,00 & Conexion en modo observador/supervisado, API inicial, telemetria, limites de seguridad y pruebas tecnicas controladas. \\ \addlinespace
+Validacion piloto y QA & 2.500,00 & Protocolo de pruebas, metricas offline/piloto, tests, revision de resultados y aceptacion inicial. \\ \addlinespace
+Gestion de proyecto y documentacion & 2.000,00 & Coordinacion, reuniones, riesgos, presupuesto, manuales y documentacion de entrega. \\ \addlinespace
+Contingencia tecnica & 1.500,00 & Margen para incertidumbre en datos reales, ajustes de integracion y validacion agronomica. \\
+\midrule
+\textbf{Total continuidad licitacion} & \textbf{28.500,00} & Presupuesto estimado para completar una fase piloto razonable desde el prototipo actual. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Presupuesto por work package}
+
+El presupuesto anterior tambien puede leerse por work package. Esta vista facilita el seguimiento de gestion, porque vincula cada coste a un paquete de trabajo y a una entrega verificable.
+
+\begin{longtable}{p{0.12\linewidth}p{0.30\linewidth}r p{0.32\linewidth}}
+\caption{Distribucion presupuestaria por work package}\\
+\toprule
+\textbf{WP} & \textbf{Bloque} & \textbf{Importe (EUR)} & \textbf{Justificacion de gestion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{WP} & \textbf{Bloque} & \textbf{Importe (EUR)} & \textbf{Justificacion de gestion} \\
+\midrule
+\endhead
+WP1 & Variables biologicas y restricciones & 3.000,00 & Trabajo de definicion, literatura, rangos de cultivo y validacion agronomica inicial. \\ \addlinespace
+WP2 & Data augmentation & 4.000,00 & Consolidacion del modulo sintetico ya iniciado con interpolaciones, riego simulado y escenarios. \\ \addlinespace
+WP3 & Gemelo digital offline & 5.000,00 & Mejora del simulador, calibracion principal y revision del LSTM/world model. \\ \addlinespace
+WP4 & DSS comparativo & 5.000,00 & Adaptacion del dashboard, comparacion de modelos, explicabilidad y vista cliente. \\ \addlinespace
+WP5 & Integracion supervisada & 5.500,00 & Definicion tecnica de API, telemetria, limites de seguridad y modo observador/supervisado. \\ \addlinespace
+WP6 & Gestion, riesgos y documentacion & 2.000,00 & Coordinacion, seguimiento, presupuesto, riesgos y cierre documental. \\ \addlinespace
+CT & Contingencia tecnica & 1.500,00 & Margen para ajustes de datos reales, integracion y validacion. \\ \addlinespace
+QA & Validacion piloto y QA & 2.500,00 & Tests, revision de resultados, protocolo de aceptacion y validacion final. \\
+\midrule
+\textbf{Total} & \textbf{Continuidad licitacion} & \textbf{28.500,00} & \textbf{Fase piloto razonable desde el prototipo actual.} \\
+\bottomrule
+\end{longtable}
+
+\subsection{Presupuesto total incluyendo trabajo ya ejecutado}
+
+Si se desea comunicar la inversion total del sistema desde el inicio del proyecto hasta la solucion piloto, puede sumarse el coste acumulado ya comprometido:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{8cm}r}
+\toprule
+\textbf{Concepto} & \textbf{Importe (EUR)} \\
+\midrule
+Coste acumulado del prototipo SAMO & 35.860,00 \\
+Continuidad estimada para licitacion & 28.500,00 \\
+\midrule
+\textbf{Total programa completo} & \textbf{64.360,00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La cifra relevante para la empresa dependera de si la propuesta se presenta como continuidad desde el prototipo actual o como programa completo. En ambos casos, el mensaje debe ser claro: el prototipo reduce riesgo y coste futuro porque ya ha resuelto integracion inicial de datos, dashboard, simulacion, DQN, LSTM y validacion offline. El presupuesto propuesto se plantea como fase piloto razonable, no como despliegue industrial completo.
+
+\newpage
+
+\section{Gestion de riesgos de la licitacion}
+
+\subsection{Enfoque de gestion}
+
+La gestion de riesgos se plantea como una continuacion del registro acumulado del proyecto. La diferencia es que, para la licitacion, los riesgos ya no se limitan al desarrollo academico, sino que afectan a validacion agronomica, integracion con datos reales, actuadores y aceptacion del cliente. Por ello se propone un seguimiento semanal con tres acciones:
+
+\begin{itemize}
+    \item revisar riesgos abiertos al cierre de cada semana;
+    \item decidir si el siguiente work package puede avanzar o necesita datos/validacion adicional;
+    \item mantener siempre separadas las salidas reales, simuladas y recomendadas por el modelo.
+\end{itemize}
+
+\subsection{Registro de riesgos}
+
+\begin{longtable}{p{0.23\linewidth}p{0.09\linewidth}p{0.09\linewidth}p{0.25\linewidth}p{0.24\linewidth}}
+\caption{Riesgos principales y mitigacion propuesta}\\
+\toprule
+\textbf{Riesgo} & \textbf{P} & \textbf{I} & \textbf{Impacto} & \textbf{Mitigacion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Riesgo} & \textbf{P} & \textbf{I} & \textbf{Impacto} & \textbf{Mitigacion} \\
+\midrule
+\endhead
+Datos reales insuficientes de riego o crecimiento & Alta & Alta & El modelo podria depender demasiado de simulacion. & Separar datos reales y sinteticos; recoger nueva campana de datos; validar con experto. \\ \addlinespace
+Modelos biologicos no alineados con sensores disponibles & Media & Alta & Dificultad para comparar literatura y datos reales. & Definir variables puente y documentar supuestos de conversion. \\ \addlinespace
+Gemelo digital no calibrado fisicamente & Media & Alta & Riesgo de decisiones optimistas en simulacion. & Validacion por etapas y comparacion contra trayectorias historicas. \\ \addlinespace
+Conexion con actuadores reales & Media & Muy alta & Riesgo operacional sobre placas o cultivo. & Empezar en modo observador, despues supervisado, y solo despues control limitado. \\ \addlinespace
+Dashboard demasiado tecnico para cliente & Media & Media & Baja adopcion por usuarios no tecnicos. & Crear una vista simplificada: que pasa, que hacer, impacto esperado y nivel de confianza. \\ \addlinespace
+Archivos y pipelines pesados & Media & Media & Problemas de versionado y reproducibilidad. & No versionar datasets grandes; documentar regeneracion; usar artefactos y rutas controladas. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Puntos de control}
+
+Para evitar que los riesgos se detecten demasiado tarde, cada semana cierra con un punto de control:
+
+\begin{itemize}
+    \item \textbf{Semana 1}: aceptar o ajustar variables biologicas antes de generar nuevos escenarios.
+    \item \textbf{Semana 2}: comprobar que los datos sinteticos no contradicen rangos fisicos ni agronomicos.
+    \item \textbf{Semana 3}: validar que el gemelo digital offline reproduce trayectorias razonables.
+    \item \textbf{Semana 4}: revisar que el DSS explica diferencias entre modelos de forma comprensible.
+    \item \textbf{Semana 5}: confirmar que la integracion propuesta queda en modo seguro y supervisado.
+\end{itemize}
+
+\newpage
+
+\section{Conclusiones para la presentacion}
+
+La presentacion del martes deberia transmitir cuatro ideas:
+
+\begin{enumerate}
+    \item \textbf{El prototipo ya responde a una parte importante de la licitacion.} SAMO integra datos reales, dashboard, recomendaciones, alertas, DQN offline, LSTM y generacion sintetica inicial mediante interpolaciones, riego simulado y trayectorias a 10 minutos.
+    \item \textbf{No se vende como sistema productivo cerrado.} La conexion con control real, validacion agronomica y gemelo digital industrial siguen siendo trabajo pendiente.
+    \item \textbf{Hay una hoja de ruta clara.} La propuesta se organiza en 5 semanas, con work packages, hitos y entregables verificables.
+    \item \textbf{El presupuesto es defendible.} El prototipo ya ha consumido 35.860,00 euros de trabajo acumulado y la continuidad estimada para una fase piloto de licitacion es de 28.500,00 euros.
+\end{enumerate}
+
+La frase de cierre recomendada es:
+
+\begin{quote}
+SAMO no es todavia un controlador autonomo de planta agrovoltaica, pero si es una base funcional y validada offline para construirlo. El trabajo realizado cubre la primera capa de la licitacion y reduce el riesgo de la siguiente fase: convertir el prototipo en un DSS conectado a un gemelo digital y, posteriormente, al control real del piloto.
+\end{quote}
+
+\end{document}
+

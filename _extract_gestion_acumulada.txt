@@ -1,0 +1,1774 @@
+
+--- PAGE 1 ---
+Universitat Politècnica de Catalunya
+F acultat d’Informàtica de Barcelona
+Gestión acumulada del Proyecto
+Sistemas Agrovoltaicos Dinámicos
+Projecte d’Intel·ligència Artificial (PIA-GIA)
+Grau en Intel·ligència Artificial
+Equipo Chacorocalfarobar
+Daniel Álvarez Sarroca
+Pablo Chacón
+Albert Roca
+Pau Escobar
+Joel Alfaro
+Sprint 4 de 4 – Cierre acumulado
+Mayo de 2026
+
+--- PAGE 2 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+Índice
+1. Resumen Ejecutivo 3
+2. Descripción del Proyecto 4
+2.1. Contexto y antecedentes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.2. Objetivos del proyecto . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.3. Alcance del Sprint 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.4. Entregables principales . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+2.5. Entregables acumulados del proyecto . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+3. Organización del Equipo 7
+3.1. Roles y responsabilidades . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+3.2. Evolución acumulada de responsabilidades . . . . . . . . . . . . . . . . . . . . . . . . 7
+4. Planificación temporal y seguimiento acumulado 9
+4.1. Resumen de planificación por sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+4.2. Backlog resumido acumulado S1-S3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+5. Planificación y seguimiento de tareas del Sprint 4 11
+5.1. Objetivo del sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+5.2. Sprint Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+5.3. Distribución de carga por miembro . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+5.4. Estructura de comunicación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+6. Sprint Reviews y retrospectivas acumuladas 14
+6.1. Sprint Review del Sprint 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+6.2. Retrospectiva del Sprint 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+6.3. Sprint Review del Sprint 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+6.4. Retrospectiva del Sprint 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+7. Sprint Review del Sprint 3 15
+7.1. Resumen de la revisión . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+7.2. Entregables demostrados . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+7.3. Feedback incorporado en Sprint 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+7.4. Items no completados al cierre del Sprint 3 . . . . . . . . . . . . . . . . . . . . . . . 16
+8. Retrospectiva del Sprint 3 17
+8.1. Qué fue bien . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+8.2. Qué debía mejorar . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+8.3. Acciones de mejora aplicadas en Sprint 4 . . . . . . . . . . . . . . . . . . . . . . . . . 17
+9. Introducción al Sprint 4 18
+10.Descripción del trabajo técnico realizado 19
+10.1. Simulación de riego y suelo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+10.2. Integración parcial de la rama de trabajo paralela . . . . . . . . . . . . . . . . . . . . 19
+10.3. Modelo MDP y política DQN offline . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+10.4. Modelo LSTM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+10.5. Dashboard . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+11.Entregables y outputs generados 21
+12.Gestión de cambios 22
+12.1. Cambios de alcance . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+1
+
+--- PAGE 3 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+12.2. Impacto de los cambios . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+13.Limitaciones identificadas 23
+14.Gestión de riesgos acumulada 24
+14.1. Criterio de valoración . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+14.2. Registro acumulado de riesgos S1-S4 . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+14.3. Evolución de riesgos por fase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+14.4. Riesgos materializados y respuesta . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+15.Plan Económico y seguimiento presupuestario acumulado 28
+15.1. Presupuesto aprobado y situación de cierre . . . . . . . . . . . . . . . . . . . . . . . . 28
+15.2. Seguimiento económico por sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+15.3. Métricas de control presupuestario . . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+15.4. Consumo de contingencia acumulado . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+15.5. Desviación por perfiles de trabajo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+15.6. Conclusión económica . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+16.Plan de Calidad 32
+16.1. Evolución acumulada de la calidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+16.2. Criterios de calidad acumulados . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+16.3. Verificación del Definition of Done . . . . . . . . . . . . . . . . . . . . . . . . . . . . 33
+16.4. Criterios de aceptación por entregable . . . . . . . . . . . . . . . . . . . . . . . . . . 34
+17.Relación con los entregables finales 35
+17.1. E06 - Dashboard v2 final . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+17.2. E07 - Documentación técnica completa . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+17.3. E08 - Presentación final . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 35
+17.4. E09 - Documentación de gestión acumulativa . . . . . . . . . . . . . . . . . . . . . . 35
+18.Lecciones aprendidas 36
+19.Cierre del Sprint 4 38
+19.1. Balance técnico . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+19.2. Balance de gestión . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+19.3. Estado final del proyecto . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+19.4. Mejoras pendientes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+2
+
+--- PAGE 4 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+1. Resumen Ejecutivo
+Este documento constituye la versión acumulada de gestión del proyecto SAMO al cierre del Sprint
+4. No sustituye únicamente al informe operativo del último sprint, sino que consolida la evolución
+completa de la planificación, los entregables, los riesgos, el presupuesto, la calidad y las lecciones
+aprendidas desde el Sprint 1 hasta el cierre del proyecto.
+El proyecto empezó con una fase de análisis exploratorio de datos, orientada a comprender sensores,
+frecuencias, nulos, anomalías y relaciones entre variables agrovoltaicas. En el Sprint 2 se transformó
+ese conocimiento en un primer enfoque de modelización mediante el índice IEC, reglas candidatas
+de rotación y modelos interpretables. El Sprint 3 convirtió la modelización previa en una herramien-
+ta demostrable mediante un dashboard Streamlit estable, con series temporales, recomendación y
+alertas. Finalmente, el Sprint 4 corrigió la base conceptual del modelo para acercarla a un sistema
+real de decisión secuencial: simulación de riego, reconstrucción de humedad y temperatura del suelo,
+formulación MDP, sustitución del IEC como criterio principal por una reward multiobjetivo y adop-
+ción de una política DQN offline que decide acciones conjuntas de placas y riego, junto con reglas
+agronómicas por cultivo y un LSTM como modelo del mundo.
+La principal conclusión de gestión es que el proyecto se ha cerrado con un producto demostrable
+y con una arquitectura técnica más sólida que la prevista inicialmente, aunque con desviaciones
+internas relevantes. El dashboard visual final se mantiene en una versión estable de cuatro pestañas
+para proteger la demo, mientras que la capa avanzada de agronomía, riego, RL y LSTM queda
+preparada para una integración incremental posterior. Esta decisión reduce el riesgo de entrega y
+evita presentar una interfaz inestable como si estuviera completamente validada.
+Desde el punto de vista económico, el presupuesto aprobado del proyecto se mantiene en 37.977,50
+euros. La contingencia inicial era de 3.452,50 euros y se han consumido 1.335,00 euros por inciden-
+cias y desviaciones técnicas acumuladas: falta de metadatos y anomalías de sensores en Sprint 1,
+circularidad GPOA en Sprint 2, bugs de VWC/reglas en Sprint 3 y esfuerzo adicional de simulación,
+política DQN offline, LSTM, archivos grandes y rollback frontend en Sprint 4. El remanente de con-
+tingencia es de 2.117,50 euros. Las métricas de valor ganado se presentan de forma realista: no todos
+los indicadores son 1,00, porque ha existido rework, alcance técnico reorientado y funcionalidades
+visuales que quedan preparadas pero no activadas.
+3
+
+--- PAGE 5 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+2. Descripción del Proyecto
+2.1. Contexto y antecedentes
+El proyecto SAMO se centra en el análisis y optimización operativa de sistemas agrovoltaicos diná-
+micos. La instalación combina producción energética mediante placas solares móviles y uso agrícola
+del terreno situado bajo las placas. La rotación de los paneles afecta tanto a la captación energética
+como al microclima del cultivo, por lo que el problema no puede resolverse maximizando únicamente
+energía.
+Los datos disponibles proceden de sensores heterogéneos con distintas frecuencias de muestreo. Esta
+heterogeneidad ha condicionado el desarrollo técnico del proyecto, especialmente en Sprint 4, donde
+se ha detectado que no existen datos reales de riego y que las lecturas de humedad y temperatura
+del suelo son demasiado espaciadas para aprender directamente una política hídrica.
+2.2. Objetivos del proyecto
+El objetivo general del proyecto es diseñar un sistema de soporte a la decisión capaz de equilibrar
+producción energética y condiciones favorables para el cultivo. En el Sprint 4, este objetivo se ha
+concretado en:
+consolidar el dashboard funcional como herramienta demostrable;
+ampliar la modelización hacia un enfoque secuencial basado en MDP;
+incorporar riego simulado como variable de acción;
+separar la recompensa agrícola y energética, retirando el IEC como función objetivo final;
+entrenar un modelo LSTM para simular transiciones del sistema;
+cerrar la documentación técnica y de gestión del proyecto.
+2.3. Alcance del Sprint 4
+El alcance incluido en el Sprint 4 comprende:
+revisión de feedback acumulado de sprints anteriores;
+mejora del backend de modelos y políticas, con decisión final basada en una política DQN offline;
+simulación de riego y variables de suelo;
+integración parcial de componentes de la ramasprint3-10min-pipeline;
+entrenamiento y documentación del LSTM;
+preparación de la documentación técnica E07;
+actualización del seguimiento de riesgos, presupuesto y DoD;
+definición del dashboard v2 previsto.
+Queda fuera del alcance final activado la integración visual completa de la quinta pestaña agronómica
+en Streamlit, ya que durante las pruebas afectó a la carga del dashboard. La funcionalidad queda
+preparada y documentada para una siguiente iteración.
+2.4. Entregables principales
+Cuadro 1: Entregables principales del Sprint 4
+ID Entregable Estado
+E06 Dashboard v2 final con recomendacio-
+nes
+Dashboard estable mantenido;
+backend avanzado preparado para
+v2.
+4
+
+--- PAGE 6 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Entregable Estado
+E07 Documentación técnica completa Documento técnico creado en La-
+TeX con modelos, DQN offline,
+LSTM y dashboard previsto.
+E08 Presentación final al cliente Pendiente de consolidar a partir
+de E07 y del cierre de gestión.
+E09 Documentación de gestión acumulati-
+va
+Estedocumentoconstituyelabase
+de cierre del Sprint 4.
+2.5. Entregables acumulados del proyecto
+La Tabla siguiente consolida los entregables definidos en el Plan de Gestión de Proyecto SAMO y
+su estado al cierre del Sprint 4. Se incluye la evidencia principal de cada entregable para que el
+documento funcione como cierre acumulativo y no solo como memoria del último sprint.
+Cuadro 2: Estado acumulado de entregables E01-E09
+ID Sprint Entregable Estado Evidencia / comenta-
+rio
+E01 Sprint 1 Informe de análisis explora-
+torio de datos
+Completado EDA con estructura de
+datos, nulos, rangos, se-
+ries temporales, anoma-
+lías y primeras hipótesis
+sobre sensores y zonas.
+E02 Sprint 1 Notebook/script replicable
+del EDA
+Completado Notebooks de análisis ex-
+ploratorio y limpieza dis-
+ponibles en el repositorio
+del sprint.
+E03 Sprint 2 Informe de política de rota-
+ción y modelo
+Completado Modelización del IEC,
+feature engineering, mo-
+delos ElasticNet/árbol
+y reglas candidatas de
+rotación.
+E04 Sprint 2 Código del modelo Completado Pipeline de modeli-
+zación, reglas candi-
+datas y outputs en
+sprint2/outputs_sprint2.
+E05 Sprint 3 Dashboard v1 funcional Completado Dashboard Streamlit con
+estado, series temporales,
+recomendación y alertas.
+Suite de tests asociada.
+E06 Sprint 4 Dashboard v2 final con re-
+comendaciones
+Parcial /
+aceptado
+con alcance
+controlado
+Dashboard estable man-
+tenido; backend avanza-
+do preparado. La quinta
+pestaña agronómica que-
+da documentada pero no
+activada para evitar re-
+gresiones.
+5
+
+--- PAGE 7 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Sprint Entregable Estado Evidencia / comenta-
+rio
+E07 Sprint 4 Documentación técnica
+completa
+Completado Documento técnico en
+sprint4/E07_Documentacion_Tecnica_Sprint4.tex
+con simulación, MDP, po-
+lítica DQN offline, LSTM
+y dashboard previsto.
+E08 Sprint 4 Presentación final al cliente Preparado Presentación final cons-
+truida a partir de E07 y
+del cierre de gestión, con
+narrativa de cambios res-
+pecto a Sprint 3.
+E09 Todos Documentación de gestión
+acumulativa
+En cierre El presente documento
+consolida planificación,
+reviews, retrospectivas,
+riesgos, presupuesto,
+calidad y lecciones apren-
+didas.
+6
+
+--- PAGE 8 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+3. Organización del Equipo
+3.1. Roles y responsabilidades
+La composición del equipo se mantiene respecto a los sprints anteriores. Durante el Sprint 4 los roles
+se han orientado principalmente al cierre del producto, estabilización técnica, documentación final
+y preparación de la entrega.
+Cuadro 3: Composición del equipo - Proyecto SAMO
+Miembro Rol Responsabilidades principales en Sprint 4
+Daniel Álvarez Project Manager (PM) Coordinación del cierre del sprint, seguimien-
+to de backlog, consolidación de documentación,
+control de riesgos, presupuesto y preparación de
+la entrega final.
+Pablo Chacón Data Engineer / Data
+Scientist
+Revisión y regeneración del dataset de riego, si-
+mulación de humedad y temperatura del sue-
+lo, preparación de datos para entrenamiento del
+modelo temporal.
+Albert Roca Tech Lead / ML Engi-
+neer
+Diseño de la arquitectura de MDP, integración
+de módulos RL, entrenamiento LSTM, valida-
+ción técnica, pruebas unitarias y estabilización
+del backend.
+Pau Escobar Data Analyst / Visuali-
+zación
+Revisión del dashboard, propuestas de visualiza-
+ción para dashboard v2, apoyo a narrativa téc-
+nica, validación visual de outputs y preparación
+de material para demo.
+Joel Alfaro Analista de Dominio /
+QA
+Revisión de reglas agronómicas, perfiles de cul-
+tivo, umbrales de riesgo, coherencia del enfoque
+de riego y validación funcional de los outputs.
+3.2. Evolución acumulada de responsabilidades
+La estructura de roles se mantuvo estable durante el proyecto, pero la carga real cambió entre sprints.
+Esta evolución es relevante porque explica parte de las desviaciones presupuestarias: el Sprint 4
+concentró más trabajo técnico de backend del previsto y redujo el peso relativo de la integración
+visual final.
+Cuadro 4: Evolución de foco por miembro y sprint
+Miembro Sprint 1 Sprint 2 Sprint 3 Sprint 4
+Daniel Álvarez Gestión, actas,
+riesgos y EDA
+documental
+Gestión de re-
+view, riesgos y
+presupuesto
+Informe dash-
+board, cierre
+documental y
+coordinación
+E07, E09, presu-
+puesto acumulado,
+riesgos y presenta-
+ción final.
+Pablo Chacón Limpieza, lectura
+de sensores y aná-
+lisis de datos
+Dataset de mode-
+lización y revisión
+GPOA
+Alertas, lógica de
+dashboard y QA
+de datos
+Simulación de
+riego, humedad y
+temperatura del
+suelo.
+7
+
+--- PAGE 9 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+Miembro Sprint 1 Sprint 2 Sprint 3 Sprint 4
+Albert Roca Apoyo técnico al
+EDA y correlacio-
+nes
+Modelización
+IEC, reglas y
+validación
+Motor de reglas,
+sensibilidad IEC,
+tests y correccio-
+nes
+MDP, política
+DQN offline,
+LSTM, inferen-
+cia y rollback
+frontend.
+Pau Escobar Visualizaciones
+exploratorias y
+narrativa EDA
+Análisis por régi-
+men y apoyo vi-
+sual
+Diseño/validación
+dashboard v1
+Propuesta dash-
+board v2 y va-
+lidación UX de
+integración futura.
+Joel Alfaro Revisión funcio-
+nal y apoyo de
+dominio
+QA de resultados
+y discusión de re-
+glas
+Validación dash-
+board y reglas
+operativas
+Reglas agronómi-
+cas, cultivos, zonas
+y riesgos de uso.
+8
+
+--- PAGE 10 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+4. Planificación temporal y seguimiento acumulado
+4.1. Resumen de planificación por sprint
+La planificación original del proyecto, definida enSAMO_Plan_Proyecto.pdf, dividía el trabajo
+en cuatro sprints de una semana: EDA, modelización, dashboard v1 e integración final. El cierre
+acumulado muestra que la secuencia general se mantuvo, pero el contenido técnico se hizo más
+profundo a medida que se descubrieron limitaciones de datos y riesgos de validación.
+Cuadro 5: Seguimiento acumulado de sprints
+Sprint Objetivo planifica-
+do
+Resultado real Estado Desviación prin-
+cipal
+S1 EDA e identificación
+de patrones, anoma-
+lías y ubicación de es-
+pacios.
+Se realizó EDA, lim-
+pieza, análisis tempo-
+ral,correlacionesydiag-
+nóstico inicial de senso-
+res/tracking.
+Completado Falta de metadatos
+y anomalías no do-
+cumentadas obliga-
+ron a preparar ajus-
+tes adicionales.
+S2 Modelización y políti-
+ca de rotación.
+Se definió IEC, data-
+set de modelización, re-
+glas candidatas y mode-
+los interpretables.
+Completado Corrección de circu-
+laridad GPOA y li-
+mitaciones de vali-
+dación agronómica.
+S3 Dashboard v1 funcio-
+nal.
+Se entregó Streamlit
+con cuatro pestañas, re-
+comendaciones, alertas
+y tests unitarios.
+Completado Bugs VWC/reglas
+corregidos mediante
+tests; dashboard se-
+guía siendo históri-
+co, no control real.
+S4 Dashboard v2, do-
+cumentación técnica,
+presentación y cierre.
+Se priorizó backend
+avanzado: riego simu-
+lado, MDP, política
+DQN offline, LSTM y
+documentación final.
+Parcial contro-
+lado
+La pestaña agronó-
+mica visual se des-
+activó para preser-
+var la estabilidad de
+la demo.
+4.2. Backlog resumido acumulado S1-S3
+Lostresprimerossprintsnosereproducencontodoeldetalledesusdocumentosoriginalesparaevitar
+duplicar literalmente los informes previos, pero sí se resumen sus bloques de trabajo, entregables y
+resultados. El Sprint 4 se detalla posteriormente porque constituye el cierre y la actualización final.
+Cuadro 6: Backlog acumulado resumido de Sprints 1 a 3
+Sprint Bloque de trabajo Responsable
+principal
+Estado Evidencia
+S1 Exploración de estructura de datos,
+nulos, rangos y tipos.
+Equipo técni-
+co
+Completado Informe EDA y
+notebooks.
+S1 Análisis temporal, correlaciones, régi-
+men de tracking y anomalías.
+Tech/Data Completado Matrices, series
+y conclusiones
+de EDA.
+S1 Actualización inicial de riesgos, actas
+y presupuesto.
+PM Completado Gestión Sprint
+1.
+9
+
+--- PAGE 11 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+Sprint Bloque de trabajo Responsable
+principal
+Estado Evidencia
+S2 Definición de target, features y data-
+set de modelización.
+ML/Data Completadodataset_modelizacion_6h.csv.
+S2 Modelos ElasticNet/árbol, IEC y re-
+glas candidatas.
+ML Engineer Completado Informe
+E03/E04 y
+reglas.
+S2 Corrección de circularidad GPOA y
+actualización de riesgos.
+ML/PM Completado Registroderies-
+gos S2.
+S3 Implementación dashboard v1 con es-
+tado, series, recomendación y alertas.
+Dashboard/DataCompletadosprint3/src/app.py.
+S3 Tests unitarios, corrección bug VWC
+y activación de reglas.
+Tech/QA Completado Suite pytest y
+PR de correc-
+ción.
+S3 Informe E05 y preparación de inputs
+para Sprint 4.
+PM/Equipo Completado Informe dash-
+board y gestión
+S3.
+10
+
+--- PAGE 12 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+5. Planificación y seguimiento de tareas del Sprint 4
+5.1. Objetivo del sprint
+El Sprint 4 se planificó como sprint de integración, refinamiento y entrega final. El objetivo inicial era
+cerrar el dashboard v2, incorporar el feedback de los sprints anteriores, consolidar la documentación
+técnica y preparar la presentación final al cliente.
+Durante la ejecución se identificó una necesidad técnica adicional: el modelo no podía tratar el
+riego como una variable real observada, porque no existían datos históricos de riego y las lecturas de
+humedad del suelo tenían una frecuencia demasiado baja. Por tanto, una parte relevante del sprint se
+reorientó hacia la construcción de una base técnica más sólida para el modelo de decisión: simulación
+de riego, generación de trayectorias, formulación de MDP, política DQN offline y modelo LSTM del
+mundo.
+5.2. Sprint Backlog
+Cuadro 7: Sprint Backlog - Sprint 4
+ID Tarea Responsable SP Estado
+S4-01 Sprint Planning: revisión de feedback acu-
+mulado y priorización del cierre final.
+Daniel Álvarez 1 Completado
+S4-02 Revisión del dashboard v1 y definición de
+funcionalidades candidatas para dashboard
+v2.
+Pau Escobar / Al-
+bert Roca
+2 Completado
+S4-03 Revisión del notebook
+Master_dataset_reg.ipynby análisis
+del número de filas generado.
+Pablo Chacón 3 Completado
+S4-04 Corrección de identificadores de episodio y
+revisión de duplicidades en el dataset simu-
+lado.
+Pablo Chacón /
+Albert Roca
+3 Completado
+S4-05 Calibración de dinámica de humedad y
+temperatura del suelo bajo riego simulado.
+Pablo Chacón 4 Completado
+S4-06 Incorporación de escenarios de riego con di-
+ferentes intervalos, dosis y ruido controla-
+do.
+Pablo Chacón 3 Completado
+S4-07 Revisión de la rama
+sprint3-10min-pipeliney extracción de
+componentes útiles.
+Albert Roca 3 Completado
+S4-08 Integración de reglas agronómicas por cul-
+tivo, zona y etapa de crecimiento.
+Joel Alfaro / Al-
+bert Roca
+4 Completado
+S4-09 Implementación de política DQN offline
+con recompensa multiobjetivo.
+Albert Roca 5 Completado
+S4-10 Construcción del dataset de entrenamiento
+para el modelo del mundo.
+Pablo Chacón /
+Albert Roca
+4 Completado
+S4-11 Implementación del modelo LSTM y utili-
+dades de entrenamiento.
+Albert Roca 5 Completado
+S4-12 Entrenamiento del LSTM y análisis de mé-
+tricas de validación.
+Albert Roca 3 Completado
+S4-13 Implementacióndeinferenciayrolloutpara
+simulación de políticas.
+Albert Roca 3 Completado
+11
+
+--- PAGE 13 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Tarea Responsable SP Estado
+S4-14 Revisión de integración con dashboard y
+prueba de quinta pestaña agronómica.
+Pau Escobar / Al-
+bert Roca
+3 Parcial
+S4-15 Reversión de cambios de frontend que afec-
+taban a la carga del dashboard.
+Albert Roca 2 Completado
+S4-16 Documentación técnica E07 de modelos,
+DQN offline, LSTM y dashboard previsto.
+Daniel Álvarez 4 Completado
+S4-17 Gestión de archivos grandes y exclusión de
+CSV generados del repositorio.
+Daniel Álvarez /
+Albert Roca
+2 Completado
+S4-18 Verificación final con tests automatizados. Joel Alfaro / Al-
+bert Roca
+2 Completado
+S4-19 Preparación de gestión del proyecto E09 y
+cierre documental.
+Daniel Álvarez 4 En curso
+S4-20 Preparación de la presentación final E08 y
+guion de demo.
+Todo el equipo 4 Pendiente /
+En prepara-
+ción
+5.3. Distribución de carga por miembro
+Cuadro 8: Distribución aproximada de carga - Sprint 4
+Miembro SP aprox. Foco principal
+Daniel Álvarez 11 Gestión del sprint, documentación E07/E09, segui-
+miento de cambios, coordinación de entrega y gestión
+de repositorio.
+Pablo Chacón 14 Simulación de riego, revisión de dataset, calibración
+de humedad y temperatura, generación de datos base.
+Albert Roca 22 Arquitectura MDP, política DQN offline, LSTM, infe-
+rencia, rollout, pruebas, integración backend y estabi-
+lización del dashboard.
+Pau Escobar 7 Revisión de UX, propuesta dashboard v2, visualiza-
+ción y validación de la experiencia de usuario.
+Joel Alfaro 6 QA funcional, revisión agronómica, validación de re-
+glas por cultivo y apoyo a Definition of Done.
+5.4. Estructura de comunicación
+La estructura de comunicación se mantiene alineada con el Plan de Gestión de Proyecto SAMO.
+Durante el Sprint 4 se han utilizado reuniones breves de coordinación, revisión técnica asíncrona y
+validación por entregables.
+Cuadro 9: Estructura de comunicación del Sprint 4
+Evento Frecuencia Participantes Propósito
+Daily / coordinación
+breve
+Durante el sprint Equipo técnico Seguimiento de blo-
+queos, tareas activas y
+decisiones rápidas.
+12
+
+--- PAGE 14 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+Evento Frecuencia Participantes Propósito
+Revisión técnica Según necesidad Tech Lead, Data Engi-
+neer, QA
+Validar datasets, mode-
+los, tests y estabilidad
+del dashboard.
+Sprint Review Cierre del sprint Equipo y clien-
+te/profesor
+Presentar incremento,
+limitaciones y siguientes
+pasos.
+Retrospective Cierre del sprint Equipo completo Identificar lecciones
+aprendidas y acciones
+de mejora.
+La carga real del sprint se concentró más de lo previsto en tareas técnicas de backend. Esto se debe
+a que la falta de datos de riego obligó a resolver primero el problema de modelización antes de poder
+construir una visualización final fiable.
+13
+
+--- PAGE 15 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+6. Sprint Reviews y retrospectivas acumuladas
+6.1. Sprint Review del Sprint 1
+La Review del Sprint 1 cerró la fase de exploración inicial. El equipo presentó el estado real de
+los datos, la heterogeneidad de frecuencias, las primeras anomalías y la necesidad de interpretar
+con cautela las zonas y sensores. El valor principal de esta review fue transformar una expectativa
+genérica de análisis en una lista concreta de restricciones técnicas.
+Cuadro 10: Review acumulada - Sprint 1
+Elemento revisado Resultado Impacto en el proyecto
+EDA y calidad de datos Aceptado como base
+técnica
+Permitió pasar a modelización con conoci-
+miento de nulos, rangos y anomalías.
+Frecuencias heterogé-
+neas
+Confirmadas Se decidió trabajar con resampleo y traza-
+bilidad de pérdidas de resolución.
+Trackers y sensores anó-
+malos
+Riesgo confirmado Se activó contingencia para parametrizar
+limpieza y preparar reejecución.
+Metadatos incompletos Bloqueo parcial Se documentó la dependencia respecto al
+cliente/equipo técnico de planta.
+6.2. Retrospectiva del Sprint 1
+ElSprint1funcionóbiencomosprintdedescubrimiento.Laprincipalfortalezafuedetectartemprano
+problemas de datos que podrían haber invalidado modelizaciones posteriores. La principal mejora
+identificada fue reforzar la documentación de supuestos y reservar capacidad de contingencia para
+reestructurar scripts cuando llegaran nuevas aclaraciones.
+6.3. Sprint Review del Sprint 2
+La Review del Sprint 2 presentó el salto desde el análisis descriptivo hacia una primera política de
+rotación basada en IEC, modelos interpretables y reglas candidatas. El resultado fue útil para el
+dashboard, pero también dejó claro que los umbrales agronómicos seguían siendo provisionales.
+Cuadro 11: Review acumulada - Sprint 2
+Elemento revisado Resultado Impacto en el proyecto
+Dataset de modeliza-
+ción
+Completado Base para reglas y dashboard del Sprint 3.
+IEC Aceptado como indica-
+dor provisional
+Permitió equilibrar energía y cultivo, aun-
+que no como función objetivo definitiva.
+Reglas candidatas de
+rotación
+Útiles pero provisiona-
+les
+Se integraron como lógica operativa del
+dashboard v1.
+Circularidad GPOA Detectada y corregida Se consumió contingencia por rework téc-
+nico justificado.
+6.4. Retrospectiva del Sprint 2
+El Sprint 2 mejoró la trazabilidad del modelo y produjo reglas interpretables. La lección principal fue
+que un índice sintético como el IEC ayuda a comunicar, pero puede esconder supuestos fuertes. Esta
+lección se vuelve crítica en Sprint 4, cuando el IEC se retira como criterio principal y se sustituye
+por una reward multiobjetivo usada por la política DQN offline.
+14
+
+--- PAGE 16 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+7. Sprint Review del Sprint 3
+7.1. Resumen de la revisión
+El Sprint 3 entregó el dashboard v1, con una aplicación Streamlit funcional organizada en cuatro
+pestañas: dashboard general, series temporales, recomendación y alertas. La revisión confirmó que
+el prototipo era útil para enseñar el comportamiento básico del sistema, pero también dejó claro que
+el producto todavía estaba demasiado centrado en observabilidad y reglas.
+Los principales puntos revisados fueron:
+funcionamiento del dashboard en local;
+estructura de pestañas y navegación;
+reglas de recomendación de rotación;
+alertas sobre variables microclimáticas;
+uso del IEC como indicador sintético;
+estabilidad de la suite de tests;
+limitaciones del modelo para capturar riego y dinámica de suelo.
+7.2. Entregables demostrados
+Cuadro 12: Entregables demostrados en la review del Sprint
+3
+ID Entregable Resultado de la revisión
+E05 Dashboard v1 Aceptado como prototipo funcional.
+Se detecta necesidad de ampliarlo
+con una capa más clara de decisión.
+E05-doc Informe de dashboard Aceptado como base de documenta-
+ción del frontend y de las decisiones
+de diseño.
+Tests S3 Suite de pruebas de dashboard y lógi-
+ca
+Valorada positivamente porque per-
+mitió detectar errores de escala y re-
+glas antes de la entrega.
+Análisis IEC Sensibilidad del índice energía-cultivo Útil como paso intermedio, pero reti-
+rado como criterio final frente a una
+reward explícita agrícola-energética.
+7.3. Feedback incorporado en Sprint 4
+El feedback principal transformado en trabajo del Sprint 4 fue:
+pasar de un dashboard descriptivo a un sistema de soporte a la decisión;
+incluir la componente de riego o, al menos, modelarla explícitamente;
+diferenciar cultivos y zonas, ya que no todos los cultivos tienen las mismas necesidades;
+separar la recompensa agrícola y energética para hacer más interpretable la decisión;
+investigar si la zona bajo placas debe comportarse diferente respecto a humedad y temperatura;
+preparar un modelo temporal con contexto, preferiblemente LSTM por volumen de datos;
+evitar integrar en frontend funcionalidades que rompan la estabilidad de la demo.
+15
+
+--- PAGE 17 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+7.4. Items no completados al cierre del Sprint 3
+Al cierre del Sprint 3 quedaron pendientes:
+integración real de riego en el modelo;
+entrenamiento de un modelo temporal;
+simulación de políticas futuras;
+base de cultivos con rangos agronómicos;
+visualización de agronomía y RL en el dashboard;
+cierre de documentación técnica consolidada.
+El Sprint 4 ha abordado estos puntos de forma prioritaria, aunque la integración visual completa se
+mantiene como trabajo preparado y no activado en el dashboard estable.
+16
+
+--- PAGE 18 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+8. Retrospectiva del Sprint 3
+8.1. Qué fue bien
+El dashboard v1 permitió materializar el trabajo de los sprints anteriores en una demo ejecutable.
+La separación por pestañas hizo que el producto fuera comprensible para perfiles no técnicos.
+Los tests unitarios añadidos en Sprint 3 evitaron que errores de escala y reglas llegaran a la entrega.
+La sensibilidad del IEC ayudó a entender que el problema no debía optimizar una sola variable.
+8.2. Qué debía mejorar
+El modelo necesitaba representar acciones y consecuencias, no solo recomendaciones puntuales.
+El riego no podía quedar fuera si se hablaba de estado agronómico del cultivo.
+La lógica del IEC debía retirarse como criterio final frente a una reward más flexible.
+Las mejoras de frontend debían probarse de forma incremental para no afectar a la estabilidad.
+La documentación debía dejar claras las hipótesis usadas, especialmente en datos simulados.
+8.3. Acciones de mejora aplicadas en Sprint 4
+Cuadro 13: Acciones de mejora aplicadas en Sprint 4
+ID Acción de mejora Resultado
+A4-01 Revisar el enfoque del riego y documentar
+la ausencia de datos reales.
+Se simuló riego y se explicitó como
+hipótesis del modelo.
+A4-02 Separar componente agrícola y energética. Se implementó una reward ponde-
+rada con penalizaciones por riesgo.
+A4-03 Añadir cultivos y zonas. Seincorporaronreglasagronómicas
+por cultivo, etapa y zona.
+A4-04 Entrenar modelo temporal con contexto. Se implementó y entrenó un LSTM
+de modelo del mundo.
+A4-05 Evitar entregar frontend inestable. Se revirtió la conexión de la quin-
+ta pestaña y se mantuvo dashboard
+estable.
+A4-06 Documentar reproducibilidad. Se añadieron pasos para regenerar
+CSV grandes y entrenar el modelo.
+17
+
+--- PAGE 19 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+9. Introducción al Sprint 4
+El Sprint 4 ha funcionado como sprint de cierre, pero también como sprint de corrección de enfoque.
+La planificación original preveía mejorar la UX/UI del dashboard y cerrar la documentación final. Sin
+embargo, al profundizar en los datos se detectó que una integración directa de riego en el dashboard
+no tendría sentido sin una capa de simulación o hipótesis.
+El equipo decidió, por tanto, priorizar una base técnica defendible:
+reconocer la falta de datos reales de riego;
+construir una simulación explícita;
+formular el problema como MDP;
+entrenar un modelo temporal;
+preparar la política DQN offline;
+mantener estable el dashboard para la demo.
+Esta decisión implica que el Sprint 4 no se limita a “maquillar” el dashboard, sino que corrige la base
+del modelo para que el producto final sea más coherente con el problema agrovoltaico.
+18
+
+--- PAGE 20 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+10. Descripción del trabajo técnico realizado
+10.1. Simulación de riego y suelo
+El notebooksprint3/Master_dataset_reg.ipynbse revisó para generar un dataset enriquecido
+con riego simulado, humedad y temperatura del suelo. Se detectó que el dataset resultante podía
+tener muchas más filas que el master dataset original. La causa principal no era necesariamente un
+error, sino la multiplicación de trayectorias al simular varias políticas de riego.
+Se corrigió además un problema de identificador temporal de episodio, evitando colisiones al convertir
+timestamps. La generación final queda justificada por la combinación de escenarios:
+intervalos de riego de 4 h, 6 h, 8 h y 12 h;
+dosis de 1 mm, 2 mm y 3 mm;
+ruido controlado de tiempo y cantidad;
+resolución temporal de 10 minutos.
+10.2. Integración parcial de la rama de trabajo paralela
+Se revisó la ramasprint3-10min-pipeline, donde ya se habían avanzado piezas importantes: se-
+paración por cultivos, reglas agronómicas, zona, reward y política. De esa rama se incorporaron los
+módulos útiles, adaptándolos al estado actual del repositorio.
+Los principales componentes aprovechados fueron:
+reglas agronómicas por cultivo;
+pipeline a 10 minutos;
+política DQN offline;
+vista agronómica preliminar;
+tests asociados.
+10.3. Modelo MDP y política DQN offline
+Se formalizó el problema como MDP. La acción ya no se limita al ángulo de placas, sino que incorpora
+también riego:
+ángulo de tracker;
+activación de riego;
+dosis de riego.
+La reward combina:
+componente agrícola;
+componente energética;
+penalizaciones por estrés o riesgo del cultivo.
+La configuración actual usa pesos 0.45 para agricultura y 0.55 para energía. Esto mantiene la ener-
+gía como componente ligeramente prioritaria, pero evita que el modelo recomiende acciones que
+deterioren el cultivo.
+La decisión final de modelización del Sprint 4 es utilizar una política DQN offline para escoger la
+acción recomendada. En el repositorio conviven dos aproximaciones, una política tabular anterior y
+una política DQN, pero la decisión de cierre es adoptar DQN como enfoque principal. Esta decisión
+permite presentar el sistema como un problema de decisión secuencial más coherente con el objetivo
+del proyecto: decidir conjuntamente el movimiento de placas y el riego en función del estado del
+cultivo y de la producción energética.
+Con esta decisión, el IEC deja de ser el criterio principal de optimización. El índice se mantiene
+19
+
+--- PAGE 21 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+como antecedente metodológico del Sprint 2 y como herramienta útil para explicar la evolución del
+proyecto, pero la política final se guía por una reward multiobjetivo que separa componente agrícola
+y componente energética. Esta reformulación encaja mejor con un sistema de soporte a la decisión,
+porque permite ajustar prioridades entre cultivo y energía sin depender de un único índice fijo.
+La política DQN se integra como parte del backend avanzado del Sprint 4. El detalle técnico de
+implementación se documenta en E07, mientras que este documento de gestión recoge la decisión de
+alcance: pasar de reglas e IEC a una política RL más alineada con el comportamiento secuencial del
+sistema.
+10.4. Modelo LSTM
+Se implementó un LSTM para predecir el siguiente estado del sistema a partir de una ventana
+temporal de 12 pasos de 10 minutos. El objetivo no es predecir directamente una política, sino
+aprender un modelo del mundo que permita simular consecuencias futuras.
+El entrenamiento actual produjo:
+414.744 filas cargadas;
+76.764 filas útiles tras eliminar nulos;
+ventanas de tamaño 12;
+tensor de entrada de forma76620×12×22;
+salida de 7 variables objetivo;
+loss final de validación de 0.005531.
+10.5. Dashboard
+Seintentóintegrarunaquintapestañaagronómicaeneldashboard.Laideaeramostrarcultivo,zona,
+reglas, reward, acción recomendada por la política DQN offline y predicción LSTM. Sin embargo,
+durante las pruebas se detectó que la integración afectaba a la carga del dashboard en Streamlit.
+La decisión de gestión fue revertir la conexión de esa pestaña y mantener el dashboard principal en
+su estado estable. La funcionalidad queda preparada en backend y documentada para integrarse con
+más seguridad posteriormente.
+Como mejora prioritaria posterior al cierre, se propone no recuperar directamente una pestaña
+técnica completa, sino diseñar una vista simplificada orientada al cliente. Esta tab debería traducir
+la salida de la política DQN a mensajes operativos claros: acción recomendada, motivo principal,
+impacto esperado en cultivo y energía, estado del riego y alerta si la recomendación depende de
+simulación. El objetivo es que un usuario no técnico pueda entender qué haría el sistema y por qué,
+sin tener que interpretar detalles internos del modelo.
+20
+
+--- PAGE 22 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+11. Entregables y outputs generados
+Cuadro 14: Entregables y outputs del Sprint 4
+ID Entregable / output Estado y observaciones
+E06 Dashboard v2 final con recomen-
+daciones
+Dashboard estable mantenido en versión
+de cuatro pestañas. Backend avanzado
+preparado para v2. Quinta pestaña no ac-
+tivada por estabilidad.
+E07 Documentación técnica completa Documentosprint4/E07_Documentacion_Tecnica_Sprint4.tex
+creado con modelos, política DQN offline,
+LSTM, dashboard previsto y limitaciones.
+E08 Presentación final al cliente Pendiente de consolidar a partir de E07 y
+este documento de gestión.
+E09 Documentación de gestión acumu-
+lativa
+Este documento constituye la base del cie-
+rre de gestión del Sprint 4.
+OUT-01 Dataset de mundo simulado Generado localmente como
+master_dataset_world_model.csv,
+excluido de Git por tamaño.
+OUT-02 Dataset de entrenamiento world
+model
+Generado localmente como
+world_model_training_dataset.csv,
+excluido de Git por superar 100 MB.
+OUT-03 Modelo LSTM entrenado Artefactos guardados en
+sprint3/outputs.
+OUT-04 Métricas LSTM Guardadas en
+world_model_lstm_metrics.jsone
+incorporadas al E07.
+OUT-05 Política DQN offline Implementada como política final de deci-
+sión. El archivo conserva también una po-
+lítica tabular anterior, pero el cierre del
+sprint adopta DQN como enfoque princi-
+pal.
+OUT-06 Reglas agronómicas Implementadas en
+sprint3/agricultural_rules.py.
+OUT-07 Tests automatizados Suite verificada con 94 tests pasados.
+21
+
+--- PAGE 23 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+12. Gestión de cambios
+12.1. Cambios de alcance
+El Sprint 4 incluye un cambio de alcance técnico respecto a la planificación inicial. El objetivo
+inicial hablaba de mejorar UX/UI y cerrar dashboard v2. Durante el sprint se decidió priorizar la
+arquitectura de modelo y RL porque el dashboard no podía mostrar recomendaciones de riego fiables
+sin un backend que justificara esas decisiones.
+Cuadro 15: Cambios de alcance gestionados durante Sprint 4
+ID Cambio Justificación y decisión
+CR-S4-01 Incorporar simulación de rie-
+go.
+Necesario porque no existen datos reales
+deriego.Aprobadocomohipótesisexplí-
+cita y documentada.
+CR-S4-02 Pasar de IEC central a re-
+ward multiobjetivo para polí-
+tica DQN offline.
+El IEC se descarta como criterio de de-
+cisión final; la política DQN utiliza una
+función de recompensa separable y con-
+figurable. Aprobado.
+CR-S4-03 Priorizar backend sobre quin-
+ta pestaña final.
+La integración visual rompía la estabili-
+dad de carga. Se decide entregar dash-
+board estable y backend preparado.
+CR-S4-04 Excluir CSV grandes del repo-
+sitorio.
+GitHubrechazóunarchivomayorde100
+MB. Se documenta regeneración local y
+se ignoran los CSV generados.
+12.2. Impacto de los cambios
+Los cambios aumentaron la profundidad técnica del entregable y redujeron el riesgo de presentar
+recomendaciones injustificadas. El impacto negativo es que el dashboard v2 visual no queda com-
+pletamente conectado. La decisión se considera correcta para el cierre del sprint porque preserva la
+demo funcional y deja el trabajo avanzado versionado.
+22
+
+--- PAGE 24 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+13. Limitaciones identificadas
+Cuadro 16: Limitaciones técnicas y de gestión al cierre del
+Sprint 4
+ID Limitación Mitigación aplicada
+L-S4-01 No existen datos reales de riego. Simulación documentada con esce-
+narios, dosis e intervalos.
+L-S4-02 Lecturas de humedad y temperatura
+del suelo cada 6 horas.
+Reconstrucción a 10 minutos me-
+diante dinámica parametrizada, di-
+ferenciando dato observado y simu-
+lado.
+L-S4-03 Modelo LSTM entrenado sobre parte
+de dinámica simulada.
+Métricas interpretadas como valida-
+ción del entorno simulado, no como
+validación física completa.
+L-S4-04 Quinta pestaña del dashboard no es-
+table.
+Reversión al dashboard funcional y
+documentación del plan de integra-
+ción futura.
+L-S4-05 CSV grandes no versionados en Git. Inclusión en.gitignorey docu-
+mentación de comandos de regene-
+ración.
+L-S4-06 Rangos agronómicos pendientes de va-
+lidación experta.
+Reglas implementadas como base
+configurable, no como verdad agro-
+nómica definitiva.
+23
+
+--- PAGE 25 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+14. Gestión de riesgos acumulada
+La gestión de riesgos del Sprint 4 se presenta de forma acumulada, siguiendo el enfoque del plan de
+proyecto: identificación, valoración, respuesta, seguimiento y cierre. La matriz utiliza una escala de
+probabilidad e impacto de 1 a 5. La exposición se calcula como probabilidad por impacto y permite
+priorizar los riesgos que han condicionado la planificación real del proyecto.
+Duranteloscuatrosprintselregistrohaevolucionadoderiesgosprincipalmenteexploratorios,propios
+de la calidad de datos, hacia riesgos de integración, simulación y validación de modelos. Esta evolu-
+ción es coherente con la madurez del producto: primero se descubrieron las limitaciones del dataset,
+después se diseñaron indicadores y reglas, posteriormente se construyó el dashboard y finalmente se
+reformuló el sistema como problema secuencial con riego, RL offline y modelo del mundo.
+14.1. Criterio de valoración
+Elemento Escala Interpretación
+Probabilidad 1 muy baja - 5 muy alta Estima la posibilidad de que el riesgo
+afecte al proyecto.
+Impacto 1 bajo - 5 crítico Mide el efecto sobre alcance, coste, ca-
+lendario, calidad o demostrabilidad.
+Exposición Probabilidad×impacto Ayuda a ordenar la respuesta. Valores
+superiores a 15 requieren seguimiento
+explícito.
+Estado Abierto, mitigado, acep-
+tado, materializado o
+cerrado
+Indica si el riesgo sigue condicionando
+decisiones o si ya se ha absorbido.
+14.2. Registro acumulado de riesgos S1-S4
+24
+
+--- PAGE 26 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Origen Riesgo P I Exp. Estado Respuesta y cierre de gestión
+R1 S1 Calidad y continuidad insuficiente
+de los datos de sensores.
+4 5 20 Activo controla-
+do
+Se incorporaron validaciones, limpieza, inter-
+polación y documentación de rangos. En S4
+se acepta que parte del comportamiento debe
+simularse.
+R2 S1 Desalineación temporal entre
+fuentes meteorológicas, sensores y
+variables solares.
+4 4 16 Mitigado Se normalizaron frecuencias y se documentó
+el cambio a granularidad de 10 minutos para
+las trayectorias simuladas.
+R3 S1 Relaciones no lineales y retardos
+físicos no capturados por modelos
+simples.
+3 4 12 Gestionado El proyecto pasó de reglas e indicadores a
+LSTM/modelodelmundoparacapturarcon-
+texto temporal.
+R4 S1 Sesgo hacia la optimización ener-
+gética frente al componente agro-
+nómico.
+3 4 12 Reformulado En S4 se separó la recompensa en componen-
+te agrícola y eléctrico, con pesosαyβ.
+R5 S1 Sobreajuste por datos históricos
+limitados.
+4 4 16 Abiertocontrola-
+do
+Se evita afirmar validez productiva. Los mo-
+delos se presentan como prototipo expe-
+rimental y se separan simulación y datos
+reales.
+R6 S1 Fragilidad del pipeline de genera-
+ción de datasets.
+3 3 9 Mitigado Se añadieron scripts reproducibles, tests y
+documentación para regenerar salidas sin
+versionar CSV grandes.
+R7 S1 Estacionalidad limitada y baja re-
+presentatividad de escenarios ex-
+tremos.
+4 3 12 Vigente Se mantiene como limitación metodológica.
+La BBDD de cultivos permite probar rangos,
+pero no sustituye una campaña anual real.
+R8 S1 Sensores anómalos o lecturas po-
+tencialmente sesgadas por riego
+previo.
+3 3 9 Mitigado par-
+cialmente
+En S4 se descartó usar la lectura como ver-
+dad continua y se emplearon rangos para ca-
+librar simulación de humedad.
+R9 S1 Pérdidadeinformaciónalpasarde
+datos crudos a agregaciones.
+3 2 6 Aceptado Se compensa con trazabilidad de datasets de-
+rivados y documentación de columnas.
+R10 S1 Falta de contexto agronómico por
+cultivo y etapa fenológica.
+4 4 16 Mitigado Se introdujo BBDD de cultivos, rangos fa-
+vorables y calendario de fases para reward
+agrícola.
+R11 S1 Diferencias entre zonas S1/S2 no
+explicadas por el dataset.
+3 3 9 Vigente Se trata cada zona de forma independiente y
+se evita extrapolar conclusiones causales sin
+datos de campo adicionales.
+25
+
+--- PAGE 27 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Origen Riesgo P I Exp. Estado Respuesta y cierre de gestión
+R12 S2 Pesos del IEC no validados empí-
+ricamente.
+4 5 20 Reformulado El IEC se retira como criterio principal y se
+sustituye por una reward agrícola-energética
+usada por la política DQN offline.
+R13 S2 Uso de latitud o parámetros proxy
+no ajustados exactamente a la ins-
+talación.
+3 3 9 Vigente menor Se documenta como aproximación técnica
+aceptable para prototipo, no para despliegue
+comercial.
+R14 S2 Conjuntodetestsinsuficientepara
+cubrir reglas solares y casos límite.
+4 3 12 Mitigado Seampliólabateríadepruebashasta44tests
+pasados, cubriendo pipeline, lógica y valida-
+ciones relevantes.
+R15 S3 Dashboard sin validación formal
+de usuario final.
+4 3 12 Aceptado La demo se estabiliza con una versión de cua-
+tro pestañas; las mejoras avanzadas se docu-
+mentan para integración posterior.
+R16 S3 Ausencia de feed real en tiempo
+real para predicción y control.
+5 4 20 Abierto Se creó API/base backend para predicción,
+pero se deja claro que no equivale a teleme-
+tría real continua.
+R17 S3 Artefactos generados o cachés ver-
+sionados accidentalmente.
+2 2 4 Mitigado Se revisó ‘.gitignore‘, se retiraron outputs
+grandes del commit y se documentó regene-
+ración local.
+R-S4-01 S4 Confusión entre datos simula-
+dos y datos reales al entrenar
+LSTM/RL.
+3 5 15 Activo controla-
+do
+Se documentan hipótesis, rangos y naturale-
+za sintética del riego. Las salidas grandes se
+tratan como regenerables.
+R-S4-02 S4 CSV de entrenamiento superiores
+a límites de GitHub.
+4 3 12 Materializado y
+mitigado
+El push falló por archivos de 98,89 MB y
+118,19 MB. Se sacaron del commit y se dejó
+instrucción para regenerarlos.
+R-S4-03 S4 Sobreajuste del LSTM a un en-
+torno simulado.
+3 3 9 Abierto Se recomienda usar métricas de validación
+temporal y no vender el modelo como pre-
+dictor agrícola real sin calibración externa.
+R-S4-04 S4 Integración visual tardía rompe el
+dashboard estable.
+3 5 15 Materializado y
+controlado
+Se hizo rollback del frontend a la versión es-
+table y se mantuvo el backend preparado pa-
+ra integración incremental.
+R-S4-05 S4 Reward agrícola/energética no va-
+lidada con expertos.
+3 3 9 Abierto Separametrizanpesosyumbralesparapoder
+discutirlos con usuarios y defenderlos como
+hipótesis de prototipo.
+26
+
+--- PAGE 28 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+14.3. Evolución de riesgos por fase
+Sprint Tipo de riesgo domi-
+nante
+Decisión de gestión Resultado
+Sprint 1 Calidad, continuidad y
+significado de los datos.
+Priorizar EDA, limpieza y
+trazabilidad antes de mo-
+delar.
+Se evitó construir mode-
+los sin conocer limitacio-
+nes de sensores.
+Sprint 2 Definición de indicador
+y reglas de recomenda-
+ción.
+Crear IEC como puente
+interpretable, pero mante-
+nerlo revisable.
+El IEC permitió avanzar,
+aunque en S4 se retiró co-
+mo métrica principal de
+decisión.
+Sprint 3 Producto demostrable e
+integración Streamlit.
+Proteger estabilidad del
+dashboard y cubrir reglas
+con tests.
+Se obtuvo una demo fun-
+cional, pero con límites
+en predicción y feed real.
+Sprint 4 Simulación, DQN of-
+fline, LSTM, archivos
+grandes e integración
+avanzada.
+Separar backend experi-
+mental de interfaz estable.
+El proyecto cierra con ar-
+quitectura más realista y
+con riesgos explícitos, no
+escondidos.
+14.4. Riesgos materializados y respuesta
+Los riesgos que realmente se materializaron fueron especialmente útiles para mejorar la gestión del
+proyecto. El problema de archivos grandes apareció al intentar subir datasets de entrenamiento ge-
+nerados por el pipeline; la respuesta fue retirar esos CSV del commit, excluirlos del versionado y
+documentar cómo regenerarlos localmente. La integración visual avanzada también llegó a romper
+la carga del dashboard; la respuesta fue volver a una versión estable y tratar la conexión LSTM/RL
+como una mejora incremental. Finalmente, la falta de datos reales de riego obligó a abandonar una
+lectura ingenua del dataset y a construir una simulación explícita, calibrada por rangos y documen-
+tada como hipótesis.
+27
+
+--- PAGE 29 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+15. Plan Económico y seguimiento presupuestario acumulado
+El seguimiento económico acumulado se ha actualizado con el presupuesto aprobado del proyecto y
+con los consumos reales de contingencia registrados en los cuatro sprints. Se mantiene como presu-
+puesto base aprobado un total de 37.977,50 euros. La lectura económica no se limita a comprobar si
+se ha gastado menos o más, sino que incorpora métricas de valor ganado para reflejar desviaciones
+de alcance, esfuerzo técnico y calendario.
+15.1. Presupuesto aprobado y situación de cierre
+Concepto Importe (EUR) Comentario
+Presupuesto total aprobado (BAC) 37.977,50 Presupuesto vigente de referencia
+para el proyecto completo.
+Coste acumulado comprometido
+(AC)
+35.860,00 Trabajo ejecutado, documentación,
+desarrollo, pruebas y ajustes acumu-
+lados.
+Valor ganado acumulado (EV) 35.160,00 Valor reconocido del alcance real-
+mente cerrado y defendible.
+Valor planificado acumulado (PV) 37.977,50 Valor planificado al cierre del pro-
+yectosegúnalcancecompletoprevis-
+to.
+Contingencia inicial 3.452,50 Reserva de gestión para incidencias
+técnicas y desviaciones.
+Contingencia consumida 1.335,00 Rework, bugs, reformulación de mo-
+delos, rollback frontend y gestión de
+datasets pesados.
+Contingencia remanente 2.117,50 Margen no consumido al cierre.
+La diferencia entre coste acumulado y valor ganado no implica que el proyecto sea fallido, sino que
+refleja una decisión consciente: se ha cerrado y documentado una arquitectura técnica avanzada,
+pero no se ha activado toda la integración visual prevista para no comprometer la demo final. Por
+tanto, existe coste real en investigación, corrección y backend que aporta valor técnico, aunque una
+parte del valor planificado queda como integración futura.
+15.2. Seguimiento económico por sprint
+Sprint PV EV AC CPI SPI Lectura de gestión
+S1 8.500,00 8.500,00 8.850,00 0,96 1,00 Se entregó el análisis explorato-
+rioprevisto,peroconmásesfuer-
+zo por limpieza, comprensión de
+sensores y falta de metadatos.
+S2 8.700,00 8.650,00 8.825,00 0,98 0,99 La circularidad entre GPOA, án-
+gulo y recomendación obligó a
+replantear parte del enfoque del
+IEC.
+S3 8.900,00 8.850,00 9.120,00 0,97 0,99 El dashboard llegó a versión es-
+table, pero se consumió esfuerzo
+adicional en bugs de VWC, tests
+y estabilización.
+28
+
+--- PAGE 30 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+Sprint PV EV AC CPI SPI Lectura de gestión
+S4 11.877,50 9.160,00 9.065,00 1,01 0,77 El sprint fue eficiente en coste di-
+recto, pero no ganó todo el valor
+planificado por rollback de inte-
+gración visual avanzada.
+Total 37.977,50 35.160,00 35.860,00 0,98 0,93 Proyecto cerrado bajo pre-
+supuesto de caja, pero con
+desviación de alcance visual
+avanzado.
+15.3. Métricas de control presupuestario
+Métrica Fórmula Valor Interpretación
+CV EV - AC -700,00 Hay una desviación de coste inter-
+na: parte del esfuerzo consumido fue
+rework o investigación necesaria, no
+valor cerrable directamente.
+SV EV - PV -2.817,50 Existe desviación de alcan-
+ce/calendario respecto al plan
+completo, sobre todo por dejar la
+integración visual avanzada para
+después.
+CPI EV / AC 0,98 Por cada euro consumido se recono-
+cen 0,98 euros de valor ganado. Es
+una desviación pequeña, pero real.
+SPI EV / PV 0,93 Se ha ganado el 93% del valor pla-
+nificado al cierre. El 7% restante co-
+rresponde principalmente a integra-
+ción final no activada.
+EAC AC + (BAC - EV) /
+CPI
+38.735,00 Si se forzara completar el alcance
+original con la productividad ob-
+servada, se superaría ligeramente el
+BAC.
+VAC BAC - EAC -757,50 Proyección desfavorable para el al-
+cance original completo; el cierre
+aceptado evita ese sobrecoste.
+29
+
+--- PAGE 31 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+15.4. Consumo de contingencia acumulado
+Sprint Consumo (EUR) Justificación
+S1 350,00 Trabajo adicional de análisis por falta de metadatos,
+anomalías y validación inicial de sensores.
+S2 175,00 Revisión del enfoque IEC y ajuste de reglas por de-
+pendencias circulares entre ángulo, irradiancia y pro-
+ducción.
+S3 270,00 Corrección de errores de VWC, tests adicionales y es-
+tabilización del dashboard Streamlit.
+S4 540,00 Simulación de riego, generación de datasets, entrena-
+miento LSTM, retirada de CSV grandes y rollback del
+frontend avanzado.
+Total
+consu-
+mido
+1.335,00Consumo acumulado de contingencia.
+Remanente 2.117,50Contingencia disponible no utilizada.
+15.5. Desviación por perfiles de trabajo
+Perfil Plan Real Delta Motivo principal
+Gestión de proyecto y
+documentación
+5.500,00 5.550,00 +50,00 Mayor esfuerzo en cierre acu-
+mulado, riesgos y justificación
+económica.
+Ingeniería de datos y pi-
+peline
+9.500,00 9.850,00 +350,00 Regeneración de outputs, con-
+trol de CSV grandes y scripts
+reproducibles.
+Modelización, RL y
+LSTM
+7.200,00 7.905,00 +705,00 Reformulación MDP, simula-
+ción de riego y entrenamiento
+del modelo del mundo.
+Análisis de datos y vali-
+dación
+5.050,00 5.050,00 0,00 Trabajo alineado con lo pre-
+visto tras estabilizar criterios
+de datos.
+BI, dashboard e integra-
+ción
+4.575,00 4.805,00 +230,00 Intento de quinta pestaña, fa-
+llo de carga y rollback a inter-
+faz estable.
+Subtotal perfiles in-
+ternos
+31.825,00 33.160,00 +1.335,00Desviación cubierta íntegra-
+mente con contingencia.
+Servicios externos y so-
+porte
+1.700,00 1.700,00 0,00 Sin desviación.
+Infraestructura y herra-
+mientas
+1.000,00 1.000,00 0,00 Sin desviación relevante.
+Coste acumulado
+comprometido
+34.525,00 35.860,00 +1.335,00Coste real dentro del BAC
+gracias al remanente de con-
+tingencia.
+30
+
+--- PAGE 32 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+15.6. Conclusión económica
+El proyecto queda económicamente controlado porque el coste acumulado comprometido, 35.860,00
+euros,semantienepordebajodelpresupuestoaprobadode37.977,50euros.Sinembargo,lasmétricas
+CPI y SPI muestran que la gestión no ha sido perfectamente lineal. Se ha consumido más esfuerzo
+del previsto en perfiles técnicos, especialmente modelización y pipeline, y no todo el alcance visual
+avanzado se ha reconocido como entregado. Esta lectura es más fiel al desarrollo real del sprint:
+el equipo ha preferido cerrar una base defendible, estable y documentada antes que forzar una
+integración de riesgo alto en la demo final.
+31
+
+--- PAGE 33 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+16. Plan de Calidad
+16.1. Evolución acumulada de la calidad
+La calidad del proyecto no se ha gestionado como una comprobación final, sino como un proceso
+acumulado. En el Sprint 1 la calidad se centró en entender el dataset y no construir conclusiones
+sobre sensores sin una limpieza mínima. En el Sprint 2 se añadió calidad metodológica: justificar
+el IEC, revisar reglas y hacer explícitas las dependencias entre variables solares. En el Sprint 3 la
+calidad pasó a producto, con un dashboard ejecutable y pruebas sobre reglas críticas. En el Sprint
+4 la calidad se orientó a reproducibilidad, separación entre simulación y datos reales, gestión de
+archivos grandes y estabilidad de la demo.
+Cuadro 19: Evolución acumulada del plan de calidad
+Sprint Foco de calidad Controles aplicados Resultado
+S1 Calidad de datos y traza-
+bilidad exploratoria.
+Revisión de nulos, rangos,
+continuidad temporal, ano-
+malías y consistencia de
+sensores.
+Dataset comprendido y ries-
+gos de calidad identificados
+antes de modelar.
+S2 Calidad metodológica del
+indicador y reglas.
+Revisión de la circulari-
+dad GPOA-ángulo, compa-
+ración de reglas y docu-
+mentación de hipótesis.
+IEC útil como indicador inter-
+medio, pero retirado como cri-
+terio final de control.
+S3 Calidad de producto de-
+mostrable.
+Tests de lógica, correc-
+ción de VWC, estabiliza-
+ción Streamlit y validación
+de vistas principales.
+Dashboard estable y defendi-
+ble para demo.
+S4 Calidad de reproducibili-
+dad y cierre.
+Tests, documentación de
+datasets regenerables, se-
+paración de backend expe-
+rimental y frontend esta-
+ble.
+Proyecto cerrable sin ocultar
+limitaciones técnicas.
+32
+
+--- PAGE 34 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+16.2. Criterios de calidad acumulados
+Dimensión Criterio acumulado Evidencia de cierre
+Datos Las transformaciones deben
+ser reproducibles y las sali-
+das pesadas no deben depen-
+der del repositorio.
+Scripts y notebooks documen-
+tados; CSV grandes excluidos
+y regenerables.
+Modelos Ningún modelo debe presen-
+tarse como validado en campo
+si procede de simulación o hi-
+pótesis.
+E07 y este documento sepa-
+ran RL/LSTM experimental
+de explotación real.
+Dashboard La interfaz entregada debe
+abrirse de forma estable y ser
+demostrable.
+Rollback a versión de cuatro
+pestañas estable.
+Gestión Riesgos, presupuesto y alcan-
+ce deben reflejar desviaciones
+reales.
+Registro acumulado S1-S4 y
+métricas CPI/SPI no triviales.
+Documentación La entrega debe permitir en-
+tender qué se ha hecho, qué
+queda pendiente y por qué.
+Documentación técnica, ges-
+tiónacumuladaypresentación
+final.
+16.3. Verificación del Definition of Done
+Cuadro 20: Verificación del DoD - Sprint 4
+Criterio DoD Aplica Estado
+El código ejecuta sin errores en los módulos
+principales.
+Sí Completado para backend y
+tests. Dashboard estable restau-
+rado.
+La suite de tests automatizados pasa. Sí Completado: 94 tests pasados.
+El código está versionado en repositorio. Sí Completado, excluyendo CSV
+grandes generados.
+Los archivos grandes están gestionados correc-
+tamente.
+Sí Completado: añadidos a
+.gitignorey documentada
+regeneración.
+La documentación técnica incluye limitaciones
+y próximos pasos.
+Sí Completado en E07.
+La documentación de gestión se actualiza. Sí En curso con este documento.
+El dashboard final funciona y se puede ense-
+ñar.
+Sí Completado en versión estable
+de cuatro pestañas.
+La funcionalidad experimental está diferencia-
+da del entregable estable.
+Sí Completado: quinta pestaña
+preparada, no activada.
+El registro de riesgos está actualizado. Sí Completado en este documento.
+La presentación final está preparada. Sí Pendiente de cerrar a partir de
+E07 y E09.
+El cliente/supervisor ha aceptado en Review. Sí Pendiente de sesión final si apli-
+ca.
+33
+
+--- PAGE 35 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+16.4. Criterios de aceptación por entregable
+Cuadro 21: Criterios de aceptación de los entregables del
+Sprint 4
+Entregable Criterios de aceptación mínimos
+E06 - Dashboard
+v2
+El dashboard debe abrirse de forma estable, mostrar el estado princi-
+pal del sistema y conservar las vistas de dashboard, series temporales,
+recomendación y alertas. Las funcionalidades avanzadas deben quedar
+diferenciadas si no están activadas.
+E07-Documenta-
+ción técnica
+Debe describir arquitectura, datasets, simulación de riego, MDP, política
+DQN offline, LSTM, reproducibilidad, limitaciones y próximos pasos.
+E08 - Presenta-
+ción final
+Debe sintetizar problema, solución, dashboard, modelos, limitaciones,
+riesgos y propuesta de continuidad.
+E09-Documenta-
+ción de gestión
+Debe incluir backlog, review, retrospectiva, riesgos, presupuesto, DoD,
+lecciones aprendidas y cierre del proyecto.
+34
+
+--- PAGE 36 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+17. Relación con los entregables finales
+17.1. E06 - Dashboard v2 final
+El E06 se cierra como dashboard estable con backend ampliado. La versión visual conectada mantiene
+cuatro pestañas para asegurar que la demo se puede abrir y utilizar. El dashboard v2 previsto queda
+documentado y preparado a nivel de módulos, pero no se activa hasta completar una integración
+incremental.
+17.2. E07 - Documentación técnica completa
+El documento técnico del Sprint 4 consolida:
+simulación de riego;
+modelo del mundo;
+MDP;
+política DQN offline;
+LSTM;
+dashboard previsto;
+reproducibilidad;
+limitaciones.
+17.3. E08 - Presentación final
+La presentación final debería apoyarse en tres mensajes:
+1. El proyecto parte de datos reales heterogéneos y limitados.
+2. Se construye un sistema de soporte a la decisión que equilibra energía y cultivo.
+3. La solución final distingue entre dashboard estable, backend avanzado y simulación documentada.
+17.4. E09 - Documentación de gestión acumulativa
+Este documento sirve como base del E09 para el Sprint 4. Deberá acompañarse de:
+actas del sprint;
+Sprint 3 Review;
+Sprint 3 Retrospective;
+registro de riesgos final;
+seguimiento de presupuesto;
+DoD final revisada;
+informe de lecciones aprendidas.
+35
+
+--- PAGE 37 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+18. Lecciones aprendidas
+Cuadro 22: Lecciones aprendidas acumuladas S1-S4
+ID Sprint Categoría Descripción Recomendación
+LL-01 S1 Datos El dataset agrovoltaico re-
+quiere una fase de com-
+prensión previa antes de
+cualquier automatización.
+No diseñar modelos
+ni dashboards has-
+ta conocer frecuen-
+cia, nulos, sensores
+y rangos físicos.
+LL-02 S1 Alcance Los datos disponibles no
+explican por sí solos todas
+las decisiones agronómicas.
+Separar lo observa-
+ble de lo inferido
+y registrar supues-
+tos desde el primer
+sprint.
+LL-03 S1 Gestión El descubrimiento de datos
+consume más tiempo del
+previsto cuando faltan me-
+tadatos.
+Reservar contingen-
+cia temprana para
+exploración y nor-
+malización.
+LL-04 S2 Modelización Un índice sintético como el
+IEC ayuda a explicar deci-
+siones, pero puede ocultar
+dependencias internas.
+Validar cada com-
+ponente del índice
+y evitar circularida-
+des entre entrada y
+objetivo.
+LL-05 S2 Reglas Las reglas solares son úti-
+les como baseline, pero no
+sustituyen una política se-
+cuencial.
+Mantener las reglas
+como comparación
+interpretable frente
+a modelos más
+avanzados.
+LL-06 S2 Validación La interpretabilidad no eli-
+mina la necesidad de tests.
+Probar casos lími-
+te, horas sin datos
+y comportamiento
+ante variables au-
+sentes.
+LL-07 S3 Producto Una demo vale mucho más
+si abre siempre que si in-
+tenta enseñar todo.
+Proteger la estabi-
+lidad del dashboard
+antes de añadir pes-
+tañas o visualizacio-
+nes complejas.
+LL-08 S3 Integración La lógica de recomenda-
+ción y la visualización de-
+ben evolucionar juntas.
+Diseñar contratos
+claros entre mó-
+dulos backend y
+frontend.
+36
+
+--- PAGE 38 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+ID Sprint Categoría Descripción Recomendación
+LL-09 S3 Calidad Los bugs de VWC y re-
+glas aparecen rápido cuan-
+do la interfaz fuerza esce-
+narios reales.
+Usar el dashboard
+como herramienta
+de validación, no
+solo como escapara-
+te.
+LL-17 S4 Datos / Modelización No se puede entrenar una
+políticaderiegorealsinda-
+tos de riego. La ausencia
+deunavariablecríticadebe
+identificarse antes de dise-
+ñar la interfaz final.
+Separar siempre
+variables observa-
+das, simuladas y
+aprendidas. Docu-
+mentar hipótesis
+antes de presentar
+resultados.
+LL-18 S4 DQN / Producto El IEC fue útil como indi-
+cador, pero se retira como
+objetivo final porque la po-
+lítica DQN necesita una re-
+compensa descompuesta y
+configurable.
+Usar índices sinté-
+ticos solo como so-
+porte explicativo; la
+decisión final debe
+venir de la política
+DQN offline y su re-
+ward multiobjetivo.
+LL-19 S4 Frontend / Riesgo Integrar una pestaña com-
+pleja al final del sprint pue-
+de romper una demo que
+ya funcionaba.
+Activar nuevas vis-
+tasdetrásdeunain-
+tegración incremen-
+tal y probar car-
+ga después de cada
+cambio.
+LL-20 S4 Repositorio Los datasets generados
+pueden superar límites
+de GitHub y bloquear el
+push.
+Definir desde el ini-
+cio qué artefactos se
+versionan y cuáles
+seregeneranoalma-
+cenan externamen-
+te.
+LL-21 S4 Machine Learning No todas las variables de-
+ben aprenderse. Algunas,
+como minutos desde el úl-
+timo riego, son determinis-
+tas.
+Antes de entrenar,
+clasificar targets en
+aprendidos, deriva-
+dos y deterministas.
+LL-22 S4 Gestión El cierre del proyecto re-
+quiere equilibrar ambición
+técnica y estabilidad de en-
+trega.
+Priorizar una demo
+estable y documen-
+tar el trabajo avan-
+zado como evolu-
+ción próxima.
+37
+
+--- PAGE 39 ---
+Gestión acumulada del Proyecto PIA-GIA – Sprint 4
+19. Cierre del Sprint 4
+19.1. Balance técnico
+El Sprint 4 ha permitido cerrar una arquitectura mucho más sólida que la prevista inicialmente.
+Aunqueeldashboardvisualnoincorporatodavíatodalafuncionalidadavanzada,elbackendcontiene
+ya los elementos necesarios para evolucionar hacia un sistema de simulación y decisión:
+datos simulados de riego y suelo;
+MDP formalizado;
+reward multiobjetivo;
+política DQN offline;
+LSTM de modelo del mundo;
+rollout de políticas;
+reglas agronómicas por cultivo.
+19.2. Balance de gestión
+Desde gestión, el sprint ha tenido una desviación técnica controlada. El equipo ha decidido conscien-
+temente no forzar una integración visual inestable. Esta decisión reduce el riesgo de demo y permite
+entregar una documentación honesta sobre lo que está listo, lo que está preparado y lo que requiere
+validación adicional.
+19.3. Estado final del proyecto
+El proyecto queda en un estado adecuado para presentación final como prototipo avanzado:
+dashboard funcional y demostrable;
+backend preparado para decisiones secuenciales;
+documentación técnica extensa;
+riesgos y limitaciones identificados;
+próximos pasos claros para continuar.
+La principal recomendación para la continuación del proyecto es obtener datos reales de riego o
+validar experimentalmente la simulación. Con esa información, el sistema podría pasar de prototipo
+de soporte a la decisión a una herramienta más cercana a operación real.
+19.4. Mejoras pendientes
+La mejora funcional más importante para la siguiente iteración es construir una pestaña simplifi-
+cada del dashboard para cliente. La versión técnica prevista puede ser útil para el equipo, pero no
+necesariamente para una persona que solo necesita tomar decisiones. Por tanto, la propuesta es crear
+una vista de alto nivel que muestre:
+acción recomendada por la política RL;
+explicación corta de la decisión;
+efecto esperado sobre cultivo y energía;
+estado del riego y necesidad de intervención;
+avisos cuando la recomendación se base en datos simulados;
+comparación sencilla con una política fija o regla manual.
+Esta mejora permitiría conectar mejor el backend avanzado con el uso real del producto. La prioridad
+no sería enseñar todos los detalles del modelo, sino hacer que la recomendación sea comprensible,
+defendible y accionable para un cliente.
+38

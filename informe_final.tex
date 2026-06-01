@@ -1,0 +1,1489 @@
+﻿\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable} % Retornamos a longtable optimizado estáticamente
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{microtype} 
+
+% --- CONFIGURACIÓN DE GEOMETRÍA Y REGLAS DE DISEÑO ---
+\geometry{top=3cm, bottom=3cm, left=2.5cm, right=2.5cm}
+\renewcommand{\arraystretch}{1.25} 
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- PALETA DE COLORES PROFESIONAL ---
+\definecolor{brandblue}{RGB}{24, 76, 120}     
+\definecolor{brandgreen}{RGB}{34, 112, 63}   
+\definecolor{textdark}{RGB}{44, 53, 57}      
+\definecolor{lightbg}{RGB}{245, 247, 248}    
+
+\makeatletter
+\newcommand{\globalcolor}[1]{%
+  \color{#1}\global\let\default@color\current@color
+}
+\makeatother
+\AtBeginDocument{\globalcolor{textdark}} 
+
+% --- CONFIGURACIÓN DE HIPERENLACES ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=brandblue,
+    urlcolor=brandblue,
+    citecolor=brandgreen,
+    bookmarksnumbered=true
+}
+
+% --- TIPOGRAFÍA Y FORMATO DE TÍTULOS ---
+\titleformat{\section}
+  {\color{brandblue}\Large\bfseries}{\thesection.}{0.7em}{}[\vspace*{-0.2cm}\hrule]
+\titleformat{\subsection}
+  {\color{brandgreen}\large\bfseries}{\thesubsection.}{0.7em}{}
+\titleformat{\subsubsection}
+  {\color{textdark}\normalsize\bfseries}{\thesubsubsection.}{0.7em}{}
+
+% --- COMANDOS PERSONALIZADOS ---
+\setlist[itemize]{noitemsep, topsep=2pt, leftmargin=1.5em}
+\setlist[enumerate]{noitemsep, topsep=2pt, leftmargin=1.5em}
+
+\newcommand{\code}[1]{\colorbox{lightbg}{\texttt{\small\detokenize{#1}}}}
+\newcommand{\metric}[1]{\textbf{\color{brandblue}#1}}
+
+\begin{document}
+
+% --- PORTADA REDISEÑADA Y CORREGIDA ---
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    \includegraphics[width=0.45\textwidth]{upc (1) (2).png}\par
+    \vspace{1.5cm}
+    {\scshape\LARGE Universitat Politècnica de Catalunya \par}
+    \vspace{0.5cm}
+    {\large\color{brandgreen}\uppercase{Organización: Sostenibilidad y Ciencia} \par}
+    \vspace{2.5cm}
+    {\hrule height 1.5pt \vspace{0.4cm}}
+    {\bfseries\Huge Informe Final del Proyecto SAMO \par}
+    \vspace{0.4cm}
+    {\large\itshape Sistema de apoyo a la decisión para operación agrovoltaica dinámica \par}
+    {\vspace{0.4cm} \hrule height 1.5pt}
+    \vfill
+    {\linewidth=0.8\textwidth
+    \centering
+    \begin{tabular}{rl} % ¡CORREGIDO AQUÍ!
+        \textbf{Equipo:} & Chacorocalfarobar \\
+        \textbf{Curso:}   & 2025--2026 \\
+    \end{tabular}\par}
+    \vspace*{1cm}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Resumen ejecutivo}
+
+El proyecto SAMO aborda una pregunta operativa sencilla de formular, pero difícil de resolver: cómo orientar placas solares móviles para producir energía sin perjudicar al cultivo situado debajo. En una instalación agrovoltaica dinámica, la posición de los paneles afecta simultáneamente a la captación eléctrica, la sombra, la radiación que recibe la planta, la humedad del suelo y la temperatura. Por ello, el objetivo del proyecto no ha sido construir únicamente gráficos o modelos aislados, sino una base de apoyo a la decisión que permita interpretar el estado del sistema y recomendar acciones de forma prudente.
+
+El trabajo se organizó en cuatro sprints con una evolución acumulativa. En el Sprint 1 se realizó el análisis exploratorio de datos: inventario de ficheros, auditoría de calidad, frecuencias de muestreo, patrones intradiarios, correlaciones, comparación de zonas experimentales y construcción de un primer dataset integrado a 6 horas. En el Sprint 2 se transformó esa base en una primera lógica de modelización mediante el índice Energía--Cultivo (IEC), modelos interpretables y reglas candidatas de rotación. En el Sprint 3 se convirtió esa lógica en un dashboard Streamlit v1, con cuatro vistas estables: estado general, series temporales, recomendación y alertas. Finalmente, en el Sprint 4 se corrigió y amplió la arquitectura técnica: se incorporó riego simulado, trayectorias a 10 minutos, formulación como problema de decisión secuencial, política DQN offline, recompensa agrícola--energética y un modelo LSTM del mundo.
+
+La decisión más importante del cierre fue separar claramente lo que está activo en el producto demostrable de lo que queda preparado en backend. La entrega final incluye un dashboard estable para visualizar datos, consultar recomendaciones y revisar alertas. Además, deja preparados módulos avanzados de agronomía, riego simulado, DQN, rollouts y LSTM para una futura integración visual. Esta separación evita sobreprometer: el sistema recomienda y simula, pero no controla físicamente la instalación ni sustituye una validación de campo.
+
+La validación offline del módulo de decisión, realizada sobre 23.043 registros comparables de 10 minutos correspondientes a 241 días, estimó una mejora de \metric{+24,19\%} en el IEC frente al comportamiento histórico y una mejora de \metric{+61,52\%} en la recompensa agregada. Estos resultados son útiles como evidencia cuantitativa de potencial, pero deben interpretarse como validación offline basada en datos históricos y escenarios simulados, no como prueba agronómica real ni como garantía de funcionamiento en producción.
+
+
+\subsection*{Aportaciones principales}
+
+Las aportaciones más relevantes del proyecto son:
+
+\begin{itemize}
+    \item Un proceso completo de transformación de datos agrovoltaicos heterogéneos en una base reproducible de análisis y decisión.
+    \item Una métrica intermedia, el IEC, que permitió ordenar el problema energía--cultivo durante la modelización y validar mejoras estimadas, aunque no se mantiene como único criterio final de decisión.
+    \item Una evolución metodológica desde EDA e interpretabilidad hacia un sistema con reglas, simulación documentada, DQN offline y predicción temporal.
+    \item Una capa agronómica configurable por cultivo, basada en variables observables o proxies documentados.
+    \item Una versión estable del dashboard que permite visualizar el estado del sistema, consultar series temporales, revisar recomendaciones y detectar alertas.
+    \item Un backend avanzado preparado para integrar simulación de riego, política DQN offline, rollouts y modelo LSTM en una futura versión v2 del dashboard.
+    \item Una validación offline prudente, con comunicación explícita de alcance, supuestos y limitaciones.
+\end{itemize}
+
+\newpage
+
+\section{Contexto y objetivo del proyecto}
+
+\subsection{Problema abordado}
+
+Los sistemas agrovoltaicos dinámicos combinan producción fotovoltaica y actividad agrícola en el mismo espacio. Esta configuración abre oportunidades relevantes, pero introduce una dificultad operativa: la inclinación de los paneles no solo afecta a la energía generada, sino también a la radiación que recibe el cultivo, la temperatura del suelo, la humedad del sustrato y el riesgo de estrés hídrico o térmico.
+
+El proyecto parte de una instalación con datos procedentes de sensores de paneles, clima, radiación, suelo y seguimiento. El reto no era únicamente construir un modelo predictivo, sino producir una herramienta que ayudara a decidir qué hacer: cómo orientar los paneles, cuándo mantener seguimiento, cuándo priorizar sombreado, cuándo activar o pausar riego y cuándo avisar de condiciones anómalas.
+
+\subsection{Objetivos específicos}
+
+Los objetivos trabajados a lo largo de los sprints fueron:
+
+\begin{itemize}
+    \item Integrar datos heterogéneos de distintas fuentes y resoluciones temporales.
+    \item Analizar calidad, cobertura, valores atípicos, patrones horarios y relaciones entre energía, radiación, suelo y seguimiento.
+    \item Definir una métrica multiobjetivo que equilibrara producción eléctrica y bienestar del cultivo.
+    \item Derivar reglas de operación comprensibles para el usuario final.
+    \item Evolucionar desde análisis offline hacia un dashboard interactivo con recomendaciones.
+    \item Incorporar una capa agronómica, simulación de riego, política de decisión y predicción temporal.
+    \item Mantener trazabilidad documental, control de riesgos, Definition of Done y evidencias por sprint.
+\end{itemize}
+
+\subsection{Vision del producto final}
+
+El producto final se estructura en dos niveles: una versión estable del dashboard y un conjunto de componentes avanzados preparados a nivel de backend.
+
+La versión estable del dashboard agrovoltaico se desarrolla en Streamlit y actúa como herramienta demostrable de apoyo a la decisión. Su objetivo es permitir que el usuario consulte el estado operativo de la instalación, analice la evolución temporal de las variables principales, revise recomendaciones de rotación y detecte alertas asociadas a condiciones energéticas, microclimáticas o de calidad del dato.
+
+La versión conectada y estable del dashboard se organiza en cuatro vistas principales:
+
+\begin{itemize}
+    \item \textbf{Dashboard}: estado general del sistema, métricas principales, indicadores operativos y visión resumida de la instalación.
+    \item \textbf{Series temporales}: exploración histórica de variables de sensores, radiación, energía, suelo, clima y seguimiento.
+    \item \textbf{Recomendación}: propuesta operativa de rotación de paneles y explicación de las condiciones que justifican la decisión.
+    \item \textbf{Alertas}: detección de situaciones críticas, anomalías de sensores, riesgos microclimáticos y avisos operativos.
+\end{itemize}
+
+Además de esta versión estable, el Sprint 4 deja preparado un backend avanzado para una futura versión v2 del dashboard. Este backend incluye selector de cultivo, selector de zona, evaluación de riesgo agronómico, recomendación mediante política DQN offline, métricas del modelo LSTM, predicción del siguiente estado y simulación de trayectorias futuras. Sin embargo, estos componentes no se integran completamente en la interfaz final para evitar introducir inestabilidad en la demo. La decisión de separar entrega estable e integración experimental permite presentar un producto funcional y, al mismo tiempo, documentar una evolución técnica sólida para fases posteriores.
+\newpage
+
+\section{Datos de partida y sistema observado}
+
+\subsection{Fuentes de datos}
+
+El repositorio contiene 16 ficheros CSV originales en la carpeta \code{data/}. Estos ficheros cubren medidas de precipitación, temperatura del aire, viento, temperatura de paneles, radiación fotosintéticamente activa, ángulos de seguimiento, irradiancia en plano de array, temperatura de suelo, humedad volumétrica del suelo, dirección de viento y variables asociadas a distintas zonas experimentales.
+
+El Sprint 1 dejó un inventario en \code{sprint1/outputs/inventario_datasets.csv}, que sirvió para documentar nombre, cobertura y naturaleza de cada fuente. A partir de ese inventario se construyeron reportes de calidad, cobertura temporal, valores atípicos y un primer dataset integrado.
+
+% --- LONGTABLES OPTIMIZADAS CON VALORES ESTÁTICOS (Pálpito instantáneo de compilación) ---
+\begin{longtable}{p{0.25\linewidth}p{0.70\linewidth}}
+\caption{Familias de datos utilizadas en el proyecto.}\\
+\toprule
+\textbf{Familia} & \textbf{Uso dentro del proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Familia} & \textbf{Uso dentro del proyecto} \\
+\midrule
+\endhead
+Meteorología & Temperatura exterior, viento, precipitación e indicadores necesarios para contextualizar estrés térmico, evaporación, seguridad de posición y condiciones exógenas. \\ \addlinespace
+Radiación y energía & Irradiancia, GPOA, albedo y variables asociadas a producción fotovoltaica. Forman la parte energética del índice IEC y de la recompensa multiobjetivo. \\ \addlinespace
+Seguimiento solar & Ángulos de trackers y regímenes de operación. Se usan para detectar comportamiento operativo, reglas de rotación y anomalías. \\ \addlinespace
+Microclima de cultivo & ePAR, temperatura de suelo y VWC en zonas S1/S2/R1. Se usan para representar condiciones agronómicas y riesgo del cultivo. \\ \addlinespace
+Tiempo y posición solar & Hora, día, elevación solar, azimut y \emph{clearsky GHI}. Se usan en reglas físicas, modelos y simulaciones. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Zonas experimentales}
+
+El proyecto distingue zonas con funciones distintas:
+
+\begin{itemize}
+    \item \textbf{S1}: zona bajo influencia de paneles y cultivo, usada como referencia principal para reglas agronómicas y simulación.
+    \item \textbf{S2}: segunda zona experimental, útil para comparar comportamiento y validar patrones observados.
+    \item \textbf{R1}: zona de referencia o pleno sol, empleada como baseline para radiación y variables exógenas.
+\end{itemize}
+
+Esta separación permitió analizar no solo valores absolutos, sino diferencias entre zonas. En el Sprint 3 se consolidó una decisión de diseño importante: para el \emph{world model} se priorizaron variables delta, por ejemplo \code{Delta_PAR_S1}, \code{Delta_VWC_S1_sim} y \code{Delta_Tsoil_S1_sim}, porque ayudan a aislar el efecto de sombreado de los paneles frente a variaciones externas como nubes o cambios meteorológicos.
+
+\subsection{Resoluciones temporales}
+
+El proyecto evolucionó en tres niveles temporales:
+
+\begin{itemize}
+    \item \textbf{Datos crudos}: algunas fuentes superar las 600.000 filas, especialmente las series de alta frecuencia.
+    \item \textbf{Dataset integrado a 6 horas}: 1.463 filas, construido en Sprint 1 y reutilizado en Sprint 2 como base estable.
+    \item \textbf{Dataset de modelización a 10 minutos}: 34.564 filas, construido en Sprint 3 para recomendaciones más reactivas y simulación.
+\end{itemize}
+
+La resolución de 6 horas permitió una primera modelización robusta con menor ruido y menor coste de integración. La resolución de 10 minutos se introdujo después para aproximar un sistema operativo real, donde las decisiones sobre paneles y riego pueden necesitar mayor frecuencia.
+
+\subsection{Criterios de éxito y trazabilidad}
+
+Para evaluar si el proyecto llegaba a un resultado completo, se utilizaron criterios técnicos, funcionales y de gestión. La siguiente matriz resume la relación entre objetivos, sprints y evidencias disponibles en el repositorio.
+
+\begin{longtable}{p{0.16\linewidth}p{0.76\linewidth}}
+\caption{Cifras acumuladas utilizadas como evidencia del avance del proyecto.}\\
+\toprule
+\textbf{Sprint} & \textbf{Evidencia cuantitativa principal} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Evidencia cuantitativa principal} \\
+\midrule
+\endhead
+Sprint 1 & 16 ficheros CSV revisados, 8 datasets principales de sensores, 5 ficheros de precipitacion de alta frecuencia, auditoria de calidad y primer dataset integrado de 1.463 filas a 6 horas. \\ \addlinespace
+Sprint 2 & Dataset de modelizacion con 337 observaciones utiles, 19 variables de entrada, dos modelos comparados y ElasticNet con MAE 0,057, RMSE 0,080 y $R^2$ de 0,873. \\ \addlinespace
+Sprint 3 & Dashboard Streamlit v1 con 4 pestanas funcionales, 337 observaciones para recomendacion, 1.462 registros historicos consultables y 37 tests unitarios pasados. \\ \addlinespace
+Sprint 4 & Dataset avanzado de 34.564 filas a 10 minutos, validacion offline sobre 23.043 registros comparables, 241 dias, 44 tests pasados, mejora estimada de +24,19\% en IEC y +61,52\% en recompensa agregada. \\
+\bottomrule
+\end{longtable}
+
+Esta tabla no sustituye la explicacion tecnica, sino que ofrece una lectura rapida de madurez: el proyecto paso de inventariar datos a construir una interfaz estable y, finalmente, a validar una politica de decision offline. Tambien ayuda a separar evidencias de naturaleza distinta: calidad de datos, modelizacion, producto, tests y mejora estimada.
+\begin{longtable}{p{0.22\linewidth}p{0.12\linewidth}p{0.30\linewidth}p{0.28\linewidth}}
+\caption{Trazabilidad entre objetivos, trabajo realizado y evidencias.}\\
+\toprule
+\textbf{Objetivo} & \textbf{Sprint} & \textbf{Evidencia generada} & \textbf{Resultado final} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Objetivo} & \textbf{Sprint} & \textbf{Evidencia generada} & \textbf{Resultado final} \\
+\midrule
+\endhead
+Comprender los datos disponibles & Sprint 1 & Inventario, calidad, cobertura, outliers, perfiles temporales y correlaciones & Base objetiva para decidir variables y descartar interpretaciones débiles. \\ \addlinespace
+Unificar fuentes heterogéneas & Sprint 1 & \code{dataset_integrado_6h.csv} y resumen temporal & Primer dataset común, reproducible y utilizable en modelización. \\ \addlinespace
+Definir una métrica multiobjetivo & Sprint 2 & IEC, componentes energéticos y agronómicos, normalización y reglas & Criterio común para comparar decisiones de panel y cultivo. \\ \addlinespace
+Obtener reglas explicables & Sprint 2 & ElasticNet, árbol de decisión, reglas candidatas y política tabular & Recomendaciones entendibles antes de introducir modelos más complejos. \\ \addlinespace
+Reducir distancia con operación real & Sprint 3 & Pipeline de 10 minutos, reglas por franja y microbloque & Mayor sensibilidad temporal para radiación, humedad, viento y riego. \\ \addlinespace
+Construir producto usable & Sprint 3 & Dashboard Streamlit v1, cuatro pestañas, visualización SVG, recomendación y alertas & Herramienta interactiva estable que puede ser enseñada y probada por usuarios. \\ \addlinespace
+Acercar el sistema a decisión secuencial & Sprint 4 & Riego simulado, MDP, DQN offline, recompensa multiobjetivo y LSTM & Backend avanzado preparado para comparar políticas de placas y riego sin actuar automáticamente sobre el campo. \\ \addlinespace
+Validar de forma cuantitativa & Sprint 4 & Validación offline sobre registros comparables y tests ampliados & Evidencia de mejora estimada y control técnico de componentes. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Decisiones técnicas clave}
+
+Durante el proyecto se tomaron varias decisiones de diseño que condicionaron el resultado final:
+
+\begin{itemize}
+    \item \textbf{Priorizar interpretación antes que complejidad}: el Sprint 2 se apoyó en ElasticNet, árbol de decisión y reglas tabulares porque el equipo necesitaba explicar por qué una posición de panel era preferible. Esta base hizo más seguro incorporar después DQN y LSTM.
+    \item \textbf{Mantener doble resolución temporal}: la resolución de 6 horas ofreció estabilidad para analizar patrones agregados, mientras que la resolución de 10 minutos permitió acercarse a operación real. La decisión final fue conservar ambas, no reemplazar una por otra.
+    \item \textbf{Separar variables exógenas, acciones y estado interno}: esta separación redujo riesgo de circularidad y permitió formular el problema como MDP. También facilitó el diseño del \emph{world model}.
+    \item \textbf{Explicar cada recomendación}: el dashboard no solo calcula una acción; muestra reglas, alertas, contexto solar, estado agronómico y simulaciones, de forma que la decisión pueda defenderse.
+    \item \textbf{No sobreprometer validación}: la mejora offline se presenta como estimación y se separa explícitamente de una validación de campo. Esto protege la credibilidad técnica del proyecto.
+\end{itemize}
+\newpage
+
+\section{Sprint 1: análisis exploratorio e integración inicial}
+
+\subsection{Objetivo del sprint}
+
+El primer sprint tuvo como objetivo convertir un conjunto heterogéneo de ficheros en conocimiento técnico utilizable. No se buscaba aún automatizar decisiones, sino entender qué datos existían, con qué calidad, qué relaciones aparecían entre variables y qué limitaciones podían afectar a la modelización.
+
+Los entregables principales fueron:
+
+\begin{itemize}
+    \item \code{sprint1/E01_Informe_EDA_Sprint1.pdf}: informe completo de análisis exploratorio.
+    \item \code{sprint1/sprint1_eda_agrovoltaica.ipynb}: notebook reproducible.
+    \item \code{sprint1/outputs/dataset_integrado_6h.csv}: dataset integrado a resolución de 6 horas.
+    \item \code{sprint1/outputs/quality_report.csv}: reporte de nulos, duplicados y frecuencia.
+    \item \code{sprint1/outputs/temporal_summary.csv}: resumen de cobertura temporal.
+    \item \code{sprint1/outputs/outliers_summary.csv}: resumen de valores atípicos con criterio IQR.
+\end{itemize}
+
+\subsection{Trabajo realizado}
+
+El sprint comenzó con el inventario de datasets y la identificación de variables clave. A partir de ahí se aplicó una limpieza inicial orientada a:
+
+\begin{itemize}
+    \item Revisar los 16 CSV originales y separar familias de sensores, precipitación, radiación, suelo, clima y seguimiento.
+    \item Detectar duplicados o redundancias en ficheros de precipitación, especialmente por acumulados repetidos o codificaciones distintas del tipo de precipitación.
+    \item Normalizar fechas y resolver diferencias de frecuencia temporal.
+    \item Detectar columnas con unidades embebidas en cadenas o nombres heterogéneos.
+    \item Cuantificar nulos, duplicados y discontinuidades.
+    \item Construir visualizaciones de cobertura temporal y mapas de valores faltantes.
+    \item Analizar distribuciones, perfiles horarios y correlaciones.
+    \item Explorar relaciones con sentido físico: irradiancia, ángulo de tracker, ePAR, temperatura de suelo y VWC.
+\end{itemize}
+
+El resultado más importante fue la creación de \code{dataset_integrado_6h.csv}. Este dataset condensó las series originales en una frecuencia manejable para modelización, preservando las variables más relevantes de energía, suelo, radiación, clima y seguimiento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{temporal_coverage.png}
+\end{figure}
+
+La cobertura temporal muestra que el primer reto del proyecto no era entrenar un modelo, sino comprobar qué datos existían realmente y durante qué periodos. Esta figura justifica la fase de inventario, limpieza y sincronización previa a cualquier decisión de modelización.
+
+\subsection{Hallazgos técnicos}
+
+El EDA permitió establecer varias conclusiones que condicionaron el resto del proyecto:
+
+\begin{itemize}
+    \item La relación entre seguimiento solar y ePAR no era puramente lineal, por lo que una política simple de máxima irradiancia podía perjudicar al cultivo.
+    \item La temperatura del suelo presentaba retardos respecto a la irradiancia, con desfases aproximados de 6 a 12 horas.
+    \item Las secciones S1 y S2 podían tratarse como zonas experimentales válidas para comparar microclima y efecto de sombreado.
+    \item La zona R1 funcionaba como referencia de pleno sol y ayudaba a interpretar diferencias de radiación frente a zonas bajo panel.
+    \item Los perfiles intradiarios confirmaron patrones físicos coherentes en radiación, temperatura, humedad y tracking, útiles para construir reglas posteriores.
+    \item La matriz de Spearman permitió priorizar relaciones robustas sin asumir linealidad estricta entre variables.
+    \item Los umbrales de ePAR ayudaron a traducir radiación disponible a una lectura agronómica más comprensible.
+    \item La cobertura temporal y la calidad de datos eran suficientes para construir una primera modelización, pero no para asumir causalidad fuerte sin validación adicional.
+    \item Algunos trackers mostraban patrones muy estables o agrupaciones físicas inferibles, lo que requería diagnóstico posterior.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{intraday_profiles.png}
+\end{figure}
+
+Los perfiles intradiarios permiten comprobar que las variables energéticas, de suelo y de seguimiento siguen patrones diarios físicamente coherentes. Esta evidencia fue importante para pasar de una lectura puramente estadística a reglas operativas dependientes de la hora y de la posición solar.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{section_S1_vs_S2.png}
+\end{figure}
+
+La comparación entre S1 y S2 muestra que las zonas experimentales no debían tratarse como idénticas. Separar el análisis por zona permitió interpretar mejor el efecto local de sombreado, humedad y temperatura, y preparó la posterior idea de evaluar cultivos o zonas de manera independiente.
+
+\begin{longtable}{p{0.26\linewidth}p{0.66\linewidth}}
+\caption{Decisiones de seleccion y descarte derivadas del EDA.}\\
+\toprule
+\textbf{Elemento revisado} & \textbf{Decision adoptada} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento revisado} & \textbf{Decision adoptada} \\
+\midrule
+\endhead
+Ficheros de precipitacion duplicados & No se usaron como senal principal de decision porque varias fuentes contenian informacion redundante o codificaciones equivalentes. Se conservaron como contexto meteorologico y trazabilidad. \\ \addlinespace
+Precipitacion acumulada & Se trato con cautela porque podia duplicar informacion ya presente en otras columnas. Para el modelo final el riego se separo de la lluvia observada y se simulo explicitamente. \\ \addlinespace
+Tipo de precipitacion & Se considero informativo, pero no suficientemente robusto como variable central de control, por la presencia mayoritaria de valores sin evento y discrepancias puntuales. \\ \addlinespace
+Temperatura de paneles & Se mantuvo como contexto energetico, pero no como unico criterio de decision, porque la politica debe equilibrar energia y cultivo. \\ \addlinespace
+Zonas S1 y S2 & No se trataron como replicas perfectas. La diferencia sistematica de VWC y la distinta exposicion obligaron a conservar la zona como contexto. \\ \addlinespace
+Zona R1 & Se uso como referencia de pleno sol cuando estaba disponible, pero no como sustituto directo de S1/S2, porque no siempre tenia la misma instrumentacion operativa. \\
+\bottomrule
+\end{longtable}
+
+Estas decisiones son importantes porque muestran que el Sprint 1 no fue solo una limpieza mecanica. El equipo tuvo que decidir que fuentes eran fiables para modelar, cuales solo servian como contexto y que diferencias entre zonas podian sesgar una comparacion ingenua.
+
+\begin{longtable}{p{0.28\linewidth}p{0.62\linewidth}}
+\caption{Insights fisicos que condicionaron los sprints posteriores.}\\
+\toprule
+\textbf{Insight} & \textbf{Consecuencia para el proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Insight} & \textbf{Consecuencia para el proyecto} \\
+\midrule
+\endhead
+La posicion \code{STOW} alrededor de $50.6^\circ$ podia degradar el microclima del cultivo. & Se incorporo diagnostico de trackers y alertas operativas en el dashboard. \\ \addlinespace
+El ePAR bajo paneles presentaba medias mucho menores que valores exteriores de referencia. & El cultivo no podia quedar fuera de la funcion objetivo; hacia falta una metrica energia--cultivo. \\ \addlinespace
+La humedad VWC diferia de forma sistematica entre S1 y S2. & Se evito entrenar un modelo que asumiera zonas intercambiables y se preparo la logica por zona. \\ \addlinespace
+Los trackers parecian formar grupos fisicos con comportamientos distintos. & Se genero diagnostico de variabilidad y se traslado el problema a la capa de alertas. \\ \addlinespace
+La relacion entre tracking, radiacion y cultivo no era lineal. & Se justifico el uso de reglas interpretables primero y, despues, de decision secuencial mediante DQN. \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{epar_thresholds.png}
+\end{figure}
+
+Los umbrales de ePAR ayudan a pasar de una variable fisica a una lectura agronomica. Esta figura permite explicar cuando la luz que llega al cultivo puede ser insuficiente y por que la orientacion de placas no debe optimizar solo la produccion electrica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{tracker_correlations.png}
+\end{figure}
+
+Las correlaciones entre trackers muestran que no todos los actuadores se comportan igual. Esta evidencia fue el punto de partida para tratar el movimiento de placas como una variable operativa que tambien puede fallar, no solo como una entrada ideal del modelo.
+
+\subsection{Salidas generadas}
+
+El Sprint 1 produjo salidas visuales y tabulares para apoyar la interpretación:
+
+\begin{longtable}{p{0.32\linewidth}p{0.63\linewidth}}
+\caption{Artefactos principales del Sprint 1.}\\
+\toprule
+\textbf{Artefacto} & \textbf{Función} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Artefacto} & \textbf{Función} \\
+\midrule
+\endhead
+\code{inventario_datasets.csv} & Lista de los 16 CSV originales y sus características. \\ \addlinespace
+\code{quality_report.csv} & Evaluación de calidad: nulos, duplicados y frecuencia. \\ \addlinespace
+\code{temporal_summary.csv} & Cobertura temporal y huecos por fuente. \\ \addlinespace
+\code{outliers_summary.csv} & Identificación de valores extremos mediante IQR ampliado. \\ \addlinespace
+\code{dataset_integrado_6h.csv} & Base integrada utilizada para Sprint 2. \\ \addlinespace
+Gráficas EDA & Mapas de nulos, cobertura temporal, distribuciones, correlaciones, perfiles intradía, análisis de lags, umbrales de ePAR y visión de variables clave. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Gestión, riesgos y lecciones}
+
+El Sprint 1 también cerró el primer ciclo de gestión. Se documentaron reuniones, planificación, reparto de tareas, carga de trabajo, presupuesto, Definition of Done y lecciones aprendidas. El registro de riesgos se actualizó con los riesgos iniciales R1--R6 y nuevos riesgos R7--R11 derivados del EDA. Entre ellos destacan los asociados a calidad de datos, interpretación de sensores, huecos temporales, incertidumbre agronómica y limitaciones para extrapolar conclusiones.
+
+La principal lección del sprint fue que el proyecto necesitaba una base de datos reproducible antes de cualquier modelo. El trabajo exploratorio redujo incertidumbre y permitió formular preguntas de modelización más concretas para el Sprint 2.
+\newpage
+
+\section{Sprint 2: modelización e índice Energía--Cultivo}
+
+\subsection{Objetivo del sprint}
+
+El segundo sprint transformó los hallazgos exploratorios en una política de rotación candidata. El objetivo fue desarrollar un modelo que permitiera recomendar posiciones de panel teniendo en cuenta simultáneamente producción eléctrica y condiciones de cultivo. Para ello se definió el índice IEC, se entrenaron modelos y se derivaron reglas interpretables.
+
+Los entregables principales fueron:
+
+\begin{itemize}
+    \item \code{sprint2/E03_Informe_Modelizacion_Sprint2.docx.pdf}: informe de modelización.
+    \item \code{sprint2/sprint2_modelizacion_agrovoltaica.ipynb}: notebook reproducible.
+    \item \code{sprint2/outputs_sprint2/model_metrics.csv}: métricas de modelos.
+    \item \code{sprint2/outputs_sprint2/candidate_rotation_rules.csv}: reglas candidatas de operación.
+    \item \code{sprint2/outputs_sprint2/tracker_variance_diagnostic.csv}: diagnóstico de trackers.
+\end{itemize}
+
+\subsection{Construcción del dataset de modelización}
+
+El Sprint 2 partió del dataset integrado a 6 horas y generó \code{dataset_modelizacion_6h.csv}, con 337 observaciones modelizables. La reducción respecto al dataset integrado completo se debió a la selección de filas y variables con información suficiente para modelar el índice y comparar regímenes operativos.
+
+El pipeline mantuvo el foco en reproducibilidad:
+
+\begin{itemize}
+    \item Reutilización de la integración validada en Sprint 1.
+    \item Limpieza de valores con unidades embebidas.
+    \item Construcción de variables derivadas.
+    \item Selección de variables energéticas, microclimáticas y de seguimiento.
+    \item Generación de datasets de cobertura y diagnóstico.
+\end{itemize}
+
+Una decisión técnica importante fue no utilizar la irradiancia directa GPOA como entrada sin control cuando el objetivo también dependía de producción o irradiancia. Esta precaución evitó circularidad y fuga de información: si una variable aparece a la vez como causa y como parte del resultado, el modelo puede parecer muy preciso sin aportar una regla operativa realmente válida.
+
+\subsection{Feature engineering y variables del modelo}
+
+El Sprint 2 no entreno modelos directamente sobre los CSV originales. Antes se construyo un conjunto de variables derivadas para representar contexto temporal, posicion solar, estado del tracker, microclima y condiciones energeticas sin introducir fuga de informacion.
+
+\begin{longtable}{p{0.24\linewidth}p{0.28\linewidth}p{0.38\linewidth}}
+\caption{Categorias de variables utilizadas en la modelizacion del Sprint 2.}\\
+\toprule
+\textbf{Categoria} & \textbf{Ejemplos} & \textbf{Funcion en el modelo} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Categoria} & \textbf{Ejemplos} & \textbf{Funcion en el modelo} \\
+\midrule
+\endhead
+Tiempo & Hora, fecha, franja horaria & Capturar patrones intradiarios y diferenciar condiciones de manana, mediodia y tarde. \\ \addlinespace
+Geometria solar & Elevacion solar y variables derivadas & Relacionar el potencial de radiacion con la posicion del sol y el margen de movimiento del panel. \\ \addlinespace
+Tracking & Angulo medio, regimen \code{TRACKING_AM}, \code{TRACKING_PM}, \code{HORIZONTAL}, \code{STOW} & Representar la accion observada y comparar escenarios de operacion. \\ \addlinespace
+Microclima & ePAR, VWC, temperatura de suelo & Aproximar condiciones agronomicas del cultivo bajo panel. \\ \addlinespace
+Energia contextual & Albedo, irradiancia agregada y variables no circulares & Aportar senal energetica sin usar de forma ingenua variables que tambien forman parte del objetivo. \\ \addlinespace
+Calidad y cobertura & Disponibilidad de variables y filtros de registros validos & Evitar entrenar sobre filas con informacion insuficiente o no comparable. \\
+\bottomrule
+\end{longtable}
+
+Esta etapa fue clave para que el IEC no fuese solo una formula, sino un target reproducible. Tambien preparo el salto posterior al MDP: al separar tiempo, estado, accion y resultado, el proyecto pudo reformular la recomendacion como decision secuencial en el Sprint 4.
+
+\subsection{Índice combinado Energía--Cultivo}
+
+La contribución conceptual central fue el índice IEC. Este índice representa un compromiso entre:
+
+\begin{itemize}
+    \item \textbf{Componente energética}: generación fotovoltaica, irradiancia en plano de array y condiciones favorables para producción.
+    \item \textbf{Componente agronómica}: ePAR, humedad volumétrica del suelo y temperatura del suelo como proxies de bienestar del cultivo.
+\end{itemize}
+
+En términos generales, el índice puede entenderse como:
+
+\[
+IEC = f(E_{\text{normalizada}}, C_{\text{normalizado}})
+\]
+
+donde $E$ resume el rendimiento eléctrico y $C$ resume condiciones agronómicas. La finalidad no era producir una verdad agronómica definitiva, sino una métrica operacional que permitiera comparar acciones y ordenar reglas bajo un mismo criterio. En el cierre del proyecto, el IEC debe leerse como una herramienta intermedia y como indicador de validación, no como criterio único de control: la decisión final del Sprint 4 se desplaza hacia una recompensa multiobjetivo usada por la política DQN offline.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth]{iec_overview.png}
+\end{figure}
+
+La visualización del IEC resume cómo se distribuye el equilibrio energía--cultivo en los datos disponibles. Su utilidad principal fue ordenar escenarios y reglas bajo una métrica común; su limitación es que sigue siendo una aproximación basada en proxies y no una medición directa del rendimiento agronómico.
+
+\subsection{Modelos comparados}
+
+Se compararon dos modelos principales:
+
+\begin{itemize}
+    \item \textbf{ElasticNet}: útil para analizar importancia lineal de variables y controlar complejidad.
+    \item \textbf{Decision Tree}: útil para obtener reglas interpretables y traducibles a política de operación.
+\end{itemize}
+
+Las métricas documentadas fueron:
+
+\begin{table}[H]
+\centering
+\caption{Métricas de modelización del Sprint 2.}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$} \\
+\midrule
+ElasticNet & 0,057 & 0,080 & 0,873 \\
+Decision Tree & 0,091 & 0,110 & 0,762 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Aunque ElasticNet obtuvo mejores métricas globales, el árbol de decisión fue especialmente valioso porque sus particiones podían traducirse a reglas operativas. Esta diferencia explica la decisión de usar ambos: ElasticNet como referencia cuantitativa e interpretación de pesos, y árbol como mecanismo de extracción de reglas.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth]{elasticnet_coefficients.png}
+\end{figure}
+
+Los coeficientes de ElasticNet permiten leer que variables empujan el IEC hacia arriba o hacia abajo dentro del modelo lineal regularizado. Esta figura complementa las metricas: no solo muestra que el modelo ajusta bien, sino que ayuda a interpretar que factores tienen mas peso en el equilibrio energia--cultivo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth]{model_predictions_vs_actual.png}
+\end{figure}
+
+La comparacion entre IEC observado y predicho permite evaluar visualmente si el modelo captura la tendencia general o si solo acierta valores medios. En el informe final sirve para justificar que la modelizacion de Sprint 2 fue una base razonable, aunque todavia limitada por tamano de muestra y validacion agronomica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{decision_tree_interpretability.png}
+\end{figure}
+
+El árbol de decisión no fue el modelo con mejor métrica global, pero sí el más útil para explicar decisiones. Sus particiones permiten transformar patrones observados en reglas de operación, algo especialmente importante cuando el resultado debe mostrarse en un dashboard y no quedar escondido en un notebook.
+
+\subsection{Reglas candidatas de rotación}
+
+El Sprint 2 generó seis reglas candidatas.
+
+\begin{longtable}{p{0.18\linewidth}p{0.54\linewidth}p{0.10\linewidth}p{0.10\linewidth}}
+\caption{Resumen de reglas candidatas del Sprint 2.}\\
+\toprule
+\textbf{Tipo} & \textbf{Recomendación} & \textbf{Soporte} & \textbf{IEC} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Tipo} & \textbf{Recomendación} & \textbf{Soporte} & \textbf{IEC} \\
+\midrule
+\endhead
+Alta prioridad & Si \code{Albedo_S1 > 55.7} y elevación solar $> 68^\circ$, priorizar \code{TRACKING_PM}. & 33 & 0,862 \\ \addlinespace
+Mediodía & A las 12:00, \code{TRACKING_PM} con ángulo cercano a $31.8^\circ$. & 75 & 0,769 \\ \addlinespace
+Mañana & A las 06:00, \code{TRACKING_AM} con ángulo cercano a $-32.2^\circ$. & 10 & 0,602 \\ \addlinespace
+Transición & Con \code{Albedo_S1} bajo, \code{Albedo_S2} alto y VWC suficiente, usar transición controlada. & 51 & 0,435 \\ \addlinespace
+Evitación & Evitar \code{HORIZONTAL} en bandas productivas si existe seguimiento activo posible. & 169 & 0,184 \\ \addlinespace
+Precaución hídrica & En condiciones de baja señal energética e hídrica, evitar políticas forzadas de producción. & 43 & 0,093 \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{policy_rules_diagnostics.png}
+\end{figure}
+
+El diagnostico de reglas resume soporte, franjas y comportamiento esperado de las politicas candidatas. Su valor en el informe final es mostrar que las recomendaciones no aparecieron de forma arbitraria: se derivaron de datos, modelos interpretables y comparacion de regimenes observados.
+
+\subsection{Diagnóstico de trackers}
+
+El Sprint 2 detectó que algunos trackers, en particular M02, M06 y M10, presentaban ángulos prácticamente constantes alrededor de $50.6^\circ$. Este patrón podía responder a fallo, modo de seguridad o comportamiento de parada. El hallazgo se trasladó al Sprint 3 como necesidad de alertas y diagnóstico operativo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{tracker_variance_diagnostic.png}
+\end{figure}
+
+El diagnóstico de variabilidad permite distinguir trackers con comportamiento dinámico de aquellos que permanecen casi fijos. Este hallazgo justificó la incorporación de alertas y controles operativos, porque una recomendación de rotación pierde sentido si parte de los actuadores no se mueve o está en modo de seguridad.
+
+\subsection{Limitaciones identificadas}
+
+El documento de gestión del Sprint 2 recogió seis limitaciones relevantes. Las más importantes fueron:
+
+\begin{itemize}
+    \item Riesgo de circularidad si variables como GPOA se usan a la vez como entrada y objetivo sin control.
+    \item Incertidumbre agronómica del IEC al basarse en proxies y no en rendimiento real del cultivo.
+    \item Necesidad de validar reglas con expertos o ensayos de campo.
+    \item Dependencia de calidad y cobertura temporal de sensores.
+    \item Riesgo de que reglas a 6 horas sean demasiado lentas para operación en tiempo real.
+    \item Necesidad de convertir reglas técnicas en una interfaz comprensible.
+\end{itemize}
+
+Estas limitaciones orientaron directamente el Sprint 3: construir un producto demostrable, hacer visibles las reglas y preparar una interfaz que tradujera la modelización en decisiones comprensibles. La separación más estricta entre variables exógenas, acciones y estado interno se consolidaría después, durante el Sprint 4.
+\newpage
+
+\section{Sprint 3: dashboard funcional y primera capa operativa}
+
+\subsection{Objetivo del sprint}
+
+El tercer sprint transformó la modelización del Sprint 2 en una primera herramienta operativa. La prioridad fue construir un dashboard funcional que permitiera visualizar el estado del sistema, explorar series temporales, consultar recomendaciones de rotación y revisar alertas. Este sprint fue clave porque convirtió los análisis previos en una demo navegable y comprensible para perfiles no técnicos.
+
+El Sprint 3 no debe entenderse como el cierre definitivo del sistema avanzado, sino como la primera materialización funcional del producto. Sobre esta base se identificaron varias necesidades para la fase final: representar acciones y consecuencias, incorporar explícitamente el riego, diferenciar cultivos y zonas, preparar una lógica de recompensa más flexible y evitar que nuevas integraciones de frontend comprometieran la estabilidad de la demo.
+
+El objetivo del sprint fue integrar:
+
+\begin{itemize}
+    \item Estado actual del sistema.
+    \item Reglas de rotación derivadas del Sprint 2.
+    \item Visualización de series temporales.
+    \item Alertas de operación y sensores.
+    \item Una primera experiencia de usuario para validar la utilidad del sistema.
+    \item Una base técnica sobre la que construir los módulos avanzados del Sprint 4.
+\end{itemize}
+\subsection{Arquitectura del dashboard}
+
+La versión documentada en el Sprint 3 se organizó como un dashboard v1 estable, no como una integración completa de todos los módulos avanzados posteriores. Su estructura principal fue:
+
+\begin{itemize}
+    \item \textbf{Dashboard}: vista general con slider horario, estado del sistema, gauge IEC, tarjetas de ePAR/VWC, visualización SVG de paneles y resumen de alertas.
+    \item \textbf{Series temporales}: análisis histórico de variables energéticas, ambientales, de suelo y seguimiento.
+    \item \textbf{Recomendación}: lectura de reglas candidatas y acción sugerida de rotación.
+    \item \textbf{Alertas}: avisos sobre condiciones de riesgo, trackers anómalos, humedad, temperatura o calidad de dato.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_v1.png}
+\end{figure}
+
+La captura del dashboard v1 debe mostrar la transición principal del Sprint 3: pasar de resultados técnicos a una interfaz demostrable. La vista principal es importante porque concentra el estado del sistema, la representación visual de paneles y cultivo, la recomendación operativa y las alertas activas en una experiencia navegable.
+
+La aplicación se organiza en módulos con responsabilidades separadas:
+
+\begin{longtable}{p{0.25\linewidth}p{0.70\linewidth}}
+\caption{Componentes principales del dashboard.}\\
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad} \\
+\midrule
+\endhead
+\code{app.py} & Punto de entrada Streamlit, configuración de página, carga de datos y composición de pestañas. \\ \addlinespace
+\code{data_loader.py} & Carga cacheada de datasets, reglas, diagnósticos, métricas y último registro disponible, con rutas de respaldo hacia outputs de Sprint 2. \\ \addlinespace
+\code{alert_logic.py} & Construcción de alertas por trackers anómalos, tendencias de VWC y condiciones operativas. \\ \addlinespace
+\code{rule_engine.py} & Evaluación de condiciones textuales y selección de regla activa más cercana según IEC. \\ \addlinespace
+\code{solar_logic.py} & Cálculo de posición solar, elevación y ángulo recomendado. \\ \addlinespace
+\code{svg_generator.py} & Visualización del panel, sombras, cultivo y condiciones del entorno. \\ \addlinespace
+\code{styles.py} & Estilos visuales del dashboard. \\ \addlinespace
+\code{tabs/} & Componentes de interfaz v1: estado, series temporales, recomendación y alertas. \\ \addlinespace
+\code{core/} & Núcleo técnico de soporte: reglas, alertas, cálculo solar, SVG y utilidades reutilizables. \\
+\bottomrule
+\end{longtable}
+
+Esta arquitectura permitió separar la lógica de negocio de la presentación. El dashboard puede cargar artefactos de Sprint 3 si existen, pero conserva una ruta de respaldo hacia las salidas del Sprint 2, especialmente \code{dataset_modelizacion_6h.csv}, \code{candidate_rotation_rules.csv}, \code{tracker_variance_diagnostic.csv} y \code{high_iec_policy_table.csv}.
+
+\subsection{Decisiones de rendimiento y experiencia de usuario}
+
+El informe E05 tambien documento decisiones practicas de implementacion que fueron importantes para que el dashboard no fuese solo correcto, sino usable en una demostracion:
+
+\begin{itemize}
+    \item \textbf{Slider horario}: la vista principal permite recorrer la jornada operativa, especialmente entre 06:00 y 21:00, para ver como cambian sol, paneles, variables agronomicas y recomendacion.
+    \item \textbf{Reproduccion automatica}: el avance automatico facilita ensenar la evolucion diaria sin obligar al usuario a manipular cada instante manualmente.
+    \item \textbf{\code{st.cache_data}}: la carga de CSV y artefactos se cachea para evitar relecturas costosas en cada interaccion.
+    \item \textbf{\code{st.fragment}}: la parte interactiva se actualiza de forma controlada, reduciendo el coste de refresco completo de la pagina.
+    \item \textbf{SVG como imagen base64}: la escena de paneles, sol y cultivo se renderiza de forma ligera y estable dentro de Streamlit.
+    \item \textbf{Fallback de datos}: si algun artefacto avanzado no existe, el dashboard puede recurrir a salidas previas del Sprint 2 para mantener la demo funcional.
+\end{itemize}
+
+Estas decisiones explican por que el Sprint 3 se considero un producto demostrable: no solo integraba modelos y reglas, sino que protegia la experiencia del usuario frente a esperas, fallos de carga y artefactos ausentes.
+
+\subsection{Flujo funcional de datos y decisión}
+
+El funcionamiento del producto final puede entenderse como una cadena de transformación desde dato bruto hasta acción recomendada:
+
+\begin{enumerate}
+    \item \textbf{Entrada}: datasets históricos, artefactos de Sprint 2, artefactos de Sprint 3 y, en una extensión futura, datos en tiempo real.
+    \item \textbf{Normalización}: carga cacheada, selección de columnas disponibles, tratamiento de valores ausentes y elección de fuentes de respaldo cuando una zona o sensor no está disponible.
+    \item \textbf{Estado operativo}: cálculo de hora, posición solar, régimen de seguimiento, variables energéticas, humedad, temperatura de suelo, radiación PAR y condiciones meteorológicas.
+    \item \textbf{Evaluación}: activación de reglas de rotación, alertas y contexto solar.
+    \item \textbf{Salida}: recomendación de panel, explicación, visualización del estado y aviso de riesgos.
+\end{enumerate}
+
+Esta cadena es importante porque convierte el dashboard en un sistema de apoyo a la decisión, no en una simple pantalla de gráficos. El usuario puede partir de una recomendación y retroceder hasta las variables que la justifican, las reglas activadas o las limitaciones de confianza asociadas.
+
+\begin{longtable}{p{0.20\linewidth}p{0.30\linewidth}p{0.44\linewidth}}
+\caption{Relación entre módulos del producto final y decisiones entregadas.}\\
+\toprule
+\textbf{Capa} & \textbf{Módulos implicados} & \textbf{Aportación a la decisión} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Capa} & \textbf{Módulos implicados} & \textbf{Aportación a la decisión} \\
+\midrule
+\endhead
+Datos & \code{data_loader.py} y outputs CSV & Garantiza que el sistema trabaja con artefactos disponibles y usa alternativas de respaldo. \\ \addlinespace
+Contexto físico & \code{solar_logic.py}, variables de tiempo y radiación & Sitúa la recomendación dentro de la geometría solar y la ventana operativa. \\ \addlinespace
+Reglas explicables & \code{rule_engine.py} & Traduce condiciones numéricas a reglas comprensibles para la rotación de paneles. \\ \addlinespace
+Alertas & \code{alert_logic.py} & Detecta situaciones de riesgo o datos que requieren revisión operativa. \\ \addlinespace
+Interfaz & \code{app.py}, \code{tabs/}, \code{svg_generator.py}, \code{styles.py} & Presenta la decisión de forma interpreitable y operativa. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Correcciones y validación del dashboard v1}
+
+El informe E05 documenta dos correcciones técnicas importantes antes del cierre del Sprint 3:
+
+\begin{itemize}
+    \item La escala de VWC debía tratarse como porcentaje operativo, con umbrales coherentes con la visualización y las alertas, no como decimal directo.
+    \item Las reglas debían activarse por condiciones reales observadas y no por simple proximidad a valores de IEC.
+\end{itemize}
+
+Además, la suite de pruebas del dashboard v1 alcanzó 37 tests unitarios pasados sobre módulos críticos. Esta validación no demostraba todavía una política agronómica completa, pero sí aportaba confianza sobre la carga de datos, reglas, alertas, lógica solar y renderizado visual.
+
+\subsection{Sensibilidad del IEC y reformulacion posterior}
+
+Durante el Sprint 3 se exploro una rama de sensibilidad del IEC con distintas prioridades: balanceada, energetica y agricola. Esta idea era util porque permitia mostrar que una misma instalacion puede optimizar objetivos distintos segun el criterio del usuario. Sin embargo, en el cierre del proyecto esta aproximacion se reformulo.
+
+La razon es que cambiar manualmente los pesos del IEC seguia siendo una forma estatica de decidir. El Sprint 4 desplazo esta logica hacia una recompensa multiobjetivo y una politica DQN offline. Por tanto, la sensibilidad del IEC queda como antecedente metodologico: ayudo a pensar en preferencias de usuario, pero la politica final ya no depende de un unico indicador manual, sino de una recompensa agricola--energetica evaluada en trayectorias.
+
+\subsection{Errores corregidos y riesgos materializados}
+
+El paso por Sprint 3 y Sprint 4 tambien dejo aprendizajes concretos a partir de errores reales:
+
+\begin{itemize}
+    \item \textbf{Escala de VWC}: se corrigio la interpretacion de humedad volumetrica para que los umbrales del dashboard coincidieran con la escala operativa mostrada al usuario.
+    \item \textbf{Activacion de reglas}: se corrigio la seleccion de reglas para que dependiera de condiciones observadas y no de la simple proximidad numerica al IEC actual.
+    \item \textbf{Integracion visual avanzada}: la pestana experimental de agronomia, DQN y LSTM llego a comprometer la carga estable del dashboard, por lo que se hizo rollback visual y se mantuvo la logica avanzada en backend.
+    \item \textbf{Archivos grandes}: algunos CSV de entrenamiento superaban limites de GitHub; se retiraron del versionado y se documentaron como salidas regenerables.
+\end{itemize}
+
+Incluir estos puntos en el informe final es relevante porque demuestra gestion tecnica real: el proyecto no solo avanzo cuando todo funcionaba, sino que tambien corrigio supuestos, protegio la demo estable y documento que artefactos no debian versionarse.
+
+\subsection{Necesidades detectadas para Sprint 4}
+
+El Sprint 3 dejó un producto demostrable, pero también hizo visibles varias limitaciones que no podían resolverse solo con una interfaz:
+
+\begin{itemize}
+    \item La recomendación seguía muy ligada a reglas e IEC, por lo que faltaba una formulación más adecuada para decisiones secuenciales.
+    \item El dashboard no podía hablar de riego de forma sólida sin datos históricos de riego o una simulación explícita.
+    \item La resolución de 6 horas era útil para modelización inicial, pero insuficiente para aproximar decisiones operativas más frecuentes.
+    \item Faltaba una capa agronómica por cultivo y zona que permitiera traducir humedad, temperatura y radiación a riesgo para la planta.
+    \item Cualquier mejora visual avanzada debía integrarse sin romper la estabilidad de la demo.
+\end{itemize}
+
+Estas necesidades explican el salto del Sprint 4: no fue solo una mejora estética del dashboard, sino una revisión del modelo de decisión y de sus supuestos.
+
+\newpage
+
+\section{Sprint 4: integración, refinamiento y cierre técnico}
+
+\subsection{Objetivo del sprint}
+
+El Sprint 4 corresponde a la fase de integración, refinamiento y entrega final del proyecto. Su objetivo no fue únicamente añadir nuevas visualizaciones, sino revisar la coherencia técnica del sistema completo y acercar la solución al problema real de decisión agrovoltaica dinámica.
+
+Durante este sprint se detectó una limitación importante: el dataset disponible no contenía datos reales de riego y las lecturas de humedad y temperatura del suelo tenían una frecuencia temporal limitada. Por tanto, no era defendible entrenar directamente una política de control hídrico como si existieran registros reales de activación de riego, dosis aplicada y respuesta observada del suelo.
+
+A partir de esta limitación, el sprint se reorientó hacia una arquitectura más sólida y transparente:
+
+\begin{itemize}
+    \item Simulación documentada de riego.
+    \item Reconstrucción de humedad y temperatura del suelo a resolución de 10 minutos.
+    \item Formulación del problema como MDP.
+    \item Separación entre variables exógenas, acciones y variables endógenas.
+    \item Definición de una recompensa multiobjetivo con componente energética y agronómica.
+    \item Implementación de una política DQN offline como decisión final de política.
+    \item Entrenamiento de un modelo LSTM como aproximador del modelo del mundo.
+    \item Preparación de una futura vista agronómica del dashboard, no activada en la demo estable.
+\end{itemize}
+
+\subsection{Simulación de riego y variables de suelo}
+
+La ausencia de datos reales de riego obligó a tratar el riego como una variable simulada y no como una observación histórica. Esta decisión permite evaluar políticas candidatas, pero requiere separar claramente qué parte del sistema procede de datos observados y qué parte se apoya en hipótesis.
+
+La simulación combina distintos escenarios de frecuencia y dosis de riego. Se generan trayectorias artificiales pero consistentes, utilizando intervalos de riego, dosis nominales, ruido controlado y una dinámica parametrizada de humedad y temperatura del suelo. El objetivo no es afirmar que estas trayectorias reproduzcan perfectamente el campo real, sino disponer de un entorno razonable para comparar acciones y entrenar modelos temporales.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{cobertura_temporal_master_dataset.png}
+\end{figure}
+
+La cobertura temporal del master dataset a 10 minutos muestra el salto desde una base agregada para análisis hacia una base más cercana a operación. Esta granularidad no convierte el sistema en tiempo real, pero permite estudiar cambios de radiación, humedad y temperatura con mayor detalle que el dataset integrado inicial de 6 horas.
+
+\subsection{Formulación como MDP}
+
+El problema agrovoltaico se formula como un proceso de decisión secuencial. La decisión de rotar paneles o activar riego no solo afecta al instante actual, sino también al estado futuro del cultivo y a la producción energética.
+
+La formulación conceptual utilizada es:
+
+\begin{itemize}
+    \item \textbf{Estado}: condiciones ambientales, solares, energéticas y agronómicas actuales.
+    \item \textbf{Acción}: ángulo de las placas, activación de riego y dosis de riego.
+    \item \textbf{Transición}: evolución del sistema al siguiente paso temporal.
+    \item \textbf{Recompensa}: combinación entre rendimiento energético, adecuación agronómica y penalizaciones por riesgo.
+\end{itemize}
+
+Esta separación permite distinguir entre variables que el sistema controla, variables externas que solo observa y variables internas que intenta predecir.
+
+\subsection{Política DQN offline}
+
+La política DQN offline se plantea como un primer módulo de decisión, no como un agente listo para actuar automáticamente en producción. Al no disponer de un entorno real donde probar acciones libremente, la política se entrena y evalúa a partir de datos históricos y simulados.
+
+La recompensa se define como una combinación ponderada:
+
+\[
+R = \alpha R_{\text{agro}} + \beta R_{\text{energia}} - P_{\text{riesgo}}
+\]
+
+donde $R_{\text{agro}}$ mide la adecuación agronómica, $R_{\text{energia}}$ mide la componente energética y $P_{\text{riesgo}}$ penaliza situaciones críticas para el cultivo. La configuración utilizada da un peso ligeramente superior a la energía, pero mantiene la agricultura como componente casi equivalente.
+
+En el repositorio pueden convivir una política tabular anterior y una política DQN. Para el cierre del proyecto se adopta DQN como política principal, porque encaja mejor con un problema secuencial donde una acción actual puede afectar al estado futuro del cultivo y a la producción energética. La política recomienda acciones combinadas sobre placas y riego, pero sus resultados deben entenderse como validación offline, no como validación experimental en campo.
+
+La validación offline comparó el comportamiento histórico con el sistema DQN estimado. Sobre 23.043 registros comparables y 241 días, en ventana operativa de 06:00 a 21:59, se obtuvo:
+
+\begin{table}[H]
+\centering
+\caption{Validación offline de la política DQN frente al comportamiento histórico.}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Indicador} & \textbf{Histórico} & \textbf{Sistema DQN estimado} \\
+\midrule
+IEC medio & 0,2579 & 0,3203 \\
+Mejora IEC & \multicolumn{2}{c}{\metric{+24,19\%}} \\
+Recompensa media & 0,3215 & 0,5193 \\
+Mejora recompensa & \multicolumn{2}{c}{\metric{+61,52\%}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\textwidth]{kpi_validacion_offline.png}
+\end{figure}
+
+La comparación visual de KPIs ayuda a comunicar el resultado cuantitativo del cierre: frente al comportamiento histórico, el sistema DQN estimado mejora el IEC medio y la recompensa agregada en validación offline. La interpretación debe seguir siendo prudente: los valores muestran potencial del modelo, no una prueba física en campo.
+
+\subsection{Modelo LSTM del mundo}
+
+El Sprint 4 incorpora un modelo LSTM para aproximar la transición del sistema. El modelo recibe una ventana temporal reciente con variables exógenas, acciones aplicadas y estado endógeno actual, y predice el siguiente estado endógeno.
+
+La configuración utiliza una ventana de 12 pasos temporales, equivalente a 2 horas de contexto con resolución de 10 minutos. El modelo predice variables asociadas a irradiancia, albedo, PAR, humedad simulada y temperatura del suelo.
+
+Las métricas obtenidas son especialmente buenas en humedad y temperatura simuladas, algo esperable porque estas variables proceden de una dinámica parametrizada. En cambio, las variables radiativas presentan mayor dificultad. Por este motivo, el LSTM debe interpretarse como una herramienta para simular trayectorias coherentes bajo distintas acciones, no como un gemelo digital validado físicamente.
+
+\begin{longtable}{p{0.38\linewidth}p{0.28\linewidth}p{0.28\linewidth}}
+\caption{Métricas LSTM iniciales por variable objetivo.}\\
+\toprule
+\textbf{Variable objetivo} & \textbf{MAE} & \textbf{RMSE} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Variable objetivo} & \textbf{MAE} & \textbf{RMSE} \\
+\midrule
+\endhead
+\code{next_GPOA_mean} & 12,373 & 25,573 \\ \addlinespace
+\code{next_ALBEDO_mean} & 1,340 & 2,890 \\ \addlinespace
+\code{next_Delta_PAR_S1} & 7,374 & 13,888 \\ \addlinespace
+\code{next_VWC_R1_sim} & 0,0042 & 0,0060 \\ \addlinespace
+\code{next_Delta_VWC_S1_sim} & 0,0005 & 0,0008 \\ \addlinespace
+\code{next_Tsoil_R1_sim} & 0,073 & 0,132 \\ \addlinespace
+\code{next_Delta_Tsoil_S1_sim} & 0,044 & 0,105 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Estado final del dashboard}
+
+Durante el Sprint 4 se exploró la integración de una quinta pestaña orientada a agronomía, RL y simulación. Sin embargo, durante las pruebas se detectó que esta integración afectaba a la carga del dashboard en Streamlit. Para proteger la estabilidad del entregable, se decidió revertir la conexión de esa pestaña y mantener el dashboard principal en una versión funcional.
+
+La decisión final separa dos niveles de entrega:
+
+\begin{itemize}
+    \item \textbf{Dashboard estable}: versión demostrable con las vistas principales de estado, series temporales, recomendación y alertas.
+    \item \textbf{Backend avanzado}: módulos de simulación de riego, reglas agronómicas, política DQN offline, LSTM y rollouts preparados para una futura integración visual.
+\end{itemize}
+
+Esta separación evita presentar una interfaz incompleta o inestable y permite defender el proyecto como una solución técnicamente sólida, reproducible y preparada para evolucionar.
+\newpage
+
+
+\section{Validación y calidad}
+
+\subsection{Pruebas automatizadas}
+
+La validación técnica se consolidó de forma incremental. El Sprint 3 cerró el dashboard v1 con 37 tests unitarios pasados. En el cierre del proyecto, tras incorporar módulos de pipeline, DQN, LSTM y simulación, la batería se amplió hasta 44 tests pasados. Las pruebas cubren:
+
+\begin{itemize}
+    \item Reglas agronómicas y umbrales de VWC.
+    \item Lógica de alertas.
+    \item Selección de cultivo y estado del dashboard.
+    \item Carga de datos y fallback de artefactos.
+    \item Motor de reglas.
+    \item Cálculo solar.
+    \item Generación SVG.
+    \item Pipeline de 10 minutos.
+    \item Dataset, entrenamiento, inferencia y targets del LSTM.
+    \item Rollout del world model.
+    \item Política RL.
+\end{itemize}
+
+Esta cobertura no sustituye una validación agronómica de campo, pero sí proporciona control técnico sobre los componentes principales del producto software.
+
+\subsection{Validación offline}
+
+La validación offline fue el puente entre modelo y decisión. En lugar de reportar únicamente pérdidas de entrenamiento o valores Q, el proyecto comparó el IEC histórico observado con el IEC estimado bajo las acciones recomendadas por la política. Además, el informe advierte explícitamente que no se recomienda comunicar la mejora basada en Q bruto, porque aparece saturado y podría sobreestimar el rendimiento real.
+
+Esta cautela metodológica es importante: el proyecto no vende el modelo como prueba experimental cerrada, sino como una herramienta de decisión prometedora que requiere validación posterior en operación real.
+
+\subsection{Matriz de calidad del producto}
+
+Además de los tests unitarios y la validación offline, el proyecto puede evaluarse mediante una matriz de calidad que relaciona riesgos con mecanismos de control. Esta matriz resume cómo se ha intentado asegurar que el resultado final sea útil, reproducible y defendible.
+
+\begin{longtable}{p{0.20\linewidth}p{0.25\linewidth}p{0.49\linewidth}}
+\caption{Matriz de calidad y controles aplicados.}\\
+\toprule
+\textbf{Dimensión} & \textbf{Riesgo principal} & \textbf{Control aplicado en el proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Dimensión} & \textbf{Riesgo principal} & \textbf{Control aplicado en el proyecto} \\
+\midrule
+\endhead
+Calidad de datos & Sensores incompletos, valores atípicos o coberturas irregulares & Inventario, reportes de calidad, cobertura temporal, outliers y datasets intermedios trazables. \\ \addlinespace
+Reproducibilidad & Resultados dependientes de notebooks no documentados & Outputs CSV, documentación por sprint, módulos de código y separación entre datos, reglas y dashboard. \\ \addlinespace
+Interpretabilidad & Recomendaciones difíciles de justificar & Modelos interpretables, reglas candidatas, política tabular, explicación de alertas y trazabilidad de decisión. \\ \addlinespace
+Validez energética & Sobreestimar producción o inducir circularidad & Separación de variables de entrada/objetivo y advertencia explícita sobre circularidad de GPOA. \\ \addlinespace
+Validez agronómica & Usar proxies que no representen rendimiento real del cultivo & Perfiles de cultivo, reglas con fuentes agronómicas y limitación explícita sobre necesidad de validación externa. \\ \addlinespace
+Robustez operativa & Que el dashboard falle si falta un artefacto & Carga con rutas de respaldo, fallback hacia outputs de Sprint 2 y tests de carga de datos. \\ \addlinespace
+Evaluación de política & Confundir simulación offline con prueba real & Validación sobre registros comparables y comunicación prudente de la mejora estimada. \\ \addlinespace
+Mantenibilidad & Crecimiento desordenado del código & Modularización en \code{src/}, \code{tabs/}, \code{core/}, tests y documentación técnica. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Lectura crítica de resultados}
+
+Los resultados obtenidos son positivos, pero deben interpretarse con precisión:
+
+\begin{itemize}
+    \item El ElasticNet del Sprint 2 ofrece buen ajuste sobre el dataset de 6 horas, pero su valor principal no es solo predictivo, sino explicativo: ayuda a identificar variables con peso en el IEC.
+    \item Las reglas candidatas resumen patrones observados, no leyes físicas universales. Por eso se presentan con prioridad y condiciones, no como control automático definitivo.
+    \item La política DQN mejora el IEC estimado en validación offline, pero depende de que existan acciones históricas comparables. En estados poco representados, la recomendación debe tratarse con cautela.
+    \item El LSTM funciona mejor en variables de suelo y deltas simulados que en variables energéticas altamente variables, como GPOA o PAR. Esta diferencia es coherente con la naturaleza más ruidosa de la radiación.
+    \item El dashboard cumple una función de integración: su valor está en combinar datos, reglas, modelos, alertas y visualización, no únicamente en una métrica aislada.
+\end{itemize}
+\newpage
+
+\section{Gestión del proyecto}
+
+\subsection{Planificación y seguimiento}
+
+La planificación se apoyó en documentos de gestión por sprint, actas de reunión, presentaciones de revisión y Definition of Done. El equipo mantuvo un flujo de trabajo incremental: cada sprint produjo entregables técnicos y de gestión, y el siguiente sprint partió de los aprendizajes del anterior.
+
+En Sprint 1 se priorizó reducir incertidumbre. En Sprint 2 se formalizó la política y se documentó una velocidad del 91\%. En Sprint 3 se concentró el esfuerzo en producto, integración y validación. Esta evolución muestra una madurez progresiva del proyecto: primero datos, luego modelo, después decisión.
+
+\subsection{Riesgos}
+
+El registro de riesgos evolucionó desde los riesgos iniciales R1--R6 hasta riesgos añadidos en Sprint 1 y Sprint 2. Los principales riesgos gestionados fueron:
+
+\begin{itemize}
+    \item Calidad y cobertura incompleta de sensores.
+    \item Interpretación errónea de señales físicas o agronómicas.
+    \item Circularidad en variables energéticas.
+    \item Sobreajuste por tamaño limitado del dataset modelizable.
+    \item Falta de validación agronómica externa del IEC.
+    \item Riesgo de que una política automática sea demasiado agresiva sin supervisión.
+    \item Complejidad de integrar recomendaciones energéticas y agrícolas en una interfaz clara.
+\end{itemize}
+
+Las mitigaciones fueron técnicas y de gestión: mantener datasets intermedios, preservar la versión de 6 horas, usar modelos interpretables, documentar limitaciones, añadir alertas, separar variables exógenas/endógenas y validar offline.
+
+\subsection{Presupuesto y control}
+
+El Sprint 2 documentó un presupuesto acumulado de 37.977,50 EUR, una contingencia específica de 175 EUR para el tratamiento de circularidad de GPOA y un remanente de 2.927,50 EUR. Más allá de la cifra, lo relevante es que el proyecto vinculó esfuerzo técnico, riesgos y decisiones de alcance a un seguimiento económico.
+
+\subsection{Lecciones aprendidas}
+
+Las lecciones más importantes fueron:
+
+\begin{itemize}
+    \item La calidad de integración condiciona más que el algoritmo elegido.
+    \item Las reglas interpretables fueron necesarias para convertir resultados en decisión.
+    \item El IEC requiere validación agronómica externa antes de usarse como métrica definitiva.
+    \item La nomenclatura y organización de carpetas reducen fricción cuando el proyecto crece.
+    \item La separación entre análisis, modelización y dashboard facilitó el avance incremental.
+    \item El paso a 10 minutos solo es útil si se conserva una referencia estable para comparar.
+    \item Un sistema de recomendación agrovoltaico debe mostrar confianza, alertas y trazabilidad.
+\end{itemize}
+\newpage
+
+\section{Producto final}
+
+\subsection{Alcance de la entrega final}
+
+Para que el informe sea evaluable como cierre de proyecto, es importante separar qué queda realmente entregado y qué pertenece a una fase posterior de implantación. La entrega final debe entenderse como un prototipo funcional y documentado de apoyo a la decisión, no como un sistema autónomo conectado a actuadores reales.
+
+\begin{longtable}{p{0.24\linewidth}p{0.36\linewidth}p{0.34\linewidth}}
+\caption{Alcance final de la entrega.}\\
+\toprule
+\textbf{Elemento} & \textbf{Incluido en la entrega} & \textbf{Queda fuera de alcance} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento} & \textbf{Incluido en la entrega} & \textbf{Queda fuera de alcance} \\
+\midrule
+\endhead
+Datos & Inventario, limpieza, datasets integrados a 6 horas y 10 minutos, outputs CSV/JSON trazables. & Ingesta continua desde sensores reales o SCADA. \\ \addlinespace
+Modelización & IEC como indicador intermedio, modelos supervisados, reglas candidatas, política offline DQN y world model LSTM. & Control automático cerrado sobre la instalación física. \\ \addlinespace
+Agronomía & Perfiles de cultivo, umbrales, riesgo agronómico, proxies documentados y simulación simplificada de riego en backend. & Validación con rendimiento real de cosecha, ensayos agronómicos y calibración hidráulica completa. \\ \addlinespace
+Interfaz & Dashboard Streamlit estable con estado general, series temporales, recomendación y alertas; la vista agronómica avanzada queda preparada para integración futura. & Despliegue productivo multiusuario, autenticación y monitorización de servicio. \\ \addlinespace
+Calidad & Tests automatizados, validación offline y documentación técnica de pipeline, MDP y LSTM. & Certificación operacional o aprobación para actuación sin supervisión humana. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Experiencia de usuario}
+
+El dashboard final presenta el sistema como una herramienta de operación. El usuario no necesita interpretar notebooks: ve estado general, series temporales, recomendación y alertas. La cabecera indica si el sistema está activo y cuántas alertas existen. Las pestañas separan tareas frecuentes y evitan mezclar análisis histórico con acción inmediata.
+
+La visualización SVG del panel y el cultivo ayuda a comunicar una decisión física: orientación de placas, sombra proyectada y estado de cultivo. Las tarjetas de recomendación traducen reglas y modelos a acciones de panel como \code{TRACKING_AM}, \code{TRACKING_PM}, \code{HORIZONTAL} o \code{NIGHT_STOW}. Las acciones agronómicas como \code{regar}, \code{pausar_riego} o \code{aumentar_sombreado} quedan disponibles en backend, pero no se presentan como una pestaña final activada en la demo estable.
+
+\subsection{Manual funcional del dashboard}
+
+Esta sección describe el uso previsto del dashboard desde el punto de vista de un operador o evaluador del prototipo. El objetivo no es documentar cada línea de código, sino explicar qué permite hacer la interfaz, qué información muestra cada vista y cómo debe interpretarse dentro del alcance real del proyecto.
+
+\subsubsection{Pantalla de entrada y estado general}
+
+La primera vista funciona como panel de control principal. Su misión es responder rápidamente a la pregunta: ``¿en qué estado está ahora el sistema?''. Para ello agrupa indicadores de estado, variables relevantes, posición de placas, alertas activas y una representación visual del campo agrovoltaico. Esta pestaña es la más importante para una demostración, porque permite entender el sistema sin abrir notebooks ni inspeccionar CSV manualmente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_estado_general.png}
+\end{figure}
+
+Esta captura debe mostrar la vista principal del dashboard: tarjetas de estado, visualización del panel/cultivo, indicadores energéticos y avisos resumidos. La idea es que el lector vea que el proyecto no acaba en un modelo offline, sino en una interfaz capaz de traducir variables técnicas a una lectura operativa.
+
+En esta vista, el usuario puede:
+
+\begin{itemize}
+    \item comprobar el instante temporal que se está analizando;
+    \item consultar métricas principales del sistema;
+    \item revisar la representación visual de placas, sombra y cultivo;
+    \item ver si existen alertas activas;
+    \item interpretar de forma rápida si el sistema está en una situación normal o requiere atención.
+\end{itemize}
+
+Los valores que se muestran al usuario en la vista general se organizan como una lectura rápida del estado operativo:
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endhead
+Instante temporal seleccionado & Fecha, hora o registro que se está evaluando. & Permite saber si la lectura corresponde a mañana, mediodía, tarde o noche, algo clave para interpretar radiación y posición solar. \\ \addlinespace
+Estado general del sistema & Resumen operativo de la instalación y disponibilidad de información. & Indica si la lectura es normal, si faltan datos o si conviene revisar alertas antes de aceptar una recomendación. \\ \addlinespace
+IEC o indicador energía--cultivo & Valor sintético del equilibrio entre producción energética y condiciones del cultivo. & Sirve como orientación rápida, pero no debe interpretarse como verdad agronómica absoluta. \\ \addlinespace
+Variables energéticas & Radiación, irradiancia, albedo, GPOA o indicadores equivalentes disponibles. & Ayudan a entender si el sistema está en una situación favorable para producción solar. \\ \addlinespace
+Variables agronómicas & ePAR, VWC, temperatura de suelo o variables de microclima disponibles. & Permiten revisar si el cultivo recibe luz suficiente y si el suelo se mantiene dentro de rangos razonables. \\ \addlinespace
+Ángulo o régimen de placas & Posición actual o régimen operativo de los trackers. & Conecta la recomendación con una acción física comprensible: seguir al sol, mantener posición, horizontal o posición segura. \\ \addlinespace
+Visualización SVG panel--cultivo & Representación visual de placas, sombra y cultivo. & Ayuda a entender rápidamente cómo la posición de placas puede afectar al campo. \\ \addlinespace
+Resumen de alertas & Número o tipo de avisos activos. & Permite detectar si hay condiciones que requieren intervención humana o revisión de datos. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Exploración de series temporales}
+
+La pestaña de series temporales permite pasar de una fotografía puntual a una lectura histórica. Es útil para saber si una condición observada es aislada o forma parte de una tendencia. Por ejemplo, una humedad baja puede ser un pico puntual o una caída sostenida; una temperatura elevada puede depender de una franja horaria concreta; y una recomendación de panel puede entenderse mejor si se observa la evolución de radiación, ePAR o VWC.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_series_temporales.png}
+\end{figure}
+
+Esta captura debe enseñar gráficos históricos de variables energéticas, ambientales, de suelo y seguimiento. Su valor dentro del informe es demostrar que el dashboard no solo da una recomendación final, sino que permite revisar el contexto temporal que la justifica.
+
+En esta vista, el usuario puede:
+
+\begin{itemize}
+    \item seleccionar variables para comparar su evolución;
+    \item revisar patrones horarios o diarios;
+    \item detectar cambios bruscos, huecos o comportamientos anómalos;
+    \item comparar señales energéticas con señales agronómicas;
+    \item contextualizar una recomendación antes de aceptarla.
+\end{itemize}
+
+Los elementos principales de esta pestaña son:
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endhead
+Selector de variable o grupo & Permite elegir qué señales se visualizan. & Facilita comparar energía, clima, suelo y seguimiento sin saturar la pantalla. \\ \addlinespace
+Serie de radiación o GPOA & Evolución de la energía solar disponible o captada. & Ayuda a distinguir días favorables, caídas por nubosidad o patrones horarios esperables. \\ \addlinespace
+Serie ePAR/PAR & Luz útil que llega al cultivo. & Permite comprobar si el cultivo recibe suficiente radiación o si existe exceso de sombra. \\ \addlinespace
+Serie VWC & Humedad volumétrica del suelo. & Ayuda a detectar déficit hídrico, estabilidad o posibles lecturas anómalas. \\ \addlinespace
+Temperatura de suelo y aire & Evolución térmica del sistema. & Permite identificar estrés térmico, retardos respecto a la radiación o condiciones de riesgo. \\ \addlinespace
+Tracking o ángulo de panel & Evolución de la posición de placas. & Ayuda a relacionar cambios de orientación con variaciones en luz, sombra y energía. \\ \addlinespace
+Huecos o discontinuidades & Ausencia de datos o cortes en la serie. & Recuerda al usuario que una recomendación depende de la calidad de datos disponible. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Vista de recomendación}
+
+La pestaña de recomendación concentra la lógica de apoyo a la decisión del dashboard estable. En lugar de obligar al usuario a interpretar reglas, coeficientes o datasets, la interfaz presenta una acción sugerida sobre la orientación de las placas y una explicación asociada. Esta vista conecta directamente con el trabajo del Sprint 2: las reglas candidatas y el IEC se convierten en una lectura operativa.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_recomendacion.png}
+\end{figure}
+
+Esta captura debe mostrar la recomendación de ángulo o régimen de seguimiento, junto con los argumentos que la sostienen. Es importante que se vean elementos como ángulo actual, ángulo recomendado, regla activa o estado de confianza si aparecen en la interfaz.
+
+En esta vista, el usuario puede:
+
+\begin{itemize}
+    \item consultar la acción recomendada para las placas;
+    \item comparar la situación actual con la acción objetivo;
+    \item revisar la regla o condición que activa la recomendación;
+    \item entender si la decisión prioriza producción, cultivo o seguridad;
+    \item usar la recomendación como apoyo, no como orden automática de control.
+\end{itemize}
+
+Los valores y mensajes principales de la vista de recomendación son:
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endhead
+Ángulo actual & Posición de las placas en el instante analizado. & Sitúa físicamente el estado de partida antes de aplicar cualquier recomendación. \\ \addlinespace
+Ángulo objetivo recomendado & Orientación sugerida por reglas o política. & Resume la acción principal que el sistema propone sobre los paneles. \\ \addlinespace
+Régimen de seguimiento & Modo operativo recomendado, por ejemplo seguimiento de mañana, tarde, horizontal o posición segura. & Traduce un ángulo numérico a una decisión operacional más fácil de entender. \\ \addlinespace
+Regla activa o condición dominante & Explicación de por qué se recomienda esa acción. & Evita que la recomendación parezca una caja negra y permite discutirla con criterio técnico. \\ \addlinespace
+Indicadores de energía y cultivo & Valores que justifican el equilibrio de la decisión. & Permiten saber si la recomendación prioriza producción, cultivo o seguridad. \\ \addlinespace
+Nivel de confianza o aviso & Señal de fiabilidad, si está disponible. & Ayuda a diferenciar recomendaciones claras de casos donde faltan datos o hay incertidumbre. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Vista de alertas}
+
+La pestaña de alertas cumple una función de control y seguridad. Su objetivo es evitar que el usuario dependa únicamente de una métrica agregada. Aunque un índice o recomendación parezcan favorables, pueden existir problemas de sensores, humedad, temperatura, viento, tracking o calidad de dato que conviene revisar antes de tomar decisiones.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_alertas.png}
+\end{figure}
+
+Esta captura debe mostrar la lista de alertas o avisos operativos. En el informe, esta vista ayuda a defender que el dashboard no se limita a optimizar un número, sino que incorpora una capa de vigilancia sobre condiciones anómalas.
+
+En esta vista, el usuario puede:
+
+\begin{itemize}
+    \item revisar alertas activas por trackers anómalos;
+    \item detectar condiciones de humedad o temperatura fuera de rango;
+    \item identificar problemas de calidad o disponibilidad de datos;
+    \item priorizar qué situaciones requieren revisión humana;
+    \item cerrar el ciclo entre recomendación y supervisión.
+\end{itemize}
+
+La lectura de alertas se estructura así:
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endhead
+Alertas de trackers & Posibles trackers parados, en modo seguro o con baja variabilidad. & Indican que una recomendación de rotación puede no ejecutarse correctamente en campo. \\ \addlinespace
+Alertas de humedad & VWC fuera de rango o tendencia preocupante. & Permiten detectar posible estrés hídrico o necesidad de revisar riego. \\ \addlinespace
+Alertas térmicas & Temperatura de suelo o aire demasiado alta o baja. & Ayudan a valorar riesgo para el cultivo y necesidad de sombreado o protección. \\ \addlinespace
+Alertas de dato & Variables ausentes, inconsistentes o con cobertura insuficiente. & Avisan de que la decisión puede tener menor fiabilidad. \\ \addlinespace
+Severidad o prioridad & Gravedad relativa del aviso. & Ayuda a ordenar qué revisar primero durante una operación o demo. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Vista agronómica avanzada prevista}
+
+Durante el Sprint 4 se preparó una evolución del dashboard orientada a agronomía, riego, DQN y predicción temporal. Esta vista no forma parte de la demo estable activada, porque su integración afectaba a la carga de Streamlit. Aun así, es relevante documentarla porque representa la dirección natural del producto: pasar de una recomendación centrada en placas a una recomendación conjunta que considere cultivo, zona, riego, confianza del modelo y evolución esperada.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.94\textwidth]{dashboard_agronomia_prevista.png}
+\end{figure}
+
+Esta captura puede ser un mockup, una captura de una rama experimental o una composición manual. Debe dejar claro que se trata de una vista prevista, no de la versión estable final. Su función en el informe es mostrar cómo se conectaría el backend avanzado con una interfaz comprensible para cliente.
+
+La vista avanzada prevista debería permitir:
+
+\begin{itemize}
+    \item seleccionar cultivo y zona experimental;
+    \item revisar si el cultivo está dentro de rangos favorables;
+    \item consultar riesgo hídrico, térmico y lumínico;
+    \item visualizar acción recomendada sobre placas y riego;
+    \item mostrar nivel de confianza o advertencia si la recomendación depende de simulación;
+    \item comparar el estado actual con una predicción de corto plazo.
+\end{itemize}
+
+Los elementos previstos para esta vista son:
+
+\begin{longtable}{p{0.28\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento mostrado} & \textbf{Qué informa} & \textbf{Cómo lo interpreta el usuario} \\
+\midrule
+\endhead
+Selector de cultivo & Cultivo analizado y sus rangos favorables. & Permite adaptar la lectura a necesidades diferentes, por ejemplo lechuga, tomate o patata. \\ \addlinespace
+Selector de zona & Zona experimental evaluada, como S1 o S2. & Permite comparar comportamiento local bajo distintas condiciones de sombreado. \\ \addlinespace
+Riesgo hídrico & Estado de humedad respecto al rango del cultivo. & Indica si conviene regar, pausar riego o mantener vigilancia. \\ \addlinespace
+Riesgo térmico & Temperatura de suelo o aire frente a rangos aceptables. & Ayuda a valorar si el cultivo puede estar sometido a estrés térmico. \\ \addlinespace
+Riesgo lumínico & Radiación útil recibida por el cultivo. & Permite decidir si conviene aumentar o reducir sombreado. \\ \addlinespace
+Acción conjunta placas--riego & Recomendación combinada preparada en backend. & Resume qué haría el sistema considerando energía y cultivo a la vez. \\ \addlinespace
+Predicción temporal & Estimación del siguiente estado o trayectoria corta. & Ayuda a anticipar consecuencias en lugar de mirar solo el instante actual. \\ \addlinespace
+Confianza o advertencia de simulación & Nivel de fiabilidad de la recomendación. & Recuerda si la decisión se apoya en datos observados o en simulaciones de riego. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Lectura operativa recomendada}
+
+En una demostración completa, el dashboard debería recorrerse en este orden:
+
+\begin{enumerate}
+    \item empezar por la vista general para entender el estado del sistema;
+    \item pasar a series temporales para comprobar si el estado actual es puntual o sostenido;
+    \item revisar la recomendación para identificar la acción sugerida;
+    \item consultar alertas antes de aceptar la recomendación;
+    \item explicar la vista agronómica prevista como evolución natural, no como funcionalidad productiva cerrada.
+\end{enumerate}
+
+Este recorrido permite presentar el dashboard como una herramienta de apoyo a la decisión: observa, contextualiza, recomienda y advierte. Esa secuencia es más defendible que presentar el sistema como un controlador autónomo, porque mantiene al usuario humano dentro del proceso y respeta las limitaciones de los datos disponibles.
+
+\subsection{Trazabilidad de decisión}
+
+Una recomendación visible en el dashboard estable puede rastrearse hacia:
+
+\begin{itemize}
+    \item Variables de entrada cargadas por \code{data_loader.py}.
+    \item Regla activa evaluada por \code{rule_engine.py}.
+    \item Posición solar calculada por \code{solar_logic.py}.
+    \item Alertas generadas por \code{alert_logic.py}.
+\end{itemize}
+
+La recomendación avanzada preparada en backend añade riesgo agronómico, política DQN offline y predicción LSTM. Esta trazabilidad es una característica clave del producto: evita que el sistema sea una ``caja negra'' y permite justificar recomendaciones ante perfiles técnicos o de gestión.
+
+\subsection{Criterios de aceptación del producto final}
+
+El producto final puede considerarse entregable porque satisface los siguientes criterios:
+
+\begin{itemize}
+    \item Permite consultar el estado energético y operativo del sistema desde una interfaz única.
+    \item Muestra recomendaciones de orientación de paneles de forma comprensible.
+    \item Mantiene preparados, documentados y probados los módulos avanzados de riego, DQN y LSTM para integración posterior.
+    \item Conserva trazabilidad entre recomendación, datos de entrada, regla aplicada y limitaciones conocidas.
+    \item Incluye documentación técnica suficiente para entender el pipeline, el MDP, el LSTM y la validación offline.
+    \item Dispone de tests automatizados para componentes críticos de carga, reglas, alertas, solar, SVG, RL y LSTM.
+    \item Mantiene salidas cuantitativas revisables en CSV, JSON y Markdown, no solo resultados embebidos en notebooks.
+\end{itemize}
+
+Estos criterios conectan la entrega final con la Definition of Done seguida durante los sprints: funcionalidad visible, evidencia técnica, reproducibilidad y documentación.
+
+\subsection{Guía de demostración y lectura}
+
+Una demostración razonable del producto final debería seguir este recorrido:
+
+\begin{enumerate}
+    \item Abrir el dashboard y comprobar el estado general del sistema en la pestaña principal.
+    \item Seleccionar o revisar un instante temporal con datos disponibles y observar las métricas energéticas, meteorológicas y agronómicas.
+    \item Consultar las series temporales para contextualizar si el estado actual es puntual o forma parte de una tendencia.
+    \item Revisar la pestaña de recomendación para identificar la acción propuesta sobre los paneles y la justificación asociada.
+    \item Cerrar la revisión comprobando alertas activas, limitaciones y nivel de confianza de la decisión.
+    \item Como extensión técnica, revisar los outputs de backend de riego, DQN y LSTM para explicar cómo evolucionaría la futura pestaña agronómica.
+\end{enumerate}
+
+Este flujo demuestra la aportación principal del Sprint 3: convertir el análisis de los sprints anteriores en una experiencia operativa. El usuario puede pasar de datos históricos a una decisión justificada sin abrir notebooks ni reconstruir manualmente el pipeline. El Sprint 4 amplía esta base con backend avanzado, pero no lo fuerza dentro de la demo visual estable.
+
+\subsection{Instalación y ejecución}
+
+El dashboard se ejecuta desde \code{sprint3/} con:
+
+\begin{verbatim}
+pip install -r src/requirements.txt
+streamlit run src/app.py
+\end{verbatim}
+
+Las pruebas automatizadas se ejecutan con:
+
+\begin{verbatim}
+python -m pytest sprint3/src/tests
+\end{verbatim}
+
+\section{Limitaciones}
+
+Aunque el producto final es funcional y está documentado, existen limitaciones importantes:
+
+\begin{itemize}
+    \item La mejora del 24,19\% es una estimación offline, no una validación experimental.
+    \item El IEC usa proxies de bienestar del cultivo y debe calibrarse con datos reales de rendimiento agrícola.
+    \item La política DQN depende de acciones históricas equivalentes o similares; no puede garantizar resultados en condiciones no observadas.
+    \item Algunas variables energéticas pueden inducir circularidad si no se separan cuidadosamente entrada y objetivo.
+    \item El LSTM muestra mayor error en ventanas de stream para variables energéticas, lo que exige reentrenamiento periódico.
+    \item El riego simulado usa una parametrización razonable, pero simplificada.
+    \item El dashboard requiere integración futura con sensores en tiempo real para convertirse en sistema productivo.
+\end{itemize}
+\newpage
+
+\section{Trabajo futuro}
+
+Las líneas recomendadas para continuar el proyecto son:
+
+\begin{itemize}
+    \item Validar el IEC con expertos agrónomos y datos reales de cultivo.
+    \item Ejecutar un piloto de campo comparando política histórica y política recomendada.
+    \item Integrar ingesta diaria o en tiempo real desde sensores/SCADA.
+    \item Incorporar control de seguridad operacional para viento extremo, mantenimiento y fallos de tracker.
+    \item Mejorar la calibración hidráulica del riego con datos de suelo y caudal real.
+    \item Añadir seguimiento de confianza de recomendación y explicación textual automática.
+    \item Evaluar estrategias de aprendizaje online o reentrenamiento programado con validación continua.
+\end{itemize}
+
+\subsection{Madurez tecnológica y transferencia}
+
+El estado final del proyecto se sitúa en una fase de prototipo avanzado de apoyo a la decisión. Ya existe integración de datos, interfaz, reglas, modelos, validación offline y documentación suficiente para que otro equipo pueda reproducir el flujo principal. Sin embargo, todavía no debe considerarse un controlador productivo autónomo.
+
+El paso hacia una solución desplegable requeriría tres validaciones adicionales:
+
+\begin{itemize}
+    \item \textbf{Validación agronómica}: contrastar el IEC, la recompensa agrícola y los umbrales de cultivo con expertos y con indicadores reales de cosecha.
+    \item \textbf{Validación operacional}: comprobar que las recomendaciones son seguras para trackers, riego y mantenimiento en condiciones reales.
+    \item \textbf{Validación informática}: asegurar ingesta en tiempo real, monitorización, gestión de errores, persistencia de logs y recuperación ante fallos.
+\end{itemize}
+
+Esta separación protege el valor del proyecto: el sistema es una base sólida para decisión agrovoltaica, pero su uso real debe pasar por una fase piloto supervisada antes de automatizar actuaciones físicas.
+\newpage
+
+\section{Conclusiones}
+
+El proyecto SAMO completó una evolución coherente desde datos dispersos hasta una solución de apoyo a la decisión para sistemas agrovoltaicos dinámicos. El Sprint 1 proporcionó comprensión del dato y una primera base integrada; el Sprint 2 definió el marco de decisión mediante el IEC, modelos interpretables y reglas candidatas; el Sprint 3 transformó esa lógica en un dashboard funcional; y el Sprint 4 refinó la arquitectura técnica mediante simulación de riego, formulación MDP, política DQN offline, modelo LSTM y documentación del dashboard v2 previsto.
+
+La principal aportación del proyecto no es solo técnica, sino metodológica. El trabajo demuestra cómo abordar un problema agrovoltaico dinámico sin perder trazabilidad: cada capa avanzada se construye sobre evidencia previa, y cada resultado se comunica diferenciando entre datos observados, simulaciones e hipótesis de modelización.
+
+El resultado final debe entenderse como una solución en dos niveles. Por un lado, se entrega una versión estable del dashboard, útil para visualizar el estado del sistema, revisar series temporales, consultar recomendaciones y detectar alertas. Por otro lado, se deja preparado un backend avanzado con los componentes necesarios para evolucionar hacia una herramienta de decisión más completa, capaz de comparar políticas de rotación y riego y simular trayectorias futuras.
+
+Las mejoras estimadas mediante validación offline muestran potencial, pero no sustituyen una validación de campo. Por ello, el sistema no debe desplegarse directamente como agente autónomo de control físico sin una fase piloto supervisada. La continuación natural del proyecto sería validar las recomendaciones con datos reales de operación, incorporar registros reales de riego, conectar progresivamente la vista agronómica avanzada y evaluar el impacto del sistema en condiciones reales de cultivo y producción energética.
+\newpage
+
+\section{Referencias y fuentes técnicas}
+
+El informe se ha construido a partir de los artefactos generados por el propio proyecto y de las fuentes agronómicas usadas en la capa de reglas. Las referencias principales son:
+
+\begin{itemize}
+    \item Documentación interna del Sprint 1: \code{sprint1/README.md}, informe EDA, notebook EDA, outputs de calidad, cobertura, outliers y dataset integrado.
+    \item Documentación interna del Sprint 2: \code{sprint2/README.md}, notebook de modelización, reglas candidatas, métricas de modelos y documentación de gestión.
+    \item Documentación interna del Sprint 3: \code{sprint3/README.md}, informe E05 del dashboard, código Streamlit, tests y artefactos de recomendación v1.
+    \item Documentación interna del Sprint 4: \code{E07_Documentacion_Tecnica_Sprint4.pdf}, \code{sprint4/Gestion_Proyecto_Sprint4.tex}, \code{sprint3/docs/README_pipeline_10min.md}, \code{sprint3/docs/ESPECIFICACIO_REG_AUTOMATIC_MDP.md}, \code{sprint3/docs/README_realtime_lstm.md} y validación offline.
+    \item FAO Irrigation and Drainage Paper 56, usado como referencia general para necesidades hídricas y evapotranspiración: \url{https://www.fao.org/3/X0490E/x0490e00.htm}.
+    \item RuralCat, recomendaciones de riego usadas como referencia práctica regional: \url{https://ruralcat.gencat.cat/web/guest/eines/recomanacions-de-reg}.
+    \item University of Illinois Extension, ficha técnica de lechuga usada como apoyo para rangos agronómicos: \url{https://extension.illinois.edu/gardening/lettuce}.
+    \item Oregon State University Extension, publicación técnica sobre brócoli usada como apoyo para perfiles de cultivo: \url{https://extension.oregonstate.edu/imported-publication/broccoli}.
+    \item University of Minnesota Extension, estrategias de riego y sensores en hortícolas: \url{https://extension.umn.edu/vegetables/irrigation-strategies-vegetables}.
+\end{itemize}
+
+\appendix
+\section{Apéndice A: trazabilidad de artefactos}
+
+\begin{longtable}{p{0.14\linewidth}p{0.36\linewidth}p{0.44\linewidth}}
+\caption{Artefactos revisados por sprint.}\\
+\toprule
+\textbf{Sprint} & \textbf{Artefacto} & \textbf{Información aportada} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Artefacto} & \textbf{Información aportada} \\
+\midrule
+\endhead
+Sprint 1 & \code{sprint1/README.md} & Índice de entregables, salidas EDA, gestión, riesgos y estado del sprint. \\ \addlinespace
+Sprint 1 & \code{sprint1_eda_agrovoltaica.ipynb} & Flujo reproducible de análisis exploratorio. \\ \addlinespace
+Sprint 1 & \code{sprint1/outputs/*.csv} & Inventario, calidad, cobertura, outliers y dataset integrado a 6 horas. \\ \addlinespace
+Sprint 2 & \code{sprint2/README.md} & Objetivos de modelización, entregables, gestión, limitaciones y relación con Sprint 3. \\ \addlinespace
+Sprint 2 & \code{sprint2_modelizacion_agrovoltaica.ipynb} & Pipeline de modelización y generación de reglas. \\ \addlinespace
+Sprint 2 & \code{sprint2/outputs_sprint2/*.csv} & Métricas, reglas candidatas, IEC, coeficientes, diagnóstico de trackers. \\ \addlinespace
+Sprint 3 & \code{sprint3/README.md} & Arquitectura general del dashboard y forma de ejecución. \\ \addlinespace
+Sprint 3 & \code{sprint3/src/} & Implementación de interfaz, carga de datos, reglas, alertas, cálculo solar y SVG del dashboard v1. \\ \addlinespace
+Sprint 4 & \code{sprint3/docs/README_pipeline_10min.md} & Pipeline a 10 minutos, reglas agronómicas, perfiles de cultivo y simulación de riego. \\ \addlinespace
+Sprint 4 & \code{sprint3/docs/ESPECIFICACIO_REG_AUTOMATIC_MDP.md} & Definición del MDP y world model. \\ \addlinespace
+Sprint 4 & \code{sprint3/docs/README_realtime_lstm.md} & Flujo de entrenamiento LSTM sin fuga de futuro. \\ \addlinespace
+Sprint 4 & \code{sprint3/reports/validacion_offline_mejora_energia_cultivo.md} & Validación offline de mejora IEC y recompensa. \\
+\bottomrule
+\end{longtable}
+
+\section{Apéndice B: resumen de outputs cuantitativos}
+
+\begin{longtable}{p{0.38\linewidth}p{0.16\linewidth}p{0.40\linewidth}}
+\caption{Datasets y salidas cuantitativas relevantes.}\\
+\toprule
+\textbf{Archivo} & \textbf{Tamaño observado} & \textbf{Uso} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Archivo} & \textbf{Tamaño observado} & \textbf{Uso} \\
+\midrule
+\endhead
+\code{sprint1/outputs/dataset_integrado_6h.csv} & 1.463 líneas & Base integrada inicial y puente hacia Sprint 2. \\ \addlinespace
+\code{sprint2/outputs_sprint2/dataset_modelizacion_6h.csv} & 337 líneas & Dataset modelizable para IEC y reglas de rotación. \\ \addlinespace
+\code{sprint2/outputs_sprint2/candidate_rotation_rules.csv} & 7 líneas & Seis reglas candidatas más cabecera. \\ \addlinespace
+\code{sprint3/outputs/master_dataset.csv} & 34.564 líneas & Dataset maestro del dashboard a 10 minutos. \\ \addlinespace
+\code{sprint3/outputs_10min/dataset_modelizacion_10min.csv} & 34.564 líneas & Modelización experimental a 10 minutos. \\ \addlinespace
+\code{sprint3/outputs_10min/crop_risk_10min.csv} & 34.564 líneas & Riesgo agrícola por timestamp. \\ \addlinespace
+\code{sprint3/outputs/rl_factored_dataset.csv} & 34.564 líneas & Dataset de política factorizada panel--riego. \\ \addlinespace
+\code{sprint3/outputs/world_model_lstm_stream_holdout.csv} & 15.361 líneas & Holdout temporal para simulación de stream. \\
+\bottomrule
+\end{longtable}
+
+\section{Apéndice C: estructura funcional del repositorio}
+
+\begin{longtable}{p{0.28\linewidth}p{0.66\linewidth}}
+\caption{Estructura funcional del proyecto revisada para el informe.}\\
+\toprule
+\textbf{Ruta} & \textbf{Papel dentro del proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Ruta} & \textbf{Papel dentro del proyecto} \\
+\midrule
+\endhead
+\code{data/} & Ficheros CSV originales de sensores y variables meteorológicas, energéticas, de suelo, radiación y seguimiento. \\ \addlinespace
+\code{sprint1/} & Entregables de análisis exploratorio, integración inicial, gráficos, reportes de calidad, inventario y documentación de gestión. \\ \addlinespace
+\code{sprint2/} & Modelización IEC, reglas candidatas, diagnósticos, métricas de modelos, informe de modelización y gestión del sprint. \\ \addlinespace
+\code{sprint3/docs/} & Documentación técnica usada en el cierre de Sprint 4: pipeline de 10 minutos, MDP, definición de modelo y LSTM en tiempo casi real. \\ \addlinespace
+\code{sprint3/outputs/} & Dataset maestro, dataset RL factorizado, artefactos LSTM, métricas, predicciones y gráficos de cobertura/correlación. Aunque la ruta sea \code{sprint3/}, parte de estos artefactos pertenecen conceptualmente al cierre avanzado del Sprint 4. \\ \addlinespace
+\code{sprint3/outputs_10min/} & Dataset de modelización a 10 minutos, reglas de rotación, reglas agronómicas y riesgo de cultivo. \\ \addlinespace
+\code{sprint3/reports/} & Informe del dashboard, gestión del Sprint 3 y validación offline de mejora energética y agronómica. \\ \addlinespace
+\code{sprint3/src/app.py} & Entrada principal del dashboard Streamlit. \\ \addlinespace
+\code{sprint3/src/tabs/} & Pestañas del dashboard estable: estado, series temporales, recomendación y alertas; las vistas de agronomía/simulación quedan como integración futura. \\ \addlinespace
+\code{sprint3/src/core/} & Núcleo técnico: reglas agronómicas, pipeline 10 minutos, DQN, world model, datasets LSTM, entrenamiento, inferencia y rollout. \\ \addlinespace
+\code{sprint3/src/tests/} & Pruebas automatizadas de los componentes principales del producto. \\
+\bottomrule
+\end{longtable}
+
+\section{Apéndice D: relación entre proceso y producto final}
+
+\begin{longtable}{p{0.14\linewidth}p{0.36\linewidth}p{0.44\linewidth}}
+\caption{Cómo cada sprint contribuye al producto final.}\\
+\toprule
+\textbf{Fase} & \textbf{Aprendizaje conseguido} & \textbf{Impacto en el producto final} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Fase} & \textbf{Aprendizaje conseguido} & \textbf{Impacto en el producto final} \\
+\midrule
+\endhead
+Sprint 1 & Los sensores tienen distintas coberturas, escalas y comportamientos temporales. & El dashboard necesita carga robusta, fallback de variables y explicación de contexto. \\ \addlinespace
+Sprint 1 & Las variables de radiación, suelo y seguimiento presentan patrones horarios fuertes. & Se incorporan series temporales, posición solar y franjas horarias en reglas. \\ \addlinespace
+Sprint 2 & El IEC permite comparar configuraciones con un criterio común. & La recomendación final usa una métrica multiobjetivo y no solo producción eléctrica. \\ \addlinespace
+Sprint 2 & Las reglas interpretables son necesarias para defender decisiones. & El producto muestra reglas activas y evita depender solo de modelos opacos. \\ \addlinespace
+Sprint 2 & La circularidad puede sesgar conclusiones energéticas. & En Sprint 4 se separan estado, acciones y variables objetivo mediante MDP y world model. \\ \addlinespace
+Sprint 3 & La interfaz debe comunicar una acción, no solo mostrar datos. & Se implementan cuatro pestañas estables, tarjetas, SVG de panel/cultivo y alertas. \\ \addlinespace
+Sprint 4 & La operación requiere granularidad más fina que 6 horas. & Se genera pipeline de 10 minutos y reglas por microbloque. \\ \addlinespace
+Sprint 4 & La recomendación debe integrar cultivo, riego, energía y seguridad. & Se añaden perfiles de cultivo, riesgo agronómico, simulación de riego, DQN y LSTM como backend avanzado. \\
+\bottomrule
+\end{longtable}
+
+\end{document}
+
+

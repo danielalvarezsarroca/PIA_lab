@@ -1,0 +1,98 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{pdflscape}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+\titlespacing*{\section}{0pt}{1.2ex plus .2ex minus .1ex}{0.6ex plus .1ex}
+\titlespacing*{\subsection}{0pt}{0.8ex plus .2ex minus .1ex}{0.4ex plus .1ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Resumen ejecutivo del Proyecto}
+\rhead{PIA-GIA -- Sprint 4}
+\cfoot{\thepage}
+
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setlength{\parskip}{0.4em}
+\renewcommand{\arraystretch}{1.18}
+
+\begin{document}
+
+% --- Portada ---
+\begin{titlepage}
+    \centering
+    {\includegraphics[width=0.8\textwidth]{fib.png}\par}
+    \vspace{1cm}
+    {\bfseries\LARGE Universitat Polit\`ecnica de Catalunya \par}
+    \vspace{1cm}
+    {\scshape\Large Facultat d'Inform\`atica de Barcelona \par}
+    \vspace{2.5cm}
+    {\scshape\Huge Resumen Ejecutivo del Proyecto \par}
+    \vspace{0.8cm}
+    {\scshape\Large Sistemas Agrovoltaicos Din\'amicos \par}
+    \vspace{2.2cm}
+    {\itshape\Large Projecte d'Intel\textperiodcentered lig\`encia Artificial (PIA-GIA) \par}
+    \vfill
+    {\Large Grau en Intel\textperiodcentered lig\`encia Artificial \par}
+    \vspace{0.8cm}
+    {\Large Equipo Chacorocalfarobar \par}
+    \vspace{0.3cm}
+    {\large Daniel \'Alvarez Sarroca \par}
+    {\large Pablo Chac\'on \par}
+    {\large Albert Roca \par}
+    {\large Pau Escobar \par}
+    {\large Joel Alfaro \par}
+    \vfill
+    {\Large Sprint 4 de 4 -- Cierre acumulado \par}
+    {\Large Mayo de 2026 \par}
+\end{titlepage}
+
+\section*{Resumen ejecutivo}
+
+\textbf{\textquestiondown C\'omo se puede producir energ\'ia solar sin perjudicar al cultivo que crece debajo?} Esta es la pregunta central del proyecto. En una instalaci\'on agrovoltaica, las placas solares no solo generan electricidad: tambi\'en dan sombra, cambian la luz que recibe la planta y pueden afectar a la humedad y temperatura del suelo. Por eso, mover las placas no deber\'ia decidirse pensando solo en producir m\'as energ\'ia, sino tambi\'en en mantener el cultivo en buenas condiciones.
+
+\textbf{Qu\'e se ha hecho.} El proyecto ha construido una herramienta para ayudar a entender y tomar mejores decisiones sobre este tipo de instalaci\'on. Primero se revisaron los datos disponibles para saber qu\'e se pod\'ia usar con confianza y qu\'e no. Despu\'es se prepar\'o un dashboard para ver el estado del sistema, consultar gr\'aficos, revisar recomendaciones y detectar alertas. Finalmente, se mejor\'o la parte de decisi\'on para que el sistema no se limite a ense\~nar datos, sino que pueda proponer acciones razonables sobre placas y riego.
+
+\textbf{Por qu\'e es importante.} El principal aprendizaje es que no basta con tener sensores: hay que saber qu\'e significan sus datos y qu\'e datos faltan. En este caso, no se dispone de un registro real de riego y algunas lecturas del suelo llegan con poca frecuencia. Esto obliga a ser prudentes. El sistema no puede prometer un control agr\'icola perfecto, pero s\'i puede servir como base para comparar escenarios, detectar riesgos y apoyar decisiones.
+
+\textbf{Qu\'e se ha encontrado.} El trabajo muestra que el equilibrio entre energ\'ia y cultivo debe tratarse como una decisi\'on conjunta. Si solo se prioriza la energ\'ia, se puede ignorar el estado de la planta. Si solo se prioriza el cultivo, se pierde parte del valor de la instalaci\'on solar. Por eso se ha pasado de una l\'ogica basada en un indicador simple a una l\'ogica que valora ambos objetivos por separado: producci\'on el\'ectrica y condiciones agron\'omicas.
+
+\textbf{Resultados principales.}
+\begin{itemize}
+    \item Se ha conseguido un dashboard estable para ense\~nar el estado del sistema, la evoluci\'on de variables y las alertas principales.
+    \item Se ha documentado claramente que una parte del riego debe simularse porque no existe un hist\'orico real suficiente.
+    \item Se ha separado la parte agr\'icola de la parte energ\'etica para evitar que una sola m\'etrica esconda decisiones importantes.
+    \item Se ha preparado una base de recomendaci\'on m\'as avanzada, pensada para decidir acciones de forma secuencial y no solo con reglas fijas.
+    \item Se ha priorizado que la demo funcione de forma estable antes que a\~nadir una pesta\~na avanzada que pod\'ia romper la carga del dashboard.
+\end{itemize}
+
+\textbf{Qu\'e contiene el dashboard.} La herramienta permite ver una vista general del sistema, consultar series temporales, revisar recomendaciones y detectar alertas. Para una siguiente versi\'on, la mejora m\'as \'util ser\'ia una pesta\~na pensada para el cliente final, con mensajes muy directos: qu\'e est\'a pasando, qu\'e riesgo hay, qu\'e acci\'on se recomienda y por qu\'e. Esta vista deber\'ia evitar detalles t\'ecnicos y centrarse en decisiones comprensibles.
+
+\textbf{Conclusi\'on y recomendaci\'on.} El proyecto cierra con una base s\'olida, pero no debe presentarse como un sistema listo para controlar una explotaci\'on real sin m\'as validaci\'on. La conclusi\'on principal es clara: se puede avanzar hacia una gesti\'on inteligente de placas y riego, pero hacen falta mejores datos de campo para confiar plenamente en las recomendaciones. El siguiente paso deber\'ia ser recoger datos reales de riego, validar los umbrales con criterio agron\'omico y simplificar el dashboard para que cualquier usuario pueda entender la recomendaci\'on sin conocer el modelo por dentro.
+
+\end{document}

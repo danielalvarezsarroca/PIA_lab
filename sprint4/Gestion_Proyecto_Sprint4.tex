@@ -1,0 +1,1188 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{pdflscape}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+\titlespacing*{\section}{0pt}{1.2ex plus .2ex minus .1ex}{0.6ex plus .1ex}
+\titlespacing*{\subsection}{0pt}{0.8ex plus .2ex minus .1ex}{0.4ex plus .1ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Gestión acumulada del Proyecto}
+\rhead{PIA-GIA -- Sprint 4}
+\cfoot{\thepage}
+
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setlength{\parskip}{0.4em}
+\renewcommand{\arraystretch}{1.18}
+
+\begin{document}
+
+% --- Portada ---
+\begin{titlepage}
+    \centering
+    {\includegraphics[width=0.8\textwidth]{fib.png}\par}
+    \vspace{1cm}
+    {\bfseries\LARGE Universitat Politècnica de Catalunya \par}
+    \vspace{1cm}
+    {\scshape\Large Facultat d'Informàtica de Barcelona \par}
+    \vspace{2.5cm}
+    {\scshape\Huge Gestión acumulada del Proyecto SAMO \par}
+    \vspace{0.8cm}
+    {\scshape\Large Sistemas Agrovoltaicos Dinámicos \par}
+    \vspace{2.2cm}
+    {\itshape\Large Projecte d'Intel·ligència Artificial (PIA-GIA) \par}
+    \vfill
+    {\Large Grau en Intel·ligència Artificial \par}
+    \vspace{0.8cm}
+    {\Large Equipo Chacorocalfarobar \par}
+    \vspace{0.3cm}
+    {\large Daniel Álvarez Sarroca \par}
+    {\large Pablo Chacón \par}
+    {\large Albert Roca \par}
+    {\large Pau Escobar \par}
+    {\large Joel Alfaro \par}
+    \vfill
+    {\Large Sprint 4 de 4 -- Cierre acumulado \par}
+    {\Large Mayo de 2026 \par}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Resumen Ejecutivo}
+
+Este documento constituye la versión acumulada de gestión del proyecto SAMO al cierre del Sprint 4. No sustituye únicamente al informe operativo del último sprint, sino que consolida la evolución completa de la planificación, los entregables, los riesgos, el presupuesto, la calidad y las lecciones aprendidas desde el Sprint 1 hasta el cierre del proyecto.
+
+El proyecto empezó con una fase de análisis exploratorio de datos, orientada a comprender sensores, frecuencias, nulos, anomalías y relaciones entre variables agrovoltaicas. En el Sprint 2 se transformó ese conocimiento en un primer enfoque de modelización mediante el índice IEC, reglas candidatas de rotación y modelos interpretables. El Sprint 3 convirtió la modelización previa en una herramienta demostrable mediante un dashboard Streamlit estable, con series temporales, recomendación y alertas. Finalmente, el Sprint 4 corrigió la base conceptual del modelo para acercarla a un sistema real de decisión secuencial: simulación de riego, reconstrucción de humedad y temperatura del suelo, formulación MDP, sustitución del IEC como criterio principal por una reward multiobjetivo y adopción de una política DQN offline que decide acciones conjuntas de placas y riego, junto con reglas agronómicas por cultivo y un LSTM como modelo del mundo.
+
+La principal conclusión de gestión es que el proyecto se ha cerrado con un producto demostrable y con una arquitectura técnica más sólida que la prevista inicialmente, aunque con desviaciones internas relevantes. El dashboard visual final se mantiene en una versión estable de cuatro pestañas para proteger la demo, mientras que la capa avanzada de agronomía, riego, RL y LSTM queda preparada para una integración incremental posterior. Esta decisión reduce el riesgo de entrega y evita presentar una interfaz inestable como si estuviera completamente validada.
+
+Desde el punto de vista económico, el presupuesto aprobado del proyecto se mantiene en 37.977,50 euros. La contingencia inicial era de 3.452,50 euros y se han consumido 1.335,00 euros por incidencias y desviaciones técnicas acumuladas: falta de metadatos y anomalías de sensores en Sprint 1, circularidad GPOA en Sprint 2, bugs de VWC/reglas en Sprint 3 y esfuerzo adicional de simulación, política DQN offline, LSTM, archivos grandes y rollback frontend en Sprint 4. El remanente de contingencia es de 2.117,50 euros. Las métricas de valor ganado se presentan de forma realista: no todos los indicadores son 1,00, porque ha existido rework, alcance técnico reorientado y funcionalidades visuales que quedan preparadas pero no activadas.
+
+\newpage
+
+\section{Descripción del Proyecto}
+
+\subsection{Contexto y antecedentes}
+
+El proyecto SAMO se centra en el análisis y optimización operativa de sistemas agrovoltaicos dinámicos. La instalación combina producción energética mediante placas solares móviles y uso agrícola del terreno situado bajo las placas. La rotación de los paneles afecta tanto a la captación energética como al microclima del cultivo, por lo que el problema no puede resolverse maximizando únicamente energía.
+
+Los datos disponibles proceden de sensores heterogéneos con distintas frecuencias de muestreo. Esta heterogeneidad ha condicionado el desarrollo técnico del proyecto, especialmente en Sprint 4, donde se ha detectado que no existen datos reales de riego y que las lecturas de humedad y temperatura del suelo son demasiado espaciadas para aprender directamente una política hídrica.
+
+\subsection{Objetivos del proyecto}
+
+El objetivo general del proyecto es diseñar un sistema de soporte a la decisión capaz de equilibrar producción energética y condiciones favorables para el cultivo. En el Sprint 4, este objetivo se ha concretado en:
+
+\begin{itemize}
+    \item consolidar el dashboard funcional como herramienta demostrable;
+    \item ampliar la modelización hacia un enfoque secuencial basado en MDP;
+    \item incorporar riego simulado como variable de acción;
+    \item separar la recompensa agrícola y energética, retirando el IEC como función objetivo final;
+    \item entrenar un modelo LSTM para simular transiciones del sistema;
+    \item cerrar la documentación técnica y de gestión del proyecto.
+\end{itemize}
+
+\subsection{Alcance del Sprint 4}
+
+El alcance incluido en el Sprint 4 comprende:
+
+\begin{itemize}
+    \item revisión de feedback acumulado de sprints anteriores;
+    \item mejora del backend de modelos y políticas, con decisión final basada en una política DQN offline;
+    \item simulación de riego y variables de suelo;
+    \item integración parcial de componentes de la rama \texttt{sprint3-10min-pipeline};
+    \item entrenamiento y documentación del LSTM;
+    \item preparación de la documentación técnica E07;
+    \item actualización del seguimiento de riesgos, presupuesto y DoD;
+    \item definición del dashboard v2 previsto.
+\end{itemize}
+
+Queda fuera del alcance final activado la integración visual completa de la quinta pestaña agronómica en Streamlit, ya que durante las pruebas afectó a la carga del dashboard. La funcionalidad queda preparada y documentada para una siguiente iteración.
+
+\subsection{Entregables principales}
+
+\begin{longtable}{p{0.16\textwidth}p{0.38\textwidth}p{0.34\textwidth}}
+\caption{Entregables principales del Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Entregable} & \textbf{Estado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Entregable} & \textbf{Estado} \\
+\midrule
+\endhead
+E06 & Dashboard v2 final con recomendaciones & Dashboard estable mantenido; backend avanzado preparado para v2. \\
+E07 & Documentación técnica completa & Documento técnico creado en LaTeX con modelos, DQN offline, LSTM y dashboard previsto. \\
+E08 & Presentación final al cliente & Pendiente de consolidar a partir de E07 y del cierre de gestión. \\
+E09 & Documentación de gestión acumulativa & Este documento constituye la base de cierre del Sprint 4. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Entregables acumulados del proyecto}
+
+La Tabla siguiente consolida los entregables definidos en el Plan de Gestión de Proyecto SAMO y su estado al cierre del Sprint 4. Se incluye la evidencia principal de cada entregable para que el documento funcione como cierre acumulativo y no solo como memoria del último sprint.
+
+\begin{longtable}{p{0.10\textwidth}p{0.14\textwidth}p{0.28\textwidth}p{0.14\textwidth}p{0.26\textwidth}}
+\caption{Estado acumulado de entregables E01-E09}\\
+\toprule
+\textbf{ID} & \textbf{Sprint} & \textbf{Entregable} & \textbf{Estado} & \textbf{Evidencia / comentario} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Sprint} & \textbf{Entregable} & \textbf{Estado} & \textbf{Evidencia / comentario} \\
+\midrule
+\endhead
+E01 & Sprint 1 & Informe de análisis exploratorio de datos & Completado & EDA con estructura de datos, nulos, rangos, series temporales, anomalías y primeras hipótesis sobre sensores y zonas. \\
+E02 & Sprint 1 & Notebook/script replicable del EDA & Completado & Notebooks de análisis exploratorio y limpieza disponibles en el repositorio del sprint. \\
+E03 & Sprint 2 & Informe de política de rotación y modelo & Completado & Modelización del IEC, feature engineering, modelos ElasticNet/árbol y reglas candidatas de rotación. \\
+E04 & Sprint 2 & Código del modelo & Completado & Pipeline de modelización, reglas candidatas y outputs en \texttt{sprint2/outputs\_sprint2}. \\
+E05 & Sprint 3 & Dashboard v1 funcional & Completado & Dashboard Streamlit con estado, series temporales, recomendación y alertas. Suite de tests asociada. \\
+E06 & Sprint 4 & Dashboard v2 final con recomendaciones & Parcial / aceptado con alcance controlado & Dashboard estable mantenido; backend avanzado preparado. La quinta pestaña agronómica queda documentada pero no activada para evitar regresiones. \\
+E07 & Sprint 4 & Documentación técnica completa & Completado & Documento técnico en \texttt{sprint4/E07\_Documentacion\_Tecnica\_Sprint4.tex} con simulación, MDP, política DQN offline, LSTM y dashboard previsto. \\
+E08 & Sprint 4 & Presentación final al cliente & Preparado & Presentación final construida a partir de E07 y del cierre de gestión, con narrativa de cambios respecto a Sprint 3. \\
+E09 & Todos & Documentación de gestión acumulativa & En cierre & El presente documento consolida planificación, reviews, retrospectivas, riesgos, presupuesto, calidad y lecciones aprendidas. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Organización del Equipo}
+
+\subsection{Roles y responsabilidades}
+
+La composición del equipo se mantiene respecto a los sprints anteriores. Durante el Sprint 4 los roles se han orientado principalmente al cierre del producto, estabilización técnica, documentación final y preparación de la entrega.
+
+\begin{longtable}{p{0.20\textwidth}p{0.24\textwidth}p{0.48\textwidth}}
+\caption{Composición del equipo - Proyecto SAMO}\\
+\toprule
+\textbf{Miembro} & \textbf{Rol} & \textbf{Responsabilidades principales en Sprint 4} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Miembro} & \textbf{Rol} & \textbf{Responsabilidades principales en Sprint 4} \\
+\midrule
+\endhead
+Daniel Álvarez & Project Manager (PM) & Coordinación del cierre del sprint, seguimiento de backlog, consolidación de documentación, control de riesgos, presupuesto y preparación de la entrega final. \\
+\addlinespace
+Pablo Chacón & Data Engineer / Data Scientist & Revisión y regeneración del dataset de riego, simulación de humedad y temperatura del suelo, preparación de datos para entrenamiento del modelo temporal. \\
+\addlinespace
+Albert Roca & Tech Lead / ML Engineer & Diseño de la arquitectura de MDP, integración de módulos RL, entrenamiento LSTM, validación técnica, pruebas unitarias y estabilización del backend. \\
+\addlinespace
+Pau Escobar & Data Analyst / Visualización & Revisión del dashboard, propuestas de visualización para dashboard v2, apoyo a narrativa técnica, validación visual de outputs y preparación de material para demo. \\
+\addlinespace
+Joel Alfaro & Analista de Dominio / QA & Revisión de reglas agronómicas, perfiles de cultivo, umbrales de riesgo, coherencia del enfoque de riego y validación funcional de los outputs. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Evolución acumulada de responsabilidades}
+
+La estructura de roles se mantuvo estable durante el proyecto, pero la carga real cambió entre sprints. Esta evolución es relevante porque explica parte de las desviaciones presupuestarias: el Sprint 4 concentró más trabajo técnico de backend del previsto y redujo el peso relativo de la integración visual final.
+
+\begin{longtable}{p{0.19\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.19\textwidth}}
+\caption{Evolución de foco por miembro y sprint}\\
+\toprule
+\textbf{Miembro} & \textbf{Sprint 1} & \textbf{Sprint 2} & \textbf{Sprint 3} & \textbf{Sprint 4} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Miembro} & \textbf{Sprint 1} & \textbf{Sprint 2} & \textbf{Sprint 3} & \textbf{Sprint 4} \\
+\midrule
+\endhead
+Daniel Álvarez & Gestión, actas, riesgos y EDA documental & Gestión de review, riesgos y presupuesto & Informe dashboard, cierre documental y coordinación & E07, E09, presupuesto acumulado, riesgos y presentación final. \\
+Pablo Chacón & Limpieza, lectura de sensores y análisis de datos & Dataset de modelización y revisión GPOA & Alertas, lógica de dashboard y QA de datos & Simulación de riego, humedad y temperatura del suelo. \\
+Albert Roca & Apoyo técnico al EDA y correlaciones & Modelización IEC, reglas y validación & Motor de reglas, sensibilidad IEC, tests y correcciones & MDP, política DQN offline, LSTM, inferencia y rollback frontend. \\
+Pau Escobar & Visualizaciones exploratorias y narrativa EDA & Análisis por régimen y apoyo visual & Diseño/validación dashboard v1 & Propuesta dashboard v2 y validación UX de integración futura. \\
+Joel Alfaro & Revisión funcional y apoyo de dominio & QA de resultados y discusión de reglas & Validación dashboard y reglas operativas & Reglas agronómicas, cultivos, zonas y riesgos de uso. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Planificación temporal y seguimiento acumulado}
+
+\subsection{Resumen de planificación por sprint}
+
+La planificación original del proyecto, definida en \textit{SAMO\_Plan\_Proyecto.pdf}, dividía el trabajo en cuatro sprints de una semana: EDA, modelización, dashboard v1 e integración final. El cierre acumulado muestra que la secuencia general se mantuvo, pero el contenido técnico se hizo más profundo a medida que se descubrieron limitaciones de datos y riesgos de validación.
+
+\begin{longtable}{p{0.10\textwidth}p{0.22\textwidth}p{0.24\textwidth}p{0.16\textwidth}p{0.20\textwidth}}
+\caption{Seguimiento acumulado de sprints}\\
+\toprule
+\textbf{Sprint} & \textbf{Objetivo planificado} & \textbf{Resultado real} & \textbf{Estado} & \textbf{Desviación principal} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Objetivo planificado} & \textbf{Resultado real} & \textbf{Estado} & \textbf{Desviación principal} \\
+\midrule
+\endhead
+S1 & EDA e identificación de patrones, anomalías y ubicación de espacios. & Se realizó EDA, limpieza, análisis temporal, correlaciones y diagnóstico inicial de sensores/tracking. & Completado & Falta de metadatos y anomalías no documentadas obligaron a preparar ajustes adicionales. \\
+S2 & Modelización y política de rotación. & Se definió IEC, dataset de modelización, reglas candidatas y modelos interpretables. & Completado & Corrección de circularidad GPOA y limitaciones de validación agronómica. \\
+S3 & Dashboard v1 funcional. & Se entregó Streamlit con cuatro pestañas, recomendaciones, alertas y tests unitarios. & Completado & Bugs VWC/reglas corregidos mediante tests; dashboard seguía siendo histórico, no control real. \\
+S4 & Dashboard v2, documentación técnica, presentación y cierre. & Se priorizó backend avanzado: riego simulado, MDP, política DQN offline, LSTM y documentación final. & Parcial controlado & La pestaña agronómica visual se desactivó para preservar la estabilidad de la demo. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Backlog resumido acumulado S1-S3}
+
+Los tres primeros sprints no se reproducen con todo el detalle de sus documentos originales para evitar duplicar literalmente los informes previos, pero sí se resumen sus bloques de trabajo, entregables y resultados. El Sprint 4 se detalla posteriormente porque constituye el cierre y la actualización final.
+
+\begin{longtable}{p{0.10\textwidth}p{0.38\textwidth}p{0.14\textwidth}p{0.14\textwidth}p{0.16\textwidth}}
+\caption{Backlog acumulado resumido de Sprints 1 a 3}\\
+\toprule
+\textbf{Sprint} & \textbf{Bloque de trabajo} & \textbf{Responsable principal} & \textbf{Estado} & \textbf{Evidencia} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Bloque de trabajo} & \textbf{Responsable principal} & \textbf{Estado} & \textbf{Evidencia} \\
+\midrule
+\endhead
+S1 & Exploración de estructura de datos, nulos, rangos y tipos. & Equipo técnico & Completado & Informe EDA y notebooks. \\
+S1 & Análisis temporal, correlaciones, régimen de tracking y anomalías. & Tech/Data & Completado & Matrices, series y conclusiones de EDA. \\
+S1 & Actualización inicial de riesgos, actas y presupuesto. & PM & Completado & Gestión Sprint 1. \\
+S2 & Definición de target, features y dataset de modelización. & ML/Data & Completado & \texttt{dataset\_modelizacion\_6h.csv}. \\
+S2 & Modelos ElasticNet/árbol, IEC y reglas candidatas. & ML Engineer & Completado & Informe E03/E04 y reglas. \\
+S2 & Corrección de circularidad GPOA y actualización de riesgos. & ML/PM & Completado & Registro de riesgos S2. \\
+S3 & Implementación dashboard v1 con estado, series, recomendación y alertas. & Dashboard/Data & Completado & \texttt{sprint3/src/app.py}. \\
+S3 & Tests unitarios, corrección bug VWC y activación de reglas. & Tech/QA & Completado & Suite pytest y PR de corrección. \\
+S3 & Informe E05 y preparación de inputs para Sprint 4. & PM/Equipo & Completado & Informe dashboard y gestión S3. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Planificación y seguimiento de tareas del Sprint 4}
+
+\subsection{Objetivo del sprint}
+
+El Sprint 4 se planificó como sprint de integración, refinamiento y entrega final. El objetivo inicial era cerrar el dashboard v2, incorporar el feedback de los sprints anteriores, consolidar la documentación técnica y preparar la presentación final al cliente.
+
+Durante la ejecución se identificó una necesidad técnica adicional: el modelo no podía tratar el riego como una variable real observada, porque no existían datos históricos de riego y las lecturas de humedad del suelo tenían una frecuencia demasiado baja. Por tanto, una parte relevante del sprint se reorientó hacia la construcción de una base técnica más sólida para el modelo de decisión: simulación de riego, generación de trayectorias, formulación de MDP, política DQN offline y modelo LSTM del mundo.
+
+\subsection{Sprint Backlog}
+
+\begin{longtable}{p{0.09\textwidth}p{0.43\textwidth}p{0.19\textwidth}p{0.07\textwidth}p{0.14\textwidth}}
+\caption{Sprint Backlog - Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Tarea} & \textbf{Responsable} & \textbf{SP} & \textbf{Estado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Tarea} & \textbf{Responsable} & \textbf{SP} & \textbf{Estado} \\
+\midrule
+\endhead
+S4-01 & Sprint Planning: revisión de feedback acumulado y priorización del cierre final. & Daniel Álvarez & 1 & Completado \\
+S4-02 & Revisión del dashboard v1 y definición de funcionalidades candidatas para dashboard v2. & Pau Escobar / Albert Roca & 2 & Completado \\
+S4-03 & Revisión del notebook \texttt{Master\_dataset\_reg.ipynb} y análisis del número de filas generado. & Pablo Chacón & 3 & Completado \\
+S4-04 & Corrección de identificadores de episodio y revisión de duplicidades en el dataset simulado. & Pablo Chacón / Albert Roca & 3 & Completado \\
+S4-05 & Calibración de dinámica de humedad y temperatura del suelo bajo riego simulado. & Pablo Chacón & 4 & Completado \\
+S4-06 & Incorporación de escenarios de riego con diferentes intervalos, dosis y ruido controlado. & Pablo Chacón & 3 & Completado \\
+S4-07 & Revisión de la rama \texttt{sprint3-10min-pipeline} y extracción de componentes útiles. & Albert Roca & 3 & Completado \\
+S4-08 & Integración de reglas agronómicas por cultivo, zona y etapa de crecimiento. & Joel Alfaro / Albert Roca & 4 & Completado \\
+S4-09 & Implementación de política DQN offline con recompensa multiobjetivo. & Albert Roca & 5 & Completado \\
+S4-10 & Construcción del dataset de entrenamiento para el modelo del mundo. & Pablo Chacón / Albert Roca & 4 & Completado \\
+S4-11 & Implementación del modelo LSTM y utilidades de entrenamiento. & Albert Roca & 5 & Completado \\
+S4-12 & Entrenamiento del LSTM y análisis de métricas de validación. & Albert Roca & 3 & Completado \\
+S4-13 & Implementación de inferencia y rollout para simulación de políticas. & Albert Roca & 3 & Completado \\
+S4-14 & Revisión de integración con dashboard y prueba de quinta pestaña agronómica. & Pau Escobar / Albert Roca & 3 & Parcial \\
+S4-15 & Reversión de cambios de frontend que afectaban a la carga del dashboard. & Albert Roca & 2 & Completado \\
+S4-16 & Documentación técnica E07 de modelos, DQN offline, LSTM y dashboard previsto. & Daniel Álvarez & 4 & Completado \\
+S4-17 & Gestión de archivos grandes y exclusión de CSV generados del repositorio. & Daniel Álvarez / Albert Roca & 2 & Completado \\
+S4-18 & Verificación final con tests automatizados. & Joel Alfaro / Albert Roca & 2 & Completado \\
+S4-19 & Preparación de gestión del proyecto E09 y cierre documental. & Daniel Álvarez & 4 & En curso \\
+S4-20 & Preparación de la presentación final E08 y guion de demo. & Todo el equipo & 4 & Pendiente / En preparación \\
+\bottomrule
+\end{longtable}
+
+\subsection{Distribución de carga por miembro}
+
+\begin{longtable}{p{0.24\textwidth}p{0.14\textwidth}p{0.54\textwidth}}
+\caption{Distribución aproximada de carga - Sprint 4}\\
+\toprule
+\textbf{Miembro} & \textbf{SP aprox.} & \textbf{Foco principal} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Miembro} & \textbf{SP aprox.} & \textbf{Foco principal} \\
+\midrule
+\endhead
+Daniel Álvarez & 11 & Gestión del sprint, documentación E07/E09, seguimiento de cambios, coordinación de entrega y gestión de repositorio. \\
+Pablo Chacón & 14 & Simulación de riego, revisión de dataset, calibración de humedad y temperatura, generación de datos base. \\
+Albert Roca & 22 & Arquitectura MDP, política DQN offline, LSTM, inferencia, rollout, pruebas, integración backend y estabilización del dashboard. \\
+Pau Escobar & 7 & Revisión de UX, propuesta dashboard v2, visualización y validación de la experiencia de usuario. \\
+Joel Alfaro & 6 & QA funcional, revisión agronómica, validación de reglas por cultivo y apoyo a Definition of Done. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Estructura de comunicación}
+
+La estructura de comunicación se mantiene alineada con el Plan de Gestión de Proyecto SAMO. Durante el Sprint 4 se han utilizado reuniones breves de coordinación, revisión técnica asíncrona y validación por entregables.
+
+\begin{longtable}{p{0.22\textwidth}p{0.18\textwidth}p{0.24\textwidth}p{0.24\textwidth}}
+\caption{Estructura de comunicación del Sprint 4}\\
+\toprule
+\textbf{Evento} & \textbf{Frecuencia} & \textbf{Participantes} & \textbf{Propósito} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Evento} & \textbf{Frecuencia} & \textbf{Participantes} & \textbf{Propósito} \\
+\midrule
+\endhead
+Daily / coordinación breve & Durante el sprint & Equipo técnico & Seguimiento de bloqueos, tareas activas y decisiones rápidas. \\
+Revisión técnica & Según necesidad & Tech Lead, Data Engineer, QA & Validar datasets, modelos, tests y estabilidad del dashboard. \\
+Sprint Review & Cierre del sprint & Equipo y cliente/profesor & Presentar incremento, limitaciones y siguientes pasos. \\
+Retrospective & Cierre del sprint & Equipo completo & Identificar lecciones aprendidas y acciones de mejora. \\
+\bottomrule
+\end{longtable}
+
+La carga real del sprint se concentró más de lo previsto en tareas técnicas de backend. Esto se debe a que la falta de datos de riego obligó a resolver primero el problema de modelización antes de poder construir una visualización final fiable.
+
+\newpage
+
+\section{Sprint Reviews y retrospectivas acumuladas}
+
+\subsection{Sprint Review del Sprint 1}
+
+La Review del Sprint 1 cerró la fase de exploración inicial. El equipo presentó el estado real de los datos, la heterogeneidad de frecuencias, las primeras anomalías y la necesidad de interpretar con cautela las zonas y sensores. El valor principal de esta review fue transformar una expectativa genérica de análisis en una lista concreta de restricciones técnicas.
+
+\begin{longtable}{p{0.24\textwidth}p{0.24\textwidth}p{0.42\textwidth}}
+\caption{Review acumulada - Sprint 1}\\
+\toprule
+\textbf{Elemento revisado} & \textbf{Resultado} & \textbf{Impacto en el proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento revisado} & \textbf{Resultado} & \textbf{Impacto en el proyecto} \\
+\midrule
+\endhead
+EDA y calidad de datos & Aceptado como base técnica & Permitió pasar a modelización con conocimiento de nulos, rangos y anomalías. \\
+Frecuencias heterogéneas & Confirmadas & Se decidió trabajar con resampleo y trazabilidad de pérdidas de resolución. \\
+Trackers y sensores anómalos & Riesgo confirmado & Se activó contingencia para parametrizar limpieza y preparar reejecución. \\
+Metadatos incompletos & Bloqueo parcial & Se documentó la dependencia respecto al cliente/equipo técnico de planta. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Retrospectiva del Sprint 1}
+
+El Sprint 1 funcionó bien como sprint de descubrimiento. La principal fortaleza fue detectar temprano problemas de datos que podrían haber invalidado modelizaciones posteriores. La principal mejora identificada fue reforzar la documentación de supuestos y reservar capacidad de contingencia para reestructurar scripts cuando llegaran nuevas aclaraciones.
+
+\subsection{Sprint Review del Sprint 2}
+
+La Review del Sprint 2 presentó el salto desde el análisis descriptivo hacia una primera política de rotación basada en IEC, modelos interpretables y reglas candidatas. El resultado fue útil para el dashboard, pero también dejó claro que los umbrales agronómicos seguían siendo provisionales.
+
+\begin{longtable}{p{0.24\textwidth}p{0.24\textwidth}p{0.42\textwidth}}
+\caption{Review acumulada - Sprint 2}\\
+\toprule
+\textbf{Elemento revisado} & \textbf{Resultado} & \textbf{Impacto en el proyecto} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Elemento revisado} & \textbf{Resultado} & \textbf{Impacto en el proyecto} \\
+\midrule
+\endhead
+Dataset de modelización & Completado & Base para reglas y dashboard del Sprint 3. \\
+IEC & Aceptado como indicador provisional & Permitió equilibrar energía y cultivo, aunque no como función objetivo definitiva. \\
+Reglas candidatas de rotación & Útiles pero provisionales & Se integraron como lógica operativa del dashboard v1. \\
+Circularidad GPOA & Detectada y corregida & Se consumió contingencia por rework técnico justificado. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Retrospectiva del Sprint 2}
+
+El Sprint 2 mejoró la trazabilidad del modelo y produjo reglas interpretables. La lección principal fue que un índice sintético como el IEC ayuda a comunicar, pero puede esconder supuestos fuertes. Esta lección se vuelve crítica en Sprint 4, cuando el IEC se retira como criterio principal y se sustituye por una reward multiobjetivo usada por la política DQN offline.
+
+\newpage
+
+\section{Sprint Review del Sprint 3}
+
+\subsection{Resumen de la revisión}
+
+El Sprint 3 entregó el dashboard v1, con una aplicación Streamlit funcional organizada en cuatro pestañas: dashboard general, series temporales, recomendación y alertas. La revisión confirmó que el prototipo era útil para enseñar el comportamiento básico del sistema, pero también dejó claro que el producto todavía estaba demasiado centrado en observabilidad y reglas.
+
+Los principales puntos revisados fueron:
+
+\begin{itemize}
+    \item funcionamiento del dashboard en local;
+    \item estructura de pestañas y navegación;
+    \item reglas de recomendación de rotación;
+    \item alertas sobre variables microclimáticas;
+    \item uso del IEC como indicador sintético;
+    \item estabilidad de la suite de tests;
+    \item limitaciones del modelo para capturar riego y dinámica de suelo.
+\end{itemize}
+
+\subsection{Entregables demostrados}
+
+\begin{longtable}{p{0.15\textwidth}p{0.38\textwidth}p{0.37\textwidth}}
+\caption{Entregables demostrados en la review del Sprint 3}\\
+\toprule
+\textbf{ID} & \textbf{Entregable} & \textbf{Resultado de la revisión} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Entregable} & \textbf{Resultado de la revisión} \\
+\midrule
+\endhead
+E05 & Dashboard v1 & Aceptado como prototipo funcional. Se detecta necesidad de ampliarlo con una capa más clara de decisión. \\
+E05-doc & Informe de dashboard & Aceptado como base de documentación del frontend y de las decisiones de diseño. \\
+Tests S3 & Suite de pruebas de dashboard y lógica & Valorada positivamente porque permitió detectar errores de escala y reglas antes de la entrega. \\
+Análisis IEC & Sensibilidad del índice energía-cultivo & Útil como paso intermedio, pero retirado como criterio final frente a una reward explícita agrícola-energética. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Feedback incorporado en Sprint 4}
+
+El feedback principal transformado en trabajo del Sprint 4 fue:
+
+\begin{itemize}
+    \item pasar de un dashboard descriptivo a un sistema de soporte a la decisión;
+    \item incluir la componente de riego o, al menos, modelarla explícitamente;
+    \item diferenciar cultivos y zonas, ya que no todos los cultivos tienen las mismas necesidades;
+    \item separar la recompensa agrícola y energética para hacer más interpretable la decisión;
+    \item investigar si la zona bajo placas debe comportarse diferente respecto a humedad y temperatura;
+    \item preparar un modelo temporal con contexto, preferiblemente LSTM por volumen de datos;
+    \item evitar integrar en frontend funcionalidades que rompan la estabilidad de la demo.
+\end{itemize}
+
+\subsection{Items no completados al cierre del Sprint 3}
+
+Al cierre del Sprint 3 quedaron pendientes:
+
+\begin{itemize}
+    \item integración real de riego en el modelo;
+    \item entrenamiento de un modelo temporal;
+    \item simulación de políticas futuras;
+    \item base de cultivos con rangos agronómicos;
+    \item visualización de agronomía y RL en el dashboard;
+    \item cierre de documentación técnica consolidada.
+\end{itemize}
+
+El Sprint 4 ha abordado estos puntos de forma prioritaria, aunque la integración visual completa se mantiene como trabajo preparado y no activado en el dashboard estable.
+
+\newpage
+
+\section{Retrospectiva del Sprint 3}
+
+\subsection{Qué fue bien}
+
+\begin{itemize}
+    \item El dashboard v1 permitió materializar el trabajo de los sprints anteriores en una demo ejecutable.
+    \item La separación por pestañas hizo que el producto fuera comprensible para perfiles no técnicos.
+    \item Los tests unitarios añadidos en Sprint 3 evitaron que errores de escala y reglas llegaran a la entrega.
+    \item La sensibilidad del IEC ayudó a entender que el problema no debía optimizar una sola variable.
+\end{itemize}
+
+\subsection{Qué debía mejorar}
+
+\begin{itemize}
+    \item El modelo necesitaba representar acciones y consecuencias, no solo recomendaciones puntuales.
+    \item El riego no podía quedar fuera si se hablaba de estado agronómico del cultivo.
+    \item La lógica del IEC debía retirarse como criterio final frente a una reward más flexible.
+    \item Las mejoras de frontend debían probarse de forma incremental para no afectar a la estabilidad.
+    \item La documentación debía dejar claras las hipótesis usadas, especialmente en datos simulados.
+\end{itemize}
+
+\subsection{Acciones de mejora aplicadas en Sprint 4}
+
+\begin{longtable}{p{0.13\textwidth}p{0.42\textwidth}p{0.35\textwidth}}
+\caption{Acciones de mejora aplicadas en Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Acción de mejora} & \textbf{Resultado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Acción de mejora} & \textbf{Resultado} \\
+\midrule
+\endhead
+A4-01 & Revisar el enfoque del riego y documentar la ausencia de datos reales. & Se simuló riego y se explicitó como hipótesis del modelo. \\
+A4-02 & Separar componente agrícola y energética. & Se implementó una reward ponderada con penalizaciones por riesgo. \\
+A4-03 & Añadir cultivos y zonas. & Se incorporaron reglas agronómicas por cultivo, etapa y zona. \\
+A4-04 & Entrenar modelo temporal con contexto. & Se implementó y entrenó un LSTM de modelo del mundo. \\
+A4-05 & Evitar entregar frontend inestable. & Se revirtió la conexión de la quinta pestaña y se mantuvo dashboard estable. \\
+A4-06 & Documentar reproducibilidad. & Se añadieron pasos para regenerar CSV grandes y entrenar el modelo. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Introducción al Sprint 4}
+
+El Sprint 4 ha funcionado como sprint de cierre, pero también como sprint de corrección de enfoque. La planificación original preveía mejorar la UX/UI del dashboard y cerrar la documentación final. Sin embargo, al profundizar en los datos se detectó que una integración directa de riego en el dashboard no tendría sentido sin una capa de simulación o hipótesis.
+
+El equipo decidió, por tanto, priorizar una base técnica defendible:
+
+\begin{itemize}
+    \item reconocer la falta de datos reales de riego;
+    \item construir una simulación explícita;
+    \item formular el problema como MDP;
+    \item entrenar un modelo temporal;
+    \item preparar la política DQN offline;
+    \item mantener estable el dashboard para la demo.
+\end{itemize}
+
+Esta decisión implica que el Sprint 4 no se limita a ``maquillar'' el dashboard, sino que corrige la base del modelo para que el producto final sea más coherente con el problema agrovoltaico.
+
+\newpage
+
+\section{Descripción del trabajo técnico realizado}
+
+\subsection{Simulación de riego y suelo}
+
+El notebook \texttt{sprint3/Master\_dataset\_reg.ipynb} se revisó para generar un dataset enriquecido con riego simulado, humedad y temperatura del suelo. Se detectó que el dataset resultante podía tener muchas más filas que el master dataset original. La causa principal no era necesariamente un error, sino la multiplicación de trayectorias al simular varias políticas de riego.
+
+Se corrigió además un problema de identificador temporal de episodio, evitando colisiones al convertir timestamps. La generación final queda justificada por la combinación de escenarios:
+
+\begin{itemize}
+    \item intervalos de riego de 4 h, 6 h, 8 h y 12 h;
+    \item dosis de 1 mm, 2 mm y 3 mm;
+    \item ruido controlado de tiempo y cantidad;
+    \item resolución temporal de 10 minutos.
+\end{itemize}
+
+\subsection{Integración parcial de la rama de trabajo paralela}
+
+Se revisó la rama \texttt{sprint3-10min-pipeline}, donde ya se habían avanzado piezas importantes: separación por cultivos, reglas agronómicas, zona, reward y política. De esa rama se incorporaron los módulos útiles, adaptándolos al estado actual del repositorio.
+
+Los principales componentes aprovechados fueron:
+
+\begin{itemize}
+    \item reglas agronómicas por cultivo;
+    \item pipeline a 10 minutos;
+    \item política DQN offline;
+    \item vista agronómica preliminar;
+    \item tests asociados.
+\end{itemize}
+
+\subsection{Modelo MDP y política DQN offline}
+
+Se formalizó el problema como MDP. La acción ya no se limita al ángulo de placas, sino que incorpora también riego:
+
+\begin{itemize}
+    \item ángulo de tracker;
+    \item activación de riego;
+    \item dosis de riego.
+\end{itemize}
+
+La reward combina:
+
+\begin{itemize}
+    \item componente agrícola;
+    \item componente energética;
+    \item penalizaciones por estrés o riesgo del cultivo.
+\end{itemize}
+
+La configuración actual usa pesos 0.45 para agricultura y 0.55 para energía. Esto mantiene la energía como componente ligeramente prioritaria, pero evita que el modelo recomiende acciones que deterioren el cultivo.
+
+La decisión final de modelización del Sprint 4 es utilizar una política DQN offline para escoger la acción recomendada. En el repositorio conviven dos aproximaciones, una política tabular anterior y una política DQN, pero la decisión de cierre es adoptar DQN como enfoque principal. Esta decisión permite presentar el sistema como un problema de decisión secuencial más coherente con el objetivo del proyecto: decidir conjuntamente el movimiento de placas y el riego en función del estado del cultivo y de la producción energética.
+
+Con esta decisión, el IEC deja de ser el criterio principal de optimización. El índice se mantiene como antecedente metodológico del Sprint 2 y como herramienta útil para explicar la evolución del proyecto, pero la política final se guía por una reward multiobjetivo que separa componente agrícola y componente energética. Esta reformulación encaja mejor con un sistema de soporte a la decisión, porque permite ajustar prioridades entre cultivo y energía sin depender de un único índice fijo.
+
+La política DQN se integra como parte del backend avanzado del Sprint 4. El detalle técnico de implementación se documenta en E07, mientras que este documento de gestión recoge la decisión de alcance: pasar de reglas e IEC a una política RL más alineada con el comportamiento secuencial del sistema.
+
+\subsection{Modelo LSTM}
+
+Se implementó un LSTM para predecir el siguiente estado del sistema a partir de una ventana temporal de 12 pasos de 10 minutos. El objetivo no es predecir directamente una política, sino aprender un modelo del mundo que permita simular consecuencias futuras.
+
+El entrenamiento actual produjo:
+
+\begin{itemize}
+    \item 414.744 filas cargadas;
+    \item 76.764 filas útiles tras eliminar nulos;
+    \item ventanas de tamaño 12;
+    \item tensor de entrada de forma \(76620 \times 12 \times 22\);
+    \item salida de 7 variables objetivo;
+    \item loss final de validación de 0.005531.
+\end{itemize}
+
+\subsection{Dashboard}
+
+Se intentó integrar una quinta pestaña agronómica en el dashboard. La idea era mostrar cultivo, zona, reglas, reward, acción recomendada por la política DQN offline y predicción LSTM. Sin embargo, durante las pruebas se detectó que la integración afectaba a la carga del dashboard en Streamlit.
+
+La decisión de gestión fue revertir la conexión de esa pestaña y mantener el dashboard principal en su estado estable. La funcionalidad queda preparada en backend y documentada para integrarse con más seguridad posteriormente.
+
+Como mejora prioritaria posterior al cierre, se propone no recuperar directamente una pestaña técnica completa, sino diseñar una vista simplificada orientada al cliente. Esta tab debería traducir la salida de la política DQN a mensajes operativos claros: acción recomendada, motivo principal, impacto esperado en cultivo y energía, estado del riego y alerta si la recomendación depende de simulación. El objetivo es que un usuario no técnico pueda entender qué haría el sistema y por qué, sin tener que interpretar detalles internos del modelo.
+
+\newpage
+
+\section{Entregables y outputs generados}
+
+\begin{longtable}{p{0.14\textwidth}p{0.34\textwidth}p{0.42\textwidth}}
+\caption{Entregables y outputs del Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Entregable / output} & \textbf{Estado y observaciones} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Entregable / output} & \textbf{Estado y observaciones} \\
+\midrule
+\endhead
+E06 & Dashboard v2 final con recomendaciones & Dashboard estable mantenido en versión de cuatro pestañas. Backend avanzado preparado para v2. Quinta pestaña no activada por estabilidad. \\
+E07 & Documentación técnica completa & Documento \texttt{sprint4/E07\_Documentacion\_Tecnica\_Sprint4.tex} creado con modelos, política DQN offline, LSTM, dashboard previsto y limitaciones. \\
+E08 & Presentación final al cliente & Pendiente de consolidar a partir de E07 y este documento de gestión. \\
+E09 & Documentación de gestión acumulativa & Este documento constituye la base del cierre de gestión del Sprint 4. \\
+OUT-01 & Dataset de mundo simulado & Generado localmente como \texttt{master\_dataset\_world\_model.csv}, excluido de Git por tamaño. \\
+OUT-02 & Dataset de entrenamiento world model & Generado localmente como \texttt{world\_model\_training\_dataset.csv}, excluido de Git por superar 100 MB. \\
+OUT-03 & Modelo LSTM entrenado & Artefactos guardados en \texttt{sprint3/outputs}. \\
+OUT-04 & Métricas LSTM & Guardadas en \texttt{world\_model\_lstm\_metrics.json} e incorporadas al E07. \\
+OUT-05 & Política DQN offline & Implementada como política final de decisión. El archivo conserva también una política tabular anterior, pero el cierre del sprint adopta DQN como enfoque principal. \\
+OUT-06 & Reglas agronómicas & Implementadas en \texttt{sprint3/agricultural\_rules.py}. \\
+OUT-07 & Tests automatizados & Suite verificada con 94 tests pasados. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Gestión de cambios}
+
+\subsection{Cambios de alcance}
+
+El Sprint 4 incluye un cambio de alcance técnico respecto a la planificación inicial. El objetivo inicial hablaba de mejorar UX/UI y cerrar dashboard v2. Durante el sprint se decidió priorizar la arquitectura de modelo y RL porque el dashboard no podía mostrar recomendaciones de riego fiables sin un backend que justificara esas decisiones.
+
+\begin{longtable}{p{0.15\textwidth}p{0.30\textwidth}p{0.40\textwidth}}
+\caption{Cambios de alcance gestionados durante Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Cambio} & \textbf{Justificación y decisión} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Cambio} & \textbf{Justificación y decisión} \\
+\midrule
+\endhead
+CR-S4-01 & Incorporar simulación de riego. & Necesario porque no existen datos reales de riego. Aprobado como hipótesis explícita y documentada. \\
+CR-S4-02 & Pasar de IEC central a reward multiobjetivo para política DQN offline. & El IEC se descarta como criterio de decisión final; la política DQN utiliza una función de recompensa separable y configurable. Aprobado. \\
+CR-S4-03 & Priorizar backend sobre quinta pestaña final. & La integración visual rompía la estabilidad de carga. Se decide entregar dashboard estable y backend preparado. \\
+CR-S4-04 & Excluir CSV grandes del repositorio. & GitHub rechazó un archivo mayor de 100 MB. Se documenta regeneración local y se ignoran los CSV generados. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Impacto de los cambios}
+
+Los cambios aumentaron la profundidad técnica del entregable y redujeron el riesgo de presentar recomendaciones injustificadas. El impacto negativo es que el dashboard v2 visual no queda completamente conectado. La decisión se considera correcta para el cierre del sprint porque preserva la demo funcional y deja el trabajo avanzado versionado.
+
+\newpage
+
+\section{Limitaciones identificadas}
+
+\begin{longtable}{p{0.16\textwidth}p{0.38\textwidth}p{0.36\textwidth}}
+\caption{Limitaciones técnicas y de gestión al cierre del Sprint 4}\\
+\toprule
+\textbf{ID} & \textbf{Limitación} & \textbf{Mitigación aplicada} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Limitación} & \textbf{Mitigación aplicada} \\
+\midrule
+\endhead
+L-S4-01 & No existen datos reales de riego. & Simulación documentada con escenarios, dosis e intervalos. \\
+L-S4-02 & Lecturas de humedad y temperatura del suelo cada 6 horas. & Reconstrucción a 10 minutos mediante dinámica parametrizada, diferenciando dato observado y simulado. \\
+L-S4-03 & Modelo LSTM entrenado sobre parte de dinámica simulada. & Métricas interpretadas como validación del entorno simulado, no como validación física completa. \\
+L-S4-04 & Quinta pestaña del dashboard no estable. & Reversión al dashboard funcional y documentación del plan de integración futura. \\
+L-S4-05 & CSV grandes no versionados en Git. & Inclusión en \texttt{.gitignore} y documentación de comandos de regeneración. \\
+L-S4-06 & Rangos agronómicos pendientes de validación experta. & Reglas implementadas como base configurable, no como verdad agronómica definitiva. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Gestión de riesgos acumulada}
+
+La gestión de riesgos del Sprint 4 se presenta de forma acumulada, siguiendo el enfoque del plan de proyecto: identificación, valoración, respuesta, seguimiento y cierre. La matriz utiliza una escala de probabilidad e impacto de 1 a 5. La exposición se calcula como probabilidad por impacto y permite priorizar los riesgos que han condicionado la planificación real del proyecto.
+
+Durante los cuatro sprints el registro ha evolucionado de riesgos principalmente exploratorios, propios de la calidad de datos, hacia riesgos de integración, simulación y validación de modelos. Esta evolución es coherente con la madurez del producto: primero se descubrieron las limitaciones del dataset, después se diseñaron indicadores y reglas, posteriormente se construyó el dashboard y finalmente se reformuló el sistema como problema secuencial con riego, RL offline y modelo del mundo.
+
+\subsection{Criterio de valoración}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{3cm}p{4cm}p{6.5cm}}
+\toprule
+\textbf{Elemento} & \textbf{Escala} & \textbf{Interpretación} \\
+\midrule
+Probabilidad & 1 muy baja - 5 muy alta & Estima la posibilidad de que el riesgo afecte al proyecto. \\
+Impacto & 1 bajo - 5 crítico & Mide el efecto sobre alcance, coste, calendario, calidad o demostrabilidad. \\
+Exposición & Probabilidad $\times$ impacto & Ayuda a ordenar la respuesta. Valores superiores a 15 requieren seguimiento explícito. \\
+Estado & Abierto, mitigado, aceptado, materializado o cerrado & Indica si el riesgo sigue condicionando decisiones o si ya se ha absorbido. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Registro acumulado de riesgos S1-S4}
+
+\begin{landscape}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{p{1.6cm}p{1.4cm}p{5.2cm}p{0.8cm}p{0.8cm}p{1cm}p{2.6cm}p{6.8cm}}
+\toprule
+\textbf{ID} & \textbf{Origen} & \textbf{Riesgo} & \textbf{P} & \textbf{I} & \textbf{Exp.} & \textbf{Estado} & \textbf{Respuesta y cierre de gestión} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Origen} & \textbf{Riesgo} & \textbf{P} & \textbf{I} & \textbf{Exp.} & \textbf{Estado} & \textbf{Respuesta y cierre de gestión} \\
+\midrule
+\endhead
+R1 & S1 & Calidad y continuidad insuficiente de los datos de sensores. & 4 & 5 & 20 & Activo controlado & Se incorporaron validaciones, limpieza, interpolación y documentación de rangos. En S4 se acepta que parte del comportamiento debe simularse. \\
+R2 & S1 & Desalineación temporal entre fuentes meteorológicas, sensores y variables solares. & 4 & 4 & 16 & Mitigado & Se normalizaron frecuencias y se documentó el cambio a granularidad de 10 minutos para las trayectorias simuladas. \\
+R3 & S1 & Relaciones no lineales y retardos físicos no capturados por modelos simples. & 3 & 4 & 12 & Gestionado & El proyecto pasó de reglas e indicadores a LSTM/modelo del mundo para capturar contexto temporal. \\
+R4 & S1 & Sesgo hacia la optimización energética frente al componente agronómico. & 3 & 4 & 12 & Reformulado & En S4 se separó la recompensa en componente agrícola y eléctrico, con pesos $\alpha$ y $\beta$. \\
+R5 & S1 & Sobreajuste por datos históricos limitados. & 4 & 4 & 16 & Abierto controlado & Se evita afirmar validez productiva. Los modelos se presentan como prototipo experimental y se separan simulación y datos reales. \\
+R6 & S1 & Fragilidad del pipeline de generación de datasets. & 3 & 3 & 9 & Mitigado & Se añadieron scripts reproducibles, tests y documentación para regenerar salidas sin versionar CSV grandes. \\
+R7 & S1 & Estacionalidad limitada y baja representatividad de escenarios extremos. & 4 & 3 & 12 & Vigente & Se mantiene como limitación metodológica. La BBDD de cultivos permite probar rangos, pero no sustituye una campaña anual real. \\
+R8 & S1 & Sensores anómalos o lecturas potencialmente sesgadas por riego previo. & 3 & 3 & 9 & Mitigado parcialmente & En S4 se descartó usar la lectura como verdad continua y se emplearon rangos para calibrar simulación de humedad. \\
+R9 & S1 & Pérdida de información al pasar de datos crudos a agregaciones. & 3 & 2 & 6 & Aceptado & Se compensa con trazabilidad de datasets derivados y documentación de columnas. \\
+R10 & S1 & Falta de contexto agronómico por cultivo y etapa fenológica. & 4 & 4 & 16 & Mitigado & Se introdujo BBDD de cultivos, rangos favorables y calendario de fases para reward agrícola. \\
+R11 & S1 & Diferencias entre zonas S1/S2 no explicadas por el dataset. & 3 & 3 & 9 & Vigente & Se trata cada zona de forma independiente y se evita extrapolar conclusiones causales sin datos de campo adicionales. \\
+R12 & S2 & Pesos del IEC no validados empíricamente. & 4 & 5 & 20 & Reformulado & El IEC se retira como criterio principal y se sustituye por una reward agrícola-energética usada por la política DQN offline. \\
+R13 & S2 & Uso de latitud o parámetros proxy no ajustados exactamente a la instalación. & 3 & 3 & 9 & Vigente menor & Se documenta como aproximación técnica aceptable para prototipo, no para despliegue comercial. \\
+R14 & S2 & Conjunto de tests insuficiente para cubrir reglas solares y casos límite. & 4 & 3 & 12 & Mitigado & Se amplió la batería de pruebas hasta 44 tests pasados, cubriendo pipeline, lógica y validaciones relevantes. \\
+R15 & S3 & Dashboard sin validación formal de usuario final. & 4 & 3 & 12 & Aceptado & La demo se estabiliza con una versión de cuatro pestañas; las mejoras avanzadas se documentan para integración posterior. \\
+R16 & S3 & Ausencia de feed real en tiempo real para predicción y control. & 5 & 4 & 20 & Abierto & Se creó API/base backend para predicción, pero se deja claro que no equivale a telemetría real continua. \\
+R17 & S3 & Artefactos generados o cachés versionados accidentalmente. & 2 & 2 & 4 & Mitigado & Se revisó `.gitignore`, se retiraron outputs grandes del commit y se documentó regeneración local. \\
+R-S4-01 & S4 & Confusión entre datos simulados y datos reales al entrenar LSTM/RL. & 3 & 5 & 15 & Activo controlado & Se documentan hipótesis, rangos y naturaleza sintética del riego. Las salidas grandes se tratan como regenerables. \\
+R-S4-02 & S4 & CSV de entrenamiento superiores a límites de GitHub. & 4 & 3 & 12 & Materializado y mitigado & El push falló por archivos de 98,89 MB y 118,19 MB. Se sacaron del commit y se dejó instrucción para regenerarlos. \\
+R-S4-03 & S4 & Sobreajuste del LSTM a un entorno simulado. & 3 & 3 & 9 & Abierto & Se recomienda usar métricas de validación temporal y no vender el modelo como predictor agrícola real sin calibración externa. \\
+R-S4-04 & S4 & Integración visual tardía rompe el dashboard estable. & 3 & 5 & 15 & Materializado y controlado & Se hizo rollback del frontend a la versión estable y se mantuvo el backend preparado para integración incremental. \\
+R-S4-05 & S4 & Reward agrícola/energética no validada con expertos. & 3 & 3 & 9 & Abierto & Se parametrizan pesos y umbrales para poder discutirlos con usuarios y defenderlos como hipótesis de prototipo. \\
+\bottomrule
+\end{longtable}
+\end{landscape}
+
+\subsection{Evolución de riesgos por fase}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{2cm}p{4cm}p{4.5cm}p{4.2cm}}
+\toprule
+\textbf{Sprint} & \textbf{Tipo de riesgo dominante} & \textbf{Decisión de gestión} & \textbf{Resultado} \\
+\midrule
+Sprint 1 & Calidad, continuidad y significado de los datos. & Priorizar EDA, limpieza y trazabilidad antes de modelar. & Se evitó construir modelos sin conocer limitaciones de sensores. \\
+Sprint 2 & Definición de indicador y reglas de recomendación. & Crear IEC como puente interpretable, pero mantenerlo revisable. & El IEC permitió avanzar, aunque en S4 se retiró como métrica principal de decisión. \\
+Sprint 3 & Producto demostrable e integración Streamlit. & Proteger estabilidad del dashboard y cubrir reglas con tests. & Se obtuvo una demo funcional, pero con límites en predicción y feed real. \\
+Sprint 4 & Simulación, DQN offline, LSTM, archivos grandes e integración avanzada. & Separar backend experimental de interfaz estable. & El proyecto cierra con arquitectura más realista y con riesgos explícitos, no escondidos. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Riesgos materializados y respuesta}
+
+Los riesgos que realmente se materializaron fueron especialmente útiles para mejorar la gestión del proyecto. El problema de archivos grandes apareció al intentar subir datasets de entrenamiento generados por el pipeline; la respuesta fue retirar esos CSV del commit, excluirlos del versionado y documentar cómo regenerarlos localmente. La integración visual avanzada también llegó a romper la carga del dashboard; la respuesta fue volver a una versión estable y tratar la conexión LSTM/RL como una mejora incremental. Finalmente, la falta de datos reales de riego obligó a abandonar una lectura ingenua del dataset y a construir una simulación explícita, calibrada por rangos y documentada como hipótesis.
+
+\newpage
+
+\section{Plan Económico y seguimiento presupuestario acumulado}
+
+El seguimiento económico acumulado se ha actualizado con el presupuesto aprobado del proyecto y con los consumos reales de contingencia registrados en los cuatro sprints. Se mantiene como presupuesto base aprobado un total de 37.977,50 euros. La lectura económica no se limita a comprobar si se ha gastado menos o más, sino que incorpora métricas de valor ganado para reflejar desviaciones de alcance, esfuerzo técnico y calendario.
+
+\subsection{Presupuesto aprobado y situación de cierre}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{6cm}r p{6cm}}
+\toprule
+\textbf{Concepto} & \textbf{Importe (EUR)} & \textbf{Comentario} \\
+\midrule
+Presupuesto total aprobado (BAC) & 37.977,50 & Presupuesto vigente de referencia para el proyecto completo. \\
+Coste acumulado comprometido (AC) & 35.860,00 & Trabajo ejecutado, documentación, desarrollo, pruebas y ajustes acumulados. \\
+Valor ganado acumulado (EV) & 35.160,00 & Valor reconocido del alcance realmente cerrado y defendible. \\
+Valor planificado acumulado (PV) & 37.977,50 & Valor planificado al cierre del proyecto según alcance completo previsto. \\
+Contingencia inicial & 3.452,50 & Reserva de gestión para incidencias técnicas y desviaciones. \\
+Contingencia consumida & 1.335,00 & Rework, bugs, reformulación de modelos, rollback frontend y gestión de datasets pesados. \\
+Contingencia remanente & 2.117,50 & Margen no consumido al cierre. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La diferencia entre coste acumulado y valor ganado no implica que el proyecto sea fallido, sino que refleja una decisión consciente: se ha cerrado y documentado una arquitectura técnica avanzada, pero no se ha activado toda la integración visual prevista para no comprometer la demo final. Por tanto, existe coste real en investigación, corrección y backend que aporta valor técnico, aunque una parte del valor planificado queda como integración futura.
+
+\subsection{Seguimiento económico por sprint}
+
+\begin{longtable}{p{1.4cm}r r r r r p{5.4cm}}
+\toprule
+\textbf{Sprint} & \textbf{PV} & \textbf{EV} & \textbf{AC} & \textbf{CPI} & \textbf{SPI} & \textbf{Lectura de gestión} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{PV} & \textbf{EV} & \textbf{AC} & \textbf{CPI} & \textbf{SPI} & \textbf{Lectura de gestión} \\
+\midrule
+\endhead
+S1 & 8.500,00 & 8.500,00 & 8.850,00 & 0,96 & 1,00 & Se entregó el análisis exploratorio previsto, pero con más esfuerzo por limpieza, comprensión de sensores y falta de metadatos. \\
+S2 & 8.700,00 & 8.650,00 & 8.825,00 & 0,98 & 0,99 & La circularidad entre GPOA, ángulo y recomendación obligó a replantear parte del enfoque del IEC. \\
+S3 & 8.900,00 & 8.850,00 & 9.120,00 & 0,97 & 0,99 & El dashboard llegó a versión estable, pero se consumió esfuerzo adicional en bugs de VWC, tests y estabilización. \\
+S4 & 11.877,50 & 9.160,00 & 9.065,00 & 1,01 & 0,77 & El sprint fue eficiente en coste directo, pero no ganó todo el valor planificado por rollback de integración visual avanzada. \\
+\midrule
+\textbf{Total} & \textbf{37.977,50} & \textbf{35.160,00} & \textbf{35.860,00} & \textbf{0,98} & \textbf{0,93} & \textbf{Proyecto cerrado bajo presupuesto de caja, pero con desviación de alcance visual avanzado.} \\
+\bottomrule
+\end{longtable}
+
+\subsection{Métricas de control presupuestario}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{3cm}p{4cm}r p{6cm}}
+\toprule
+\textbf{Métrica} & \textbf{Fórmula} & \textbf{Valor} & \textbf{Interpretación} \\
+\midrule
+CV & EV - AC & -700,00 & Hay una desviación de coste interna: parte del esfuerzo consumido fue rework o investigación necesaria, no valor cerrable directamente. \\
+SV & EV - PV & -2.817,50 & Existe desviación de alcance/calendario respecto al plan completo, sobre todo por dejar la integración visual avanzada para después. \\
+CPI & EV / AC & 0,98 & Por cada euro consumido se reconocen 0,98 euros de valor ganado. Es una desviación pequeña, pero real. \\
+SPI & EV / PV & 0,93 & Se ha ganado el 93\% del valor planificado al cierre. El 7\% restante corresponde principalmente a integración final no activada. \\
+EAC & AC + (BAC - EV) / CPI & 38.735,00 & Si se forzara completar el alcance original con la productividad observada, se superaría ligeramente el BAC. \\
+VAC & BAC - EAC & -757,50 & Proyección desfavorable para el alcance original completo; el cierre aceptado evita ese sobrecoste. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Consumo de contingencia acumulado}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{1.5cm}r p{9cm}}
+\toprule
+\textbf{Sprint} & \textbf{Consumo (EUR)} & \textbf{Justificación} \\
+\midrule
+S1 & 350,00 & Trabajo adicional de análisis por falta de metadatos, anomalías y validación inicial de sensores. \\
+S2 & 175,00 & Revisión del enfoque IEC y ajuste de reglas por dependencias circulares entre ángulo, irradiancia y producción. \\
+S3 & 270,00 & Corrección de errores de VWC, tests adicionales y estabilización del dashboard Streamlit. \\
+S4 & 540,00 & Simulación de riego, generación de datasets, entrenamiento LSTM, retirada de CSV grandes y rollback del frontend avanzado. \\
+\midrule
+\textbf{Total consumido} & \textbf{1.335,00} & Consumo acumulado de contingencia. \\
+\textbf{Remanente} & \textbf{2.117,50} & Contingencia disponible no utilizada. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Desviación por perfiles de trabajo}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{4cm}r r r p{5cm}}
+\toprule
+\textbf{Perfil} & \textbf{Plan} & \textbf{Real} & \textbf{Delta} & \textbf{Motivo principal} \\
+\midrule
+Gestión de proyecto y documentación & 5.500,00 & 5.550,00 & +50,00 & Mayor esfuerzo en cierre acumulado, riesgos y justificación económica. \\
+Ingeniería de datos y pipeline & 9.500,00 & 9.850,00 & +350,00 & Regeneración de outputs, control de CSV grandes y scripts reproducibles. \\
+Modelización, RL y LSTM & 7.200,00 & 7.905,00 & +705,00 & Reformulación MDP, simulación de riego y entrenamiento del modelo del mundo. \\
+Análisis de datos y validación & 5.050,00 & 5.050,00 & 0,00 & Trabajo alineado con lo previsto tras estabilizar criterios de datos. \\
+BI, dashboard e integración & 4.575,00 & 4.805,00 & +230,00 & Intento de quinta pestaña, fallo de carga y rollback a interfaz estable. \\
+\midrule
+\textbf{Subtotal perfiles internos} & \textbf{31.825,00} & \textbf{33.160,00} & \textbf{+1.335,00} & Desviación cubierta íntegramente con contingencia. \\
+Servicios externos y soporte & 1.700,00 & 1.700,00 & 0,00 & Sin desviación. \\
+Infraestructura y herramientas & 1.000,00 & 1.000,00 & 0,00 & Sin desviación relevante. \\
+\midrule
+\textbf{Coste acumulado comprometido} & \textbf{34.525,00} & \textbf{35.860,00} & \textbf{+1.335,00} & Coste real dentro del BAC gracias al remanente de contingencia. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Conclusión económica}
+
+El proyecto queda económicamente controlado porque el coste acumulado comprometido, 35.860,00 euros, se mantiene por debajo del presupuesto aprobado de 37.977,50 euros. Sin embargo, las métricas CPI y SPI muestran que la gestión no ha sido perfectamente lineal. Se ha consumido más esfuerzo del previsto en perfiles técnicos, especialmente modelización y pipeline, y no todo el alcance visual avanzado se ha reconocido como entregado. Esta lectura es más fiel al desarrollo real del sprint: el equipo ha preferido cerrar una base defendible, estable y documentada antes que forzar una integración de riesgo alto en la demo final.
+
+\newpage
+
+\section{Plan de Calidad}
+
+\subsection{Evolución acumulada de la calidad}
+
+La calidad del proyecto no se ha gestionado como una comprobación final, sino como un proceso acumulado. En el Sprint 1 la calidad se centró en entender el dataset y no construir conclusiones sobre sensores sin una limpieza mínima. En el Sprint 2 se añadió calidad metodológica: justificar el IEC, revisar reglas y hacer explícitas las dependencias entre variables solares. En el Sprint 3 la calidad pasó a producto, con un dashboard ejecutable y pruebas sobre reglas críticas. En el Sprint 4 la calidad se orientó a reproducibilidad, separación entre simulación y datos reales, gestión de archivos grandes y estabilidad de la demo.
+
+\begin{longtable}{p{1.4cm}p{4.2cm}p{4.5cm}p{5cm}}
+\caption{Evolución acumulada del plan de calidad}\\
+\toprule
+\textbf{Sprint} & \textbf{Foco de calidad} & \textbf{Controles aplicados} & \textbf{Resultado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Sprint} & \textbf{Foco de calidad} & \textbf{Controles aplicados} & \textbf{Resultado} \\
+\midrule
+\endhead
+S1 & Calidad de datos y trazabilidad exploratoria. & Revisión de nulos, rangos, continuidad temporal, anomalías y consistencia de sensores. & Dataset comprendido y riesgos de calidad identificados antes de modelar. \\
+S2 & Calidad metodológica del indicador y reglas. & Revisión de la circularidad GPOA-ángulo, comparación de reglas y documentación de hipótesis. & IEC útil como indicador intermedio, pero retirado como criterio final de control. \\
+S3 & Calidad de producto demostrable. & Tests de lógica, corrección de VWC, estabilización Streamlit y validación de vistas principales. & Dashboard estable y defendible para demo. \\
+S4 & Calidad de reproducibilidad y cierre. & Tests, documentación de datasets regenerables, separación de backend experimental y frontend estable. & Proyecto cerrable sin ocultar limitaciones técnicas. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Criterios de calidad acumulados}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{4cm}p{5cm}p{5cm}}
+\toprule
+\textbf{Dimensión} & \textbf{Criterio acumulado} & \textbf{Evidencia de cierre} \\
+\midrule
+Datos & Las transformaciones deben ser reproducibles y las salidas pesadas no deben depender del repositorio. & Scripts y notebooks documentados; CSV grandes excluidos y regenerables. \\
+Modelos & Ningún modelo debe presentarse como validado en campo si procede de simulación o hipótesis. & E07 y este documento separan RL/LSTM experimental de explotación real. \\
+Dashboard & La interfaz entregada debe abrirse de forma estable y ser demostrable. & Rollback a versión de cuatro pestañas estable. \\
+Gestión & Riesgos, presupuesto y alcance deben reflejar desviaciones reales. & Registro acumulado S1-S4 y métricas CPI/SPI no triviales. \\
+Documentación & La entrega debe permitir entender qué se ha hecho, qué queda pendiente y por qué. & Documentación técnica, gestión acumulada y presentación final. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Verificación del Definition of Done}
+
+\begin{longtable}{p{0.46\textwidth}p{0.12\textwidth}p{0.32\textwidth}}
+\caption{Verificación del DoD - Sprint 4}\\
+\toprule
+\textbf{Criterio DoD} & \textbf{Aplica} & \textbf{Estado} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Criterio DoD} & \textbf{Aplica} & \textbf{Estado} \\
+\midrule
+\endhead
+El código ejecuta sin errores en los módulos principales. & Sí & Completado para backend y tests. Dashboard estable restaurado. \\
+La suite de tests automatizados pasa. & Sí & Completado: 94 tests pasados. \\
+El código está versionado en repositorio. & Sí & Completado, excluyendo CSV grandes generados. \\
+Los archivos grandes están gestionados correctamente. & Sí & Completado: añadidos a \texttt{.gitignore} y documentada regeneración. \\
+La documentación técnica incluye limitaciones y próximos pasos. & Sí & Completado en E07. \\
+La documentación de gestión se actualiza. & Sí & En curso con este documento. \\
+El dashboard final funciona y se puede enseñar. & Sí & Completado en versión estable de cuatro pestañas. \\
+La funcionalidad experimental está diferenciada del entregable estable. & Sí & Completado: quinta pestaña preparada, no activada. \\
+El registro de riesgos está actualizado. & Sí & Completado en este documento. \\
+La presentación final está preparada. & Sí & Pendiente de cerrar a partir de E07 y E09. \\
+El cliente/supervisor ha aceptado en Review. & Sí & Pendiente de sesión final si aplica. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Criterios de aceptación por entregable}
+
+\begin{longtable}{p{0.18\textwidth}p{0.72\textwidth}}
+\caption{Criterios de aceptación de los entregables del Sprint 4}\\
+\toprule
+\textbf{Entregable} & \textbf{Criterios de aceptación mínimos} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Entregable} & \textbf{Criterios de aceptación mínimos} \\
+\midrule
+\endhead
+E06 - Dashboard v2 & El dashboard debe abrirse de forma estable, mostrar el estado principal del sistema y conservar las vistas de dashboard, series temporales, recomendación y alertas. Las funcionalidades avanzadas deben quedar diferenciadas si no están activadas. \\
+E07 - Documentación técnica & Debe describir arquitectura, datasets, simulación de riego, MDP, política DQN offline, LSTM, reproducibilidad, limitaciones y próximos pasos. \\
+E08 - Presentación final & Debe sintetizar problema, solución, dashboard, modelos, limitaciones, riesgos y propuesta de continuidad. \\
+E09 - Documentación de gestión & Debe incluir backlog, review, retrospectiva, riesgos, presupuesto, DoD, lecciones aprendidas y cierre del proyecto. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Relación con los entregables finales}
+
+\subsection{E06 - Dashboard v2 final}
+
+El E06 se cierra como dashboard estable con backend ampliado. La versión visual conectada mantiene cuatro pestañas para asegurar que la demo se puede abrir y utilizar. El dashboard v2 previsto queda documentado y preparado a nivel de módulos, pero no se activa hasta completar una integración incremental.
+
+\subsection{E07 - Documentación técnica completa}
+
+El documento técnico del Sprint 4 consolida:
+
+\begin{itemize}
+    \item simulación de riego;
+    \item modelo del mundo;
+    \item MDP;
+    \item política DQN offline;
+    \item LSTM;
+    \item dashboard previsto;
+    \item reproducibilidad;
+    \item limitaciones.
+\end{itemize}
+
+\subsection{E08 - Presentación final}
+
+La presentación final debería apoyarse en tres mensajes:
+
+\begin{enumerate}
+    \item El proyecto parte de datos reales heterogéneos y limitados.
+    \item Se construye un sistema de soporte a la decisión que equilibra energía y cultivo.
+    \item La solución final distingue entre dashboard estable, backend avanzado y simulación documentada.
+\end{enumerate}
+
+\subsection{E09 - Documentación de gestión acumulativa}
+
+Este documento sirve como base del E09 para el Sprint 4. Deberá acompañarse de:
+
+\begin{itemize}
+    \item actas del sprint;
+    \item Sprint 3 Review;
+    \item Sprint 3 Retrospective;
+    \item registro de riesgos final;
+    \item seguimiento de presupuesto;
+    \item DoD final revisada;
+    \item informe de lecciones aprendidas.
+\end{itemize}
+
+\newpage
+
+\section{Lecciones aprendidas}
+
+\begin{longtable}{p{0.10\textwidth}p{0.13\textwidth}p{0.22\textwidth}p{0.27\textwidth}p{0.20\textwidth}}
+\caption{Lecciones aprendidas acumuladas S1-S4}\\
+\toprule
+\textbf{ID} & \textbf{Sprint} & \textbf{Categoría} & \textbf{Descripción} & \textbf{Recomendación} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Sprint} & \textbf{Categoría} & \textbf{Descripción} & \textbf{Recomendación} \\
+\midrule
+\endhead
+LL-01 & S1 & Datos & El dataset agrovoltaico requiere una fase de comprensión previa antes de cualquier automatización. & No diseñar modelos ni dashboards hasta conocer frecuencia, nulos, sensores y rangos físicos. \\
+\addlinespace
+LL-02 & S1 & Alcance & Los datos disponibles no explican por sí solos todas las decisiones agronómicas. & Separar lo observable de lo inferido y registrar supuestos desde el primer sprint. \\
+\addlinespace
+LL-03 & S1 & Gestión & El descubrimiento de datos consume más tiempo del previsto cuando faltan metadatos. & Reservar contingencia temprana para exploración y normalización. \\
+\addlinespace
+LL-04 & S2 & Modelización & Un índice sintético como el IEC ayuda a explicar decisiones, pero puede ocultar dependencias internas. & Validar cada componente del índice y evitar circularidades entre entrada y objetivo. \\
+\addlinespace
+LL-05 & S2 & Reglas & Las reglas solares son útiles como baseline, pero no sustituyen una política secuencial. & Mantener las reglas como comparación interpretable frente a modelos más avanzados. \\
+\addlinespace
+LL-06 & S2 & Validación & La interpretabilidad no elimina la necesidad de tests. & Probar casos límite, horas sin datos y comportamiento ante variables ausentes. \\
+\addlinespace
+LL-07 & S3 & Producto & Una demo vale mucho más si abre siempre que si intenta enseñar todo. & Proteger la estabilidad del dashboard antes de añadir pestañas o visualizaciones complejas. \\
+\addlinespace
+LL-08 & S3 & Integración & La lógica de recomendación y la visualización deben evolucionar juntas. & Diseñar contratos claros entre módulos backend y frontend. \\
+\addlinespace
+LL-09 & S3 & Calidad & Los bugs de VWC y reglas aparecen rápido cuando la interfaz fuerza escenarios reales. & Usar el dashboard como herramienta de validación, no solo como escaparate. \\
+\addlinespace
+LL-17 & S4 & Datos / Modelización & No se puede entrenar una política de riego real sin datos de riego. La ausencia de una variable crítica debe identificarse antes de diseñar la interfaz final. & Separar siempre variables observadas, simuladas y aprendidas. Documentar hipótesis antes de presentar resultados. \\
+\addlinespace
+LL-18 & S4 & DQN / Producto & El IEC fue útil como indicador, pero se retira como objetivo final porque la política DQN necesita una recompensa descompuesta y configurable. & Usar índices sintéticos solo como soporte explicativo; la decisión final debe venir de la política DQN offline y su reward multiobjetivo. \\
+\addlinespace
+LL-19 & S4 & Frontend / Riesgo & Integrar una pestaña compleja al final del sprint puede romper una demo que ya funcionaba. & Activar nuevas vistas detrás de una integración incremental y probar carga después de cada cambio. \\
+\addlinespace
+LL-20 & S4 & Repositorio & Los datasets generados pueden superar límites de GitHub y bloquear el push. & Definir desde el inicio qué artefactos se versionan y cuáles se regeneran o almacenan externamente. \\
+\addlinespace
+LL-21 & S4 & Machine Learning & No todas las variables deben aprenderse. Algunas, como minutos desde el último riego, son deterministas. & Antes de entrenar, clasificar targets en aprendidos, derivados y deterministas. \\
+\addlinespace
+LL-22 & S4 & Gestión & El cierre del proyecto requiere equilibrar ambición técnica y estabilidad de entrega. & Priorizar una demo estable y documentar el trabajo avanzado como evolución próxima. \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+\section{Cierre del Sprint 4}
+
+\subsection{Balance técnico}
+
+El Sprint 4 ha permitido cerrar una arquitectura mucho más sólida que la prevista inicialmente. Aunque el dashboard visual no incorpora todavía toda la funcionalidad avanzada, el backend contiene ya los elementos necesarios para evolucionar hacia un sistema de simulación y decisión:
+
+\begin{itemize}
+    \item datos simulados de riego y suelo;
+    \item MDP formalizado;
+    \item reward multiobjetivo;
+    \item política DQN offline;
+    \item LSTM de modelo del mundo;
+    \item rollout de políticas;
+    \item reglas agronómicas por cultivo.
+\end{itemize}
+
+\subsection{Balance de gestión}
+
+Desde gestión, el sprint ha tenido una desviación técnica controlada. El equipo ha decidido conscientemente no forzar una integración visual inestable. Esta decisión reduce el riesgo de demo y permite entregar una documentación honesta sobre lo que está listo, lo que está preparado y lo que requiere validación adicional.
+
+\subsection{Estado final del proyecto}
+
+El proyecto queda en un estado adecuado para presentación final como prototipo avanzado:
+
+\begin{itemize}
+    \item dashboard funcional y demostrable;
+    \item backend preparado para decisiones secuenciales;
+    \item documentación técnica extensa;
+    \item riesgos y limitaciones identificados;
+    \item próximos pasos claros para continuar.
+\end{itemize}
+
+La principal recomendación para la continuación del proyecto es obtener datos reales de riego o validar experimentalmente la simulación. Con esa información, el sistema podría pasar de prototipo de soporte a la decisión a una herramienta más cercana a operación real.
+
+\subsection{Mejoras pendientes}
+
+La mejora funcional más importante para la siguiente iteración es construir una pestaña simplificada del dashboard para cliente. La versión técnica prevista puede ser útil para el equipo, pero no necesariamente para una persona que solo necesita tomar decisiones. Por tanto, la propuesta es crear una vista de alto nivel que muestre:
+
+\begin{itemize}
+    \item acción recomendada por la política RL;
+    \item explicación corta de la decisión;
+    \item efecto esperado sobre cultivo y energía;
+    \item estado del riego y necesidad de intervención;
+    \item avisos cuando la recomendación se base en datos simulados;
+    \item comparación sencilla con una política fija o regla manual.
+\end{itemize}
+
+Esta mejora permitiría conectar mejor el backend avanzado con el uso real del producto. La prioridad no sería enseñar todos los detalles del modelo, sino hacer que la recomendación sea comprensible, defendible y accionable para un cliente.
+
+\appendix
+
+\newpage
+
+\section{Anexo A - Comandos de reproducibilidad}
+
+\subsection{Ejecutar dashboard}
+
+\begin{verbatim}
+streamlit run sprint3/app.py
+\end{verbatim}
+
+\subsection{Regenerar dataset de modelo del mundo}
+
+\begin{verbatim}
+python sprint3/build_world_model_training_dataset.py
+\end{verbatim}
+
+\subsection{Entrenar LSTM}
+
+\begin{verbatim}
+python sprint3/train_world_model_lstm.py --epochs 30 --batch-size 512
+\end{verbatim}
+
+\subsection{Ejecutar tests}
+
+\begin{verbatim}
+python -m pytest
+\end{verbatim}
+
+\newpage
+
+\section{Anexo B - Estructura de documentación Sprint 4}
+
+\begin{longtable}{p{0.30\textwidth}p{0.58\textwidth}}
+\caption{Documentación generada o prevista para Sprint 4}\\
+\toprule
+\textbf{Documento} & \textbf{Propósito} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Documento} & \textbf{Propósito} \\
+\midrule
+\endhead
+\texttt{sprint4/E07\_Documentacion\_Tecnica\_Sprint4.tex} & Documento técnico de modelos, política DQN offline, LSTM y dashboard previsto. \\
+\texttt{sprint4/Gestion\_Proyecto\_Sprint4.tex} & Documento de gestión del sprint, seguimiento, riesgos, presupuesto y cierre. \\
+\texttt{docs/superpowers/plans/2026-05-11-dashboard-agronomy-rl-lstm.md} & Plan técnico de integración futura del dashboard agronómico. \\
+\texttt{sprint3/Definicio\_model.md} & Definición original del problema de modelización. \\
+\texttt{context.md}, \texttt{tasks.md}, \texttt{checklist.md} & Contexto general, planificación por sprints y checklist de cierre. \\
+\bottomrule
+\end{longtable}
+
+\end{document}

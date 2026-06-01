@@ -1,0 +1,98 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{pdflscape}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black
+}
+\titlespacing*{\section}{0pt}{1.2ex plus .2ex minus .1ex}{0.6ex plus .1ex}
+\titlespacing*{\subsection}{0pt}{0.8ex plus .2ex minus .1ex}{0.4ex plus .1ex}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Resumen ejecutivo del Proyecto}
+\rhead{PIA-GIA -- Sprint 4}
+\cfoot{\thepage}
+
+\setlist[itemize]{leftmargin=*}
+\setlist[enumerate]{leftmargin=*}
+\setlength{\parskip}{0.4em}
+\renewcommand{\arraystretch}{1.18}
+
+\begin{document}
+
+% --- Portada ---
+\begin{titlepage}
+    \centering
+    {\includegraphics[width=0.8\textwidth]{fib.png}\par}
+    \vspace{1cm}
+    {\bfseries\LARGE Universitat Politècnica de Catalunya \par}
+    \vspace{1cm}
+    {\scshape\Large Facultat d'Informàtica de Barcelona \par}
+    \vspace{2.5cm}
+    {\scshape\Huge Resumen Ejecutivo Final del Proyecto \par}
+    \vspace{0.8cm}
+    {\scshape\Large Sistemas Agrovoltaicos Dinámicos \par}
+    \vspace{2.2cm}
+    {\itshape\Large Projecte d'Intel·ligència Artificial (PIA-GIA) \par}
+    \vfill
+    {\Large Grau en Intel·ligència Artificial \par}
+    \vspace{0.8cm}
+    {\Large Equipo Chacorocalfarobar \par}
+    \vspace{0.3cm}
+    {\large Daniel Álvarez Sarroca \par}
+    {\large Pablo Chacón \par}
+    {\large Albert Roca \par}
+    {\large Pau Escobar \par}
+    {\large Joel Alfaro \par}
+    \vfill
+    {\Large Sprint 4 de 4 -- Cierre acumulado \par}
+    {\Large Mayo de 2026 \par}
+\end{titlepage}
+
+\section*{Resumen ejecutivo}
+
+\textbf{Objetivo y problema.} SAMO aborda el reto de operar un sistema agrovoltaico dinámico sin optimizar únicamente la producción eléctrica. El objetivo del proyecto ha sido construir un sistema de soporte a la decisión que ayude a equilibrar dos necesidades que compiten entre sí: orientar las placas solares para generar energía y mantener condiciones adecuadas para el cultivo situado debajo. La dificultad principal no ha sido solo técnica, sino también de datos: las lecturas disponibles son incompletas, algunas variables agronómicas tienen baja frecuencia y no existe un histórico real de riego. Por ello, el proyecto ha tenido que combinar análisis de datos, modelización, simulación y una interfaz clara para interpretar las recomendaciones.
+
+\textbf{Trabajo realizado.} A lo largo de los cuatro sprints se ha pasado de una exploración inicial de sensores a un prototipo funcional. Primero se limpiaron y analizaron los datos para entender rangos, anomalías y limitaciones. Después se construyó una primera lógica de recomendación basada en indicadores interpretables. En el Sprint 3 se entregó un dashboard estable para visualizar el estado del sistema, series temporales, recomendaciones y alertas. En el Sprint 4 se ha reformulado la parte de decisión: el índice IEC deja de ser el criterio principal y se adopta una política DQN offline como enfoque final, más adecuada para decidir acciones secuenciales sobre placas y riego.
+
+\textbf{Resultados principales.} El resultado es un prototipo más realista y defendible que el planteamiento inicial. El sistema ya no se presenta como una simple visualización de sensores, sino como una arquitectura preparada para recomendar acciones bajo incertidumbre. Los avances más relevantes son:
+
+\begin{itemize}
+    \item incorporación de una simulación de riego para compensar la ausencia de datos reales de actuación;
+    \item generación de trayectorias a mayor resolución temporal para entrenar y evaluar decisiones;
+    \item separación explícita entre componente agrícola y componente energética en la recompensa;
+    \item adopción de DQN como política final de decisión, manteniendo las reglas anteriores solo como referencia de evolución;
+    \item uso de un modelo temporal para estimar cómo puede evolucionar el sistema en escenarios futuros;
+    \item estabilización del dashboard para asegurar una demo funcional y comprensible.
+\end{itemize}
+
+\textbf{Dashboard y lectura operativa.} La interfaz final se mantiene como la capa principal de comunicación del proyecto. El dashboard incluye una vista de estado general, donde se resume la situación actual del sistema; una pestaña de series temporales, para analizar la evolución de sensores y variables ambientales; una pestaña de recomendación, que concentra la lógica de apoyo a la decisión; y una pestaña de alertas, orientada a detectar situaciones fuera de rango o condiciones de riesgo. Como mejora prevista, se propone añadir una pestaña simplificada para cliente que traduzca la salida de DQN y de los modelos de predicción en mensajes accionables: qué hacer, por qué hacerlo, qué impacto se espera sobre cultivo y energía, y si la recomendación depende de datos simulados.
+
+\textbf{Conclusiones.} La principal conclusión del proyecto es que, con los datos disponibles, no es responsable prometer control agronómico real en tiempo continuo. Sin embargo, sí se ha construido una base sólida para un sistema de decisión agrovoltaico: datos tratados, hipótesis documentadas, simulación explícita, política de decisión más coherente y dashboard estable. El cambio de IEC a DQN refleja esta maduración: el proyecto deja de depender de un índice único y pasa a formular el problema como una decisión secuencial con objetivos agrícolas y energéticos.
+
+\textbf{Recomendaciones.} Para avanzar hacia un uso real, se recomienda validar la simulación con datos reales de riego, revisar los umbrales de cultivo con criterio experto, conectar el sistema a telemetría continua y simplificar la vista final para usuarios no técnicos. La entrega actual debe entenderse como un prototipo avanzado: suficientemente completo para explicar el valor del enfoque, pero todavía pendiente de validación agronómica y operacional antes de considerarse una herramienta productiva.
+
+\end{document}
